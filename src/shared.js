@@ -1,0 +1,95 @@
+const {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder,
+} = require('discord.js');
+const config = require('../config/server');
+
+const BRAND_COLOR = 0x9146ff; // violet Twitch
+const ACCEPT_RULES_ID = 'accept_rules';
+const ROLE_BUTTON_PREFIX = 'role:';
+
+function roleDef(key) {
+  return config.roles.find((r) => r.key === key);
+}
+
+function channelDef(key) {
+  for (const cat of config.categories) {
+    const ch = cat.channels.find((c) => c.key === key);
+    if (ch) return ch;
+  }
+  return undefined;
+}
+
+function findRole(guild, key) {
+  const def = roleDef(key);
+  return def ? guild.roles.cache.find((r) => r.name === def.name) : undefined;
+}
+
+function findChannel(guild, key) {
+  const def = channelDef(key);
+  return def ? guild.channels.cache.find((c) => c.name === def.name) : undefined;
+}
+
+function rulesPayload(guild) {
+  const embed = new EmbedBuilder()
+    .setColor(BRAND_COLOR)
+    .setTitle(`📜 Règlement de ${guild.name}`)
+    .setDescription(
+      config.rules.map((rule, i) => `**${i + 1}.** ${rule}`).join('\n\n') +
+        '\n\nEn cliquant sur le bouton ci-dessous, tu acceptes ce règlement et tu débloques l\'accès au serveur.',
+    )
+    .setFooter({ text: 'Le non-respect du règlement peut entraîner un avertissement, un mute ou un ban.' });
+
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(ACCEPT_RULES_ID)
+      .setLabel('J\'accepte le règlement')
+      .setEmoji('✅')
+      .setStyle(ButtonStyle.Success),
+  );
+
+  return { embeds: [embed], components: [row] };
+}
+
+function rolesPayload() {
+  const selfRoles = config.roles.filter((r) => r.selfAssign);
+  const embed = new EmbedBuilder()
+    .setColor(BRAND_COLOR)
+    .setTitle('🎭 Choisis tes rôles')
+    .setDescription(
+      'Clique sur un bouton pour ajouter le rôle, reclique pour le retirer.\n\n' +
+        selfRoles.map((r) => `${r.emoji} **${r.name.replace(/^\S+\s/, '')}** — ${r.description}`).join('\n'),
+    );
+
+  // 5 boutons max par ligne
+  const rows = [];
+  for (let i = 0; i < selfRoles.length; i += 5) {
+    rows.push(
+      new ActionRowBuilder().addComponents(
+        selfRoles.slice(i, i + 5).map((r) =>
+          new ButtonBuilder()
+            .setCustomId(ROLE_BUTTON_PREFIX + r.key)
+            .setLabel(r.name.replace(/^\S+\s/, ''))
+            .setEmoji(r.emoji)
+            .setStyle(ButtonStyle.Secondary),
+        ),
+      ),
+    );
+  }
+  return { embeds: [embed], components: rows };
+}
+
+module.exports = {
+  config,
+  BRAND_COLOR,
+  ACCEPT_RULES_ID,
+  ROLE_BUTTON_PREFIX,
+  roleDef,
+  channelDef,
+  findRole,
+  findChannel,
+  rulesPayload,
+  rolesPayload,
+};

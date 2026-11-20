@@ -1,0 +1,17 @@
+{
+  "name": "twitch-community-discord",
+  "version": "1.0.0",
+  "description": "Bot qui crée et anime un serveur Discord communautaire pour une chaîne Twitch",
+  "main": "src/bot.js",
+  "type": "commonjs",
+  "scripts": {
+    "setup": "node src/setup.js",
+    "start": "node src/bot.js",
+    "check": "node --check src/setup.js && node --check src/bot.js && node --check src/shared.js && node --check src/twitch.js && node -e \"require('./config/server')\""
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "discord.js": "^14.28.1",
+    "dotenv": "^16.4.5"
+  }
+}
