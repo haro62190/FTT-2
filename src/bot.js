@@ -1,10 +1,13 @@
 /**
- * Bot du serveur : accueil, règlement, rôles en libre-service, alertes de live Twitch, logs de modération.
+ * Bot du serveur : accueil, règlement, rôles en libre-service, alertes de live Twitch,
+ * commandes /, niveaux (XP) et logs de modération.
  * Usage : npm start
  */
 require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, Events, MessageFlags } = require('discord.js');
 const { TwitchClient } = require('./twitch');
+const commands = require('./commands');
+const levels = require('./levels');
 const {
   config,
   BRAND_COLOR,
@@ -32,6 +35,24 @@ const client = new Client({
   ],
   partials: [Partials.Message, Partials.GuildMember],
 });
+
+const twitch =
+  TWITCH_CHANNEL && TWITCH_CLIENT_ID && TWITCH_CLIENT_SECRET ? new TwitchClient(TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET) : null;
+
+/** Contexte passé aux commandes / */
+const ctx = {
+  twitch,
+  modLog: (interaction, title, description) =>
+    sendLog(
+      interaction.guild,
+      new EmbedBuilder()
+        .setColor(0x5865f2)
+        .setTitle(title)
+        .setDescription(description)
+        .setFooter({ text: `Par ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
+        .setTimestamp(),
+    ),
+};
 
 async function sendLog(guild, embed) {
   const channel = findChannel(guild, 'mod_logs');
@@ -100,10 +121,24 @@ client.on(Events.MessageDelete, async (message) => {
   );
 });
 
+// ───────────────────────── Niveaux (XP) ─────────────────────────
+
+client.on(Events.MessageCreate, async (message) => {
+  if (!message.guild || message.guild.id !== GUILD_ID || message.author.bot) return;
+  const newLevel = levels.onMessage(message.author.id);
+  if (newLevel !== null) {
+    await message.channel
+      .send({ content: `🎉 GG ${message.author}, tu passes au **niveau ${newLevel}** !`, allowedMentions: { users: [message.author.id] } })
+      .catch(() => {});
+  }
+});
+
 // ───────────────────────── Boutons ─────────────────────────
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isButton() || !interaction.inGuild()) return;
+  if (!interaction.inGuild() || interaction.guildId !== GUILD_ID) return;
+  if (interaction.isChatInputCommand()) return commands.handle(interaction, ctx);
+  if (!interaction.isButton()) return;
   const reply = (content) => interaction.reply({ content, flags: MessageFlags.Ephemeral });
 
   try {
@@ -197,11 +232,10 @@ async function checkTwitch(twitch, guild) {
 }
 
 function startTwitchWatcher(guild) {
-  if (!TWITCH_CHANNEL || !TWITCH_CLIENT_ID || !TWITCH_CLIENT_SECRET) {
+  if (!twitch) {
     console.log('ℹ️  Alertes Twitch désactivées (TWITCH_CHANNEL / TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET manquants).');
     return;
   }
-  const twitch = new TwitchClient(TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET);
   const tick = () => checkTwitch(twitch, guild).catch((err) => console.error('Twitch :', err.message));
   tick();
   setInterval(tick, POLL_MS);
@@ -220,6 +254,7 @@ client.once(Events.ClientReady, async () => {
   await guild.roles.fetch();
   console.log(`✅ Connecté en tant que ${client.user.tag} sur "${guild.name}"`);
   client.user.setActivity(TWITCH_CHANNEL ? `twitch.tv/${TWITCH_CHANNEL}` : 'la commu 💜', { type: 3 /* Watching */ });
+  await commands.register(guild).catch((err) => console.error('❌ Enregistrement des commandes / :', err.message));
   startTwitchWatcher(guild);
 });
 

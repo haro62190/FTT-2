@@ -9,7 +9,7 @@
  *   - "public-readonly"  : visible par tous (même avant d'accepter le règlement), personne n'écrit sauf le staff
  *   - "members"          : visible et ouvert aux membres (règlement accepté)
  *   - "members-readonly" : visible par les membres, seul le staff écrit
- *   - "vip"              : réservé aux VIP, abonnés Twitch et staff
+ *   - "vip"              : réservé aux VIP, abonnés Twitch, Streamers et staff
  *   - "staff"            : réservé aux modérateurs
  */
 
@@ -24,6 +24,8 @@ module.exports = {
     { key: 'mod', name: '🛡️ Modérateur', color: 0x2ecc71, hoist: true, mod: true },
     // `allVoice` : peut voir et rejoindre TOUS les salons vocaux (y compris le vocal VIP)
     { key: 'friend', name: '🤝 Amis', color: 0x00bcd4, hoist: true, allVoice: true },
+    // Pour les streamers de la commu : accès aux salons VIP
+    { key: 'streamer_role', name: '🎥 Streamer', color: 0xa970ff, hoist: true },
     { key: 'vip', name: '💎 VIP', color: 0xe91e63, hoist: true },
     { key: 'sub', name: '⭐ Abonné Twitch', color: 0xf1c40f, hoist: true },
     { key: 'member', name: '🎮 Membre', color: 0x3498db, hoist: false },

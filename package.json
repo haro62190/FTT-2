@@ -7,7 +7,7 @@
   "scripts": {
     "setup": "node src/setup.js",
     "start": "node src/bot.js",
-    "check": "node --check src/setup.js && node --check src/bot.js && node --check src/shared.js && node --check src/twitch.js && node -e \"require('./config/server')\""
+    "check": "node --check src/setup.js && node --check src/bot.js && node --check src/shared.js && node --check src/twitch.js && node --check src/commands.js && node --check src/levels.js && node --check src/store.js && node -e \"require('./config/server')\""
   },
   "engines": { "node": ">=18" },
   "dependencies": {

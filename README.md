@@ -23,7 +23,7 @@ Un bot qui **crée automatiquement tout ton serveur Discord** (rôles, catégori
    🛡️・mod-chat   📋・logs (arrivées, départs, messages supprimés)
 ```
 
-**Rôles :** 👑 Chef · 🛡️ Modérateur · 🤝 Amis (accès à tous les vocaux) · 💎 VIP · ⭐ Abonné Twitch · 🎮 Membre · et en libre-service : 🔴 Notif Live · 📢 Notif Annonces · 🕹️ Joueur · 🎨 Artiste.
+**Rôles :** 👑 Chef · 🛡️ Modérateur · 🤝 Amis (accès à tous les vocaux) · 🎥 Streamer (accès VIP) · 💎 VIP · ⭐ Abonné Twitch · 🎮 Membre · et en libre-service : 🔴 Notif Live · 📢 Notif Annonces · 🕹️ Joueur · 🎨 Artiste.
 
 **Réglages de sécurité appliqués :** e-mail vérifié obligatoire, filtre de contenu explicite pour tous, notifications par défaut sur « @mentions uniquement » (évite que les gens quittent à cause du bruit).
 
@@ -82,6 +82,27 @@ Pour trouver le `GUILD_ID` : Discord → Paramètres utilisateur → Avancés �
 
 Le bot doit tourner en permanence : sur ton PC pendant les streams, ou mieux sur un petit hébergement (Raspberry Pi, VPS, Railway, fly.io…).
 
+## ⌨️ Commandes `/` (façon MEE6)
+
+Tape `/` dans Discord pour voir la liste. `/aide` affiche les commandes auxquelles tu as accès.
+
+| Commande | Qui | Ce qu'elle fait |
+|---|---|---|
+| `/aide` `/ping` | tous | aide, test du bot |
+| `/live` | tous | le stream est-il en ligne ? (titre, jeu, viewers) |
+| `/profil [membre]` `/serveur` | tous | infos sur un membre / le serveur |
+| `/sondage` | tous | sondage Discord (2 à 4 choix, durée en heures) |
+| `/rang [membre]` `/classement` | tous | niveau, XP, top 10 |
+| `/annonce` | staff | publie une annonce dans 📢・annonces (option : mentionner 📢 Notif Annonces) |
+| `/clear nombre [membre]` | staff | supprime jusqu'à 100 messages |
+| `/warn` `/warns` `/clearwarns` | staff | avertissements (le membre reçoit un MP) |
+| `/mute` `/unmute` | staff | rendre muet de 1 min à 1 semaine |
+| `/kick` `/ban` | staff | expulser / bannir |
+
+Toutes les actions de modération sont notées dans 📋・logs. Les commandes staff sont cachées aux membres normaux (tu peux ajuster qui les voit dans *Paramètres du serveur → Intégrations → ton bot*).
+
+**Niveaux :** chaque message rapporte 15 à 25 XP (une fois par minute max, anti-spam). Le bot félicite le membre à chaque niveau. Les données (XP, avertissements) sont dans `data/db.json` — ne supprime pas ce fichier.
+
 ## ✏️ Personnaliser
 
 Tout se passe dans [`config/server.js`](config/server.js) : noms et couleurs des rôles, salons, niveaux d'accès, règlement, message de bienvenue. Après une modification, relance `npm run setup` : rien n'est recréé en double, les permissions et messages du bot sont simplement mis à jour.
@@ -93,7 +114,10 @@ Tout se passe dans [`config/server.js`](config/server.js) : noms et couleurs des
 ```
 config/server.js   structure du serveur (rôles, salons, règlement…)
 src/setup.js       création / mise à jour du serveur
-src/bot.js         bot en continu (accueil, boutons, alertes Twitch, logs)
+src/bot.js         bot en continu (accueil, boutons, alertes Twitch, XP, logs)
+src/commands.js    commandes /
+src/levels.js      système de niveaux
+src/store.js       sauvegarde (data/db.json)
 src/twitch.js      client API Twitch
 src/shared.js      messages et utilitaires communs
 ```

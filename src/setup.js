@@ -63,6 +63,7 @@ function buildOverwrites(guild, botId, def) {
       add(everyone, [], [P.ViewChannel]);
       add(role('vip'), [...READ, ...WRITE]);
       add(role('sub'), [...READ, ...WRITE]);
+      add(role('streamer_role'), [...READ, ...WRITE]);
       break;
     case 'staff':
       add(everyone, [], [P.ViewChannel]);
