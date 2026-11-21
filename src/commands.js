@@ -352,6 +352,8 @@ const commands = [
   },
 ];
 
+commands.push(...require('./music').commands);
+
 const byName = new Map(commands.map((c) => [c.data.name, c]));
 
 /** Enregistre les commandes sur le serveur (instantané, contrairement aux commandes globales). */

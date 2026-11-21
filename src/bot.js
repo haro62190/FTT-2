@@ -9,6 +9,7 @@ const { TwitchClient } = require('./twitch');
 const commands = require('./commands');
 const levels = require('./levels');
 const tempVoice = require('./tempvoice');
+const music = require('./music');
 const {
   config,
   BRAND_COLOR,
@@ -140,6 +141,7 @@ client.on(Events.MessageCreate, async (message) => {
 client.on(Events.VoiceStateUpdate, (oldState, newState) => {
   if (newState.guild.id !== GUILD_ID) return;
   tempVoice.onVoiceStateUpdate(oldState, newState).catch((err) => console.error('Vocal temporaire :', err.message));
+  music.onVoiceStateUpdate(oldState, newState);
 });
 
 // ───────────────────────── Boutons ─────────────────────────

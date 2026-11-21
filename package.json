@@ -7,10 +7,13 @@
   "scripts": {
     "setup": "node src/setup.js",
     "start": "node src/bot.js",
-    "check": "node --check src/setup.js && node --check src/bot.js && node --check src/shared.js && node --check src/twitch.js && node --check src/commands.js && node --check src/levels.js && node --check src/store.js && node --check src/tempvoice.js && node -e \"require('./config/server')\""
+    "check": "node --check src/setup.js && node --check src/bot.js && node --check src/shared.js && node --check src/twitch.js && node --check src/commands.js && node --check src/levels.js && node --check src/store.js && node --check src/tempvoice.js && node --check src/music.js && node -e \"require('./config/server')\""
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
+    "@discordjs/voice": "^0.19.2",
     "discord.js": "^14.28.1",
     "dotenv": "^16.4.5"
   }
