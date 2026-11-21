@@ -50,4 +50,31 @@ function rankOf(userId) {
   };
 }
 
-module.exports = { onMessage, leaderboard, rankOf, levelInfo };
+/** Récompenses : { niveau: rôle } depuis config/server.js (`levelReward`) et les réglages (/config). */
+function rewardList(guild) {
+  const { config, findRole } = require('./shared');
+  const settings = require('./settings');
+  const list = [];
+  for (const def of config.roles.filter((r) => r.levelReward)) {
+    const role = findRole(guild, def.key);
+    if (role) list.push({ level: def.levelReward, role });
+  }
+  for (const [level, roleId] of Object.entries(settings.get('levels.rewards') ?? {})) {
+    const role = guild.roles.cache.get(roleId);
+    if (role) list.push({ level: Number(level), role });
+  }
+  return list.sort((a, b) => a.level - b.level);
+}
+
+/** Donne les rôles de récompense atteints. Renvoie les rôles nouvellement obtenus. */
+async function applyRewards(member, level) {
+  const granted = [];
+  for (const { level: need, role } of rewardList(member.guild)) {
+    if (level >= need && !member.roles.cache.has(role.id) && role.editable) {
+      await member.roles.add(role, `Récompense niveau ${need}`).then(() => granted.push(role)).catch(() => {});
+    }
+  }
+  return granted;
+}
+
+module.exports = { onMessage, leaderboard, rankOf, levelInfo, rewardList, applyRewards };

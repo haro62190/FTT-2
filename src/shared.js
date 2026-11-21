@@ -6,7 +6,7 @@ const {
 } = require('discord.js');
 const config = require('../config/server');
 
-const BRAND_COLOR = 0xff2d7a; // rose néon (thème japonais / cyberpunk)
+const BRAND_COLOR = 0xe10600; // rouge néon — Les Ronins de haro62190
 const ACCEPT_RULES_ID = 'accept_rules';
 const ROLE_BUTTON_PREFIX = 'role:';
 
@@ -42,14 +42,14 @@ function rulesPayload(guild) {
     .setTitle(`⛩️ 掟 ・ Règlement de ${guild.name}`)
     .setDescription(
       config.rules.map((rule, i) => `**${i + 1}.** ${rule}`).join('\n\n') +
-        '\n\nEn cliquant sur le bouton ci-dessous, tu acceptes ce règlement et les portes de la ville s\'ouvrent ⛩️',
+        '\n\nEn cliquant sur le bouton ci-dessous, tu acceptes ce règlement et les portes du dojo s\'ouvrent ⛩️',
     )
     .setFooter({ text: 'Le non-respect du règlement peut entraîner un avertissement, un mute ou un ban.' });
 
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(ACCEPT_RULES_ID)
-      .setLabel('J\'accepte le règlement')
+      .setLabel('Je prête serment — j\'accepte le règlement')
       .setEmoji('✅')
       .setStyle(ButtonStyle.Success),
   );

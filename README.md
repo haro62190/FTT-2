@@ -1,6 +1,10 @@
-# 💜 Serveur Discord communautaire pour ta chaîne Twitch
+# ⚔️ Ronin Builder
 
-Un bot qui **crée automatiquement tout ton serveur Discord** (rôles, catégories, salons, permissions, règlement) puis **l'anime** : accueil des nouveaux, rôles en libre-service, **alertes quand tu passes en live** et logs de modération.
+![Les Ronins de haro62190](assets/banner.png)
+
+Bot Discord qui **construit automatiquement** le serveur **Les Ronins de haro62190** (rôles, catégories, salons, permissions, règlement) avec une seule commande **`/setup`**, puis **l'anime et le protège** : bienvenue / départ, tickets, niveaux et grades, alertes Twitch & TikTok, événements, musique, vocaux temporaires, anti-raid / anti-nuke, logs, sauvegardes et **tableau de bord web**.
+
+Thème **samouraï cyberpunk** : noir, rouge néon et gris. Tout passe réellement par l'API Discord ; rien n'est jamais supprimé sans confirmation.
 
 ## 🗺️ Ce qui est créé
 
@@ -9,21 +13,23 @@ Un bot qui **crée automatiquement tout ton serveur Discord** (rôles, catégori
    🏮┃bienvenue                message d'accueil automatique
    ⛩️┃règlement                règlement + bouton « J'accepte » → débloque le serveur
    📡┃annonces  🔴┃en-live  📱┃tiktok  🎴┃rôles
-🏙️ 街 ・ LA VILLE              (membres ayant accepté le règlement)
+🏯 道場 ・ LE DOJO             (membres ayant accepté le règlement)
    🍜┃discussion  📸┃médias  👾┃memes  🕹️┃gaming  🎧┃musique  🤖┃commandes
 📡 配信 ・ STREAM
    🗓️┃planning  🎬┃clips  🖌️┃fan-art  💡┃suggestions
-💠 特別 ・ VIP & ABONNÉS        (VIP, abonnés Twitch, streamers, staff)
-   💠┃salon-vip   💠 Lounge VIP
+🩸 特別 ・ VIP & ABONNÉS        (VIP, abonnés Twitch, streamers, staff)
+   🩸┃salon-vip   🩸 Lounge VIP
 🎧 音 ・ VOCAUX
    ➕ Créer ton vocal  🌃 Shibuya  🎮 Akihabara #1 / #2  📺 Shinjuku ・ Watch party  💤 Ryokan ・ AFK
+🎫 支援 ・ SUPPORT
+   🎫┃ouvrir-un-ticket          + un salon privé par ticket
 🛡️ 守 ・ STAFF                  (modérateurs uniquement)
    🛡️┃staff  🚨┃alertes-sécurité  📋┃logs  🔊┃logs-vocal
 ```
 
-Thème **japonais / cyberpunk** : 入口 = entrée, 街 = la ville, 配信 = stream, 特別 = spécial, 音 = son, 守 = protection ; les vocaux portent des noms de quartiers de Tokyo.
+Kanji des catégories : 入口 = entrée, 道場 = dojo, 配信 = stream, 特別 = spécial, 音 = son, 支援 = assistance, 守 = protection ; les vocaux portent des noms de quartiers de Tokyo.
 
-**Rôles :** 👑 Chef · 🛡️ Modérateur · 🤝 Amis (accès à tous les vocaux) · 🎥 Streamer (accès VIP) · 💎 VIP · ⭐ Abonné Twitch · 🎮 Membre · et en libre-service : 🔴 Notif Live · 📱 Notif TikTok · 📢 Notif Annonces · 🕹️ Joueur · 🎨 Artiste.
+**Rôles (du plus haut au plus bas) :** 👑 Chef · 🛡️ Modérateur · 🤝 Amis (accès à tous les vocaux) · 🎥 Streamer (accès VIP) · 🩸 VIP · ⭐ Abonné Twitch · 🏯 Daimyō (niv. 30) · ⚔️ Samouraï (niv. 15) · 🗡️ Ashigaru (niv. 5) · ⚔️ Ronin (règlement accepté) · et en libre-service : 🔴 Notif Live · 📱 Notif TikTok · 📢 Notif Annonces · 🕹️ Joueur · 🎨 Artiste.
 
 **Réglages de sécurité appliqués :** e-mail vérifié obligatoire, filtre de contenu explicite pour tous, notifications par défaut sur « @mentions uniquement » (évite que les gens quittent à cause du bruit).
 
@@ -39,7 +45,7 @@ Dans Discord : **＋ Ajouter un serveur → Créer le mien → Pour moi et mes a
 > 💡 Recommandé : **Paramètres du serveur → Activer la Communauté**. Ça permet le vrai salon d'annonces (que les autres serveurs peuvent suivre). Sinon, un salon texte classique est créé à la place.
 
 ### 2. Créer le bot
-1. Va sur <https://discord.com/developers/applications> → **New Application** (nomme-le, ex. « MaChaîne Bot »).
+1. Va sur <https://discord.com/developers/applications> → **New Application**, nomme-la **Ronin Builder**.
 2. Onglet **Bot** → **Reset Token** → copie le token (garde-le secret !).
 3. Toujours dans **Bot**, active les 2 *Privileged Gateway Intents* : **Server Members Intent** et **Message Content Intent**.
 4. Onglet **OAuth2 → URL Generator** : coche `bot`, puis la permission **Administrator**. Ouvre l'URL générée et ajoute le bot à ton serveur.
@@ -50,13 +56,19 @@ Dans Discord : **＋ Ajouter un serveur → Créer le mien → Pour moi et mes a
 3. Récupère le **Client ID**, puis **New Secret** pour le **Client Secret**.
 
 ### 4. Configurer et lancer
-Il faut [Node.js](https://nodejs.org) 18 ou plus.
+Il faut [Node.js](https://nodejs.org) **22.5 ou plus** (version LTS actuelle).
 
 ```bash
 npm install
 cp .env.example .env      # puis remplis le fichier .env
-npm run setup             # crée toute la structure du serveur (une seule fois, ou après modif de la config)
 npm start                 # lance le bot (doit tourner en continu)
+```
+
+Puis dans Discord, tape **`/setup`** : le bot affiche ce qu'il va créer, tu confirmes, et il construit tout le serveur en direct (une sauvegarde est faite juste avant). Sans Discord ouvert, `npm run setup` fait la même chose depuis le terminal.
+
+```bash
+# équivalent terminal de /setup
+npm run setup
 ```
 
 Pour trouver le `GUILD_ID` : Discord → Paramètres utilisateur → Avancés → active le **Mode développeur**, puis clic droit sur ton serveur → **Copier l'identifiant du serveur**.
@@ -75,7 +87,8 @@ Pour trouver le `GUILD_ID` : Discord → Paramètres utilisateur → Avancés �
 | Fonction | Détail |
 |---|---|
 | Accueil | Message de bienvenue personnalisé dans 🏮┃bienvenue avec le numéro du membre |
-| Règlement | Le bouton ✅ donne le rôle 🎮 Membre, qui débloque le reste du serveur |
+| Bienvenue / départ | Messages personnalisables (`/welcome` ou tableau de bord) |
+| Règlement | Le bouton « Je prête serment » donne le rôle ⚔️ Ronin, qui débloque le reste du serveur |
 | Rôles libre-service | Boutons dans 🎴┃rôles (cliquer à nouveau retire le rôle) |
 | Alerte live | Toutes les 60 s, vérifie Twitch ; au début du live, poste titre + jeu + miniature et mentionne 🔴 Notif Live. À la fin, l'annonce passe en « live terminé ». Pas de doublon si le bot redémarre pendant un live. |
 | Logs | Arrivées, départs et messages supprimés dans 📋┃logs |
@@ -84,7 +97,27 @@ Le bot doit tourner en permanence : sur ton PC pendant les streams, ou mieux sur
 
 ## ⌨️ Commandes `/` (façon MEE6)
 
-Tape `/` dans Discord pour voir la liste. `/aide` affiche les commandes auxquelles tu as accès.
+Tape `/` dans Discord pour voir la liste. `/help` (ou `/aide`) affiche les commandes auxquelles tu as accès.
+
+### 🏯 Administration (Ronin Builder)
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `/setup` | Construit **tout** le serveur : rôles + hiérarchie, catégories, salons, permissions, règlement, panneaux rôles/tickets, paramètres, icône, nom et avatar du bot |
+| `/roles` | Crée / met à jour uniquement les rôles (couleurs, permissions, ordre) |
+| `/channels` | Crée / met à jour uniquement les catégories, salons et permissions |
+| `/welcome voir · bienvenue · depart · tester` | Messages de bienvenue et de départ |
+| `/moderation voir · regler · protections · confiance` | Seuils anti-raid / anti-spam, invitations, anti-nuke, liste de confiance |
+| `/config voir · niveaux · recompense · notifications · reinitialiser` | Niveaux, rôles de récompense, alertes Twitch / TikTok |
+| `/backup creer · liste · exporter · supprimer` | Sauvegardes du serveur |
+| `/restore id` ou `/restore fichier` | Restauration (recrée ce qui manque, ne supprime rien) |
+| `/embed` | Message intégré personnalisé (titre, couleur, image, mention…) |
+| `/evenement` | Crée un **événement Discord** (date, durée, lieu) et l'annonce |
+| `/ticket ajouter · retirer · fermer` | Gestion d'un ticket |
+
+Chaque commande qui modifie le serveur affiche d'abord **ce qu'elle va faire** et attend ta **confirmation** (✅ / ❌). `/setup`, `/roles`, `/channels` et `/restore` font une sauvegarde automatique juste avant.
+
+### 🎌 Communauté et modération
 
 | Commande | Qui | Ce qu'elle fait |
 |---|---|---|
@@ -101,7 +134,40 @@ Tape `/` dans Discord pour voir la liste. `/aide` affiche les commandes auxquell
 
 Toutes les actions de modération sont notées dans 📋┃logs. Les commandes staff sont cachées aux membres normaux (tu peux ajuster qui les voit dans *Paramètres du serveur → Intégrations → ton bot*).
 
-**Niveaux :** chaque message rapporte 15 à 25 XP (une fois par minute max, anti-spam). Le bot félicite le membre à chaque niveau. Les données (XP, avertissements) sont dans `data/db.json` — ne supprime pas ce fichier.
+**Niveaux :** chaque message rapporte 15 à 25 XP (une fois par minute max, anti-spam). Le bot félicite le membre à chaque niveau et donne automatiquement les **grades** : 🗡️ Ashigaru (niv. 5), ⚔️ Samouraï (niv. 15), 🏯 Daimyō (niv. 30) — d'autres récompenses avec `/config recompense` ou le tableau de bord.
+
+## 🎫 Tickets
+
+Dans 🎫┃ouvrir-un-ticket, le bouton **Ouvrir un ticket** demande un sujet puis crée un salon privé visible seulement par le membre et les modos. Boutons **Prendre en charge** et **Fermer** (avec confirmation). À la fermeture, la transcription complète est envoyée dans 📋┃logs et en MP au membre. Un ticket ouvert à la fois par membre.
+
+## 💾 Sauvegardes et base de données
+
+Les données du bot (XP, avertissements, tickets, réglages, sauvegardes) sont dans une base **SQLite** : `data/ronin.db` (module SQLite intégré à Node.js, rien à installer). L'ancien fichier `data/db.json` est importé automatiquement.
+
+- Sauvegarde **automatique chaque jour** (7 conservées) + `/backup creer` à la demande.
+- Une sauvegarde contient : rôles (couleurs, permissions, ordre), catégories, salons, permissions de chaque salon, paramètres du serveur et réglages du bot. Les **messages** ne sont pas sauvegardés.
+- `/restore` recrée les rôles et salons manquants, remet les permissions et les réglages. **Il ne supprime jamais rien.**
+- `/backup exporter` donne un fichier `.json` à garder en lieu sûr (restaurable avec `/restore fichier`).
+- Pour une copie complète de la base : copie `data/ronin.db` (bot arrêté) depuis le VPS avec `scp root@IP:/root/bot/data/ronin.db .`
+
+## 🌐 Tableau de bord web
+
+Pages : accueil (stats, top 10), bienvenue / départ, modération, niveaux & récompenses, notifications, publier une annonce, sauvegardes (créer / restaurer avec confirmation), avertissements, tickets ouverts.
+
+**Sécurité :** connexion **avec Discord** ; seuls le propriétaire et les membres ayant *Gérer le serveur* y accèdent (droits revérifiés à chaque page). Par défaut il n'écoute que sur la machine du bot (`127.0.0.1`) : il n'est **pas exposé sur Internet**.
+
+**Activer :**
+1. Portail développeur → ton appli → **OAuth2** → **Reset Secret** → copie-le dans `.env` : `DISCORD_CLIENT_SECRET=...`
+2. Toujours dans **OAuth2 → Redirects**, ajoute : `http://localhost:3000/callback` et enregistre.
+3. `pm2 restart bot-discord` → les logs affichent `🌐 Tableau de bord : http://localhost:3000`.
+
+**Ouvrir depuis ton PC** (le bot est sur le VPS) — un tunnel SSH, gratuit et chiffré :
+```bash
+ssh -L 3000:localhost:3000 root@IP_DU_VPS
+```
+Laisse cette fenêtre ouverte et va sur <http://localhost:3000>. Si le bot tourne sur ton PC, ouvre directement <http://localhost:3000>.
+
+> Pour l'ouvrir sans tunnel (depuis ton téléphone par exemple), il faut un nom de domaine et HTTPS : mets `DASHBOARD_HOST=127.0.0.1`, `DASHBOARD_URL=https://ton-domaine` et place devant un reverse proxy comme [Caddy](https://caddyserver.com) (certificat HTTPS gratuit). Ne l'expose jamais en HTTP simple.
 
 ## ☁️ Héberger 24h/24 sur un VPS, avec mises à jour automatiques
 
@@ -188,26 +254,34 @@ Le créateur a tous les droits sur son salon (clic droit sur un membre → rendr
 
 ## ✏️ Personnaliser
 
-Tout se passe dans [`config/server.js`](config/server.js) : noms et couleurs des rôles, salons, niveaux d'accès, règlement, message de bienvenue. Après une modification, relance `npm run setup` : rien n'est recréé en double, les permissions et messages du bot sont simplement mis à jour.
+Tout se passe dans [`config/server.js`](config/server.js) : noms et couleurs des rôles, salons, niveaux d'accès, règlement, message de bienvenue. Après une modification, relance `/setup` (ou `npm run setup`) : rien n'est recréé en double, les permissions et messages du bot sont simplement mis à jour.
 
-⚠️ Si tu renommes un salon ou un rôle **dans la config**, l'ancien n'est pas supprimé : un nouveau est créé. Renomme-le aussi dans Discord (ou supprime l'ancien).
+Pour renommer un salon ou un rôle, change son `name` et ajoute l'ancien nom dans `formerNames` : `/setup` le renommera au lieu d'en créer un nouveau.
 
 ## 📂 Structure
 
 ```
-config/server.js   structure du serveur (rôles, salons, règlement…)
-src/setup.js       création / mise à jour du serveur
-src/bot.js         bot en continu (accueil, boutons, alertes Twitch, XP, logs)
-src/commands.js    commandes /
-src/music.js       musique (yt-dlp + ffmpeg)
-src/tiktok.js      alertes TikTok
-src/ytdlp.js       appels à yt-dlp
-src/logs.js        logs (journal d'audit, vocal, messages modifiés)
+config/server.js   structure du serveur (rôles, salons, règlement, messages…)
+src/bot.js         point d'entrée : événements Discord, bienvenue/départ, XP, alertes Twitch
+src/builder.js     construction du serveur via l'API Discord (/setup, /roles, /channels)
+src/setup.js       /setup depuis le terminal (npm run setup)
+src/admin.js       /setup /roles /channels /welcome /moderation /config /embed /evenement
+src/backup.js      sauvegardes / restauration, /backup /restore
+src/tickets.js     tickets d'assistance
+src/dashboard.js   tableau de bord web
+src/settings.js    réglages modifiables à chaud
+src/store.js       base SQLite (data/ronin.db)
+src/confirm.js     confirmations ✅ / ❌ et progression
+src/commands.js    commandes communautaires et modération
 src/security.js    anti-raid, anti-spam, anti-nuke, /lockdown
-assets/            icône et bannière du serveur
+src/logs.js        logs (journal d'audit, vocal, messages modifiés)
+src/levels.js      niveaux et grades
+src/music.js       musique (yt-dlp + ffmpeg)
 src/tempvoice.js   vocaux temporaires
-src/levels.js      système de niveaux
-src/store.js       sauvegarde (data/db.json)
-src/twitch.js      client API Twitch
+src/tiktok.js      alertes TikTok · src/twitch.js client Twitch · src/ytdlp.js appels yt-dlp
 src/shared.js      messages et utilitaires communs
+assets/            icône et bannière (浪人 · Les Ronins)
+scripts/update.sh  mise à jour automatique depuis GitHub
 ```
+
+**Pourquoi JavaScript et pas TypeScript ?** Le bot tourne sans étape de compilation : `git pull` + redémarrage suffisent, ce qui rend la mise à jour automatique du VPS fiable. Le code est découpé en modules documentés ; une migration TypeScript reste possible plus tard.

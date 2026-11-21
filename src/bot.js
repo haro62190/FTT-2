@@ -13,6 +13,8 @@ const music = require('./music');
 const { startTikTokWatcher } = require('./tiktok');
 const logs = require('./logs');
 const security = require('./security');
+const settings = require('./settings');
+const tickets = require('./tickets');
 const {
   config,
   BRAND_COLOR,
@@ -68,15 +70,23 @@ async function sendLog(guild, embed) {
 
 // ───────────────────────── Accueil & logs ─────────────────────────
 
+/** Variables utilisables dans les messages : {user} {username} {server} {count} {rules} */
+function fillTemplate(text, member, rules) {
+  return String(text ?? '')
+    .replaceAll('{user}', `${member}`)
+    .replaceAll('{username}', member.user?.username ?? member.displayName ?? 'Quelqu\'un')
+    .replaceAll('{server}', member.guild.name)
+    .replaceAll('{count}', String(member.guild.memberCount))
+    .replaceAll('{rules}', rules ? `${rules}` : 'règlement');
+}
+
 client.on(Events.GuildMemberAdd, async (member) => {
   if (security.lockdown.active) return; // pas de bienvenue pendant un raid
   if (member.guild.id !== GUILD_ID) return;
   const welcome = findChannel(member.guild, 'welcome');
   const rules = findChannel(member.guild, 'rules');
-  if (welcome) {
-    const text = config.welcomeMessage
-      .replace('{user}', `${member}`)
-      .replace('{rules}', rules ? `${rules}` : 'règlement');
+  if (welcome && settings.get('welcome.enabled')) {
+    const text = fillTemplate(settings.get('welcome.message'), member, rules);
     await welcome
       .send({
         embeds: [
@@ -102,6 +112,21 @@ client.on(Events.GuildMemberAdd, async (member) => {
 
 client.on(Events.GuildMemberRemove, async (member) => {
   if (member.guild.id !== GUILD_ID) return;
+  const channel = findChannel(member.guild, 'welcome');
+  if (channel && settings.get('goodbye.enabled') && !security.lockdown.active) {
+    await channel
+      .send({
+        embeds: [
+          new EmbedBuilder()
+            .setColor(0x3a3a3a)
+            .setDescription(fillTemplate(settings.get('goodbye.message'), member))
+            .setThumbnail(member.user?.displayAvatarURL() ?? null)
+            .setFooter({ text: `Nous sommes maintenant ${member.guild.memberCount}` }),
+        ],
+        allowedMentions: { parse: [] },
+      })
+      .catch(() => {});
+  }
   await sendLog(
     member.guild,
     new EmbedBuilder()
@@ -133,11 +158,20 @@ client.on(Events.MessageDelete, async (message) => {
 
 client.on(Events.MessageCreate, async (message) => {
   if (!message.guild || message.guild.id !== GUILD_ID || message.author.bot) return;
+  if (!settings.get('levels.enabled')) return;
   const newLevel = levels.onMessage(message.author.id);
   if (newLevel !== null) {
-    await message.channel
-      .send({ content: `🎉 GG ${message.author}, tu passes au **niveau ${newLevel}** !`, allowedMentions: { users: [message.author.id] } })
-      .catch(() => {});
+    const rewards = message.member ? await levels.applyRewards(message.member, newLevel) : [];
+    if (settings.get('levels.announce') || rewards.length) {
+      await message.channel
+        .send({
+          content:
+            `⚔️ GG ${message.author}, tu passes au **niveau ${newLevel}** !` +
+            (rewards.length ? `\n🎖️ Nouveau grade : ${rewards.map((r) => `**${r.name}**`).join(', ')}` : ''),
+          allowedMentions: { users: [message.author.id] },
+        })
+        .catch(() => {});
+    }
   }
 });
 
@@ -157,6 +191,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isButton() || interaction.isUserSelectMenu() || interaction.isModalSubmit()) {
     try {
       if (await tempVoice.handleInteraction(interaction)) return;
+      if (await tickets.handleInteraction(interaction)) return;
     } catch (err) {
       console.error('Vocal temporaire :', err);
       const msg = { content: '❌ Action impossible.', flags: MessageFlags.Ephemeral };
@@ -209,7 +244,7 @@ async function findExistingLiveMessage(channel, streamId) {
 
 async function checkTwitch(twitch, guild) {
   const channel = findChannel(guild, 'live');
-  if (!channel) return;
+  if (!channel || !settings.get('notifications.twitch')) return;
 
   const stream = await twitch.getLiveStream(TWITCH_CHANNEL);
 
@@ -283,11 +318,19 @@ client.once(Events.ClientReady, async () => {
   await guild.channels.fetch();
   await guild.roles.fetch();
   console.log(`✅ Connecté en tant que ${client.user.tag} sur "${guild.name}"`);
-  client.user.setActivity(TWITCH_CHANNEL ? `twitch.tv/${TWITCH_CHANNEL}` : 'la commu 💜', { type: 3 /* Watching */ });
+  client.user.setActivity('Les Ronins de haro62190 ⚔️', { type: 3 /* Watching */ });
   await tempVoice.cleanup(guild).catch((err) => console.error('Nettoyage des vocaux temporaires :', err.message));
   await commands.register(guild).catch((err) => console.error('❌ Enregistrement des commandes / :', err.message));
   startTwitchWatcher(guild);
   startTikTokWatcher(guild);
+
+  require('./dashboard').start(client, GUILD_ID);
+
+  // Sauvegarde automatique quotidienne du serveur
+  const backup = require('./backup');
+  const auto = () => guild.channels.fetch().then(() => backup.autoBackup(guild)).catch((e) => console.error('Sauvegarde auto :', e.message));
+  auto();
+  setInterval(auto, 6 * 3600_000);
 });
 
 client.login(DISCORD_TOKEN);

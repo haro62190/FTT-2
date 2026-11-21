@@ -16,23 +16,18 @@ const {
   PermissionFlagsBits: P,
   SlashCommandBuilder,
 } = require('discord.js');
-const { config, findChannel, findRole } = require('./shared');
+const { findChannel, findRole } = require('./shared');
 
-const S = {
-  raidJoins: 8, // arrivées…
-  raidWindowSec: 20, // …en X secondes = raid
-  lockdownMinutes: 10,
-  minAccountAgeDays: 0, // 0 = désactivé. Ex : 3 = expulse les comptes créés il y a moins de 3 jours
-  spamMessages: 6, // messages…
-  spamWindowSec: 5, // …en X secondes = flood
-  spamMuteMinutes: 10,
-  maxMentions: 5,
-  blockInvites: true,
-  nuke: { windowSec: 60, channelDelete: 3, roleDelete: 3, ban: 4, kick: 5, channelCreate: 8, webhookCreate: 3 },
-  whitelist: [], // IDs d'utilisateurs ou de bots de confiance
-  ...config.security,
+const settings = require('./settings');
+
+const NUKE = { windowSec: 60, channelDelete: 3, roleDelete: 3, ban: 4, kick: 5, channelCreate: 8, webhookCreate: 3 };
+/** Réglages lus à chaque utilisation : modifiables à chaud avec /moderation ou le tableau de bord */
+const S = new Proxy({}, { get: (_, key) => (key === 'nuke' ? { ...NUKE, ...settings.get('security.nuke') } : settings.get(`security.${String(key)}`)) });
+const WHITELIST = {
+  has: (id) =>
+    (S.whitelist ?? []).includes(id) ||
+    (process.env.SECURITY_WHITELIST ?? '').split(',').map((s) => s.trim()).includes(id),
 };
-const WHITELIST = new Set([...(S.whitelist ?? []), ...(process.env.SECURITY_WHITELIST ?? '').split(',').map((s) => s.trim()).filter(Boolean)]);
 
 // ───────────────────────── Alertes ─────────────────────────
 
@@ -238,7 +233,7 @@ async function onAuditEntry(entry, guild) {
     }
     return;
   }
-  if (!type) return;
+  if (!type || !S.antiNuke) return;
   const id = entry.executorId;
   if (!id || id === guild.client.user.id || id === guild.ownerId || WHITELIST.has(id)) return;
 

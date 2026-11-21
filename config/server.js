@@ -16,27 +16,33 @@
  */
 
 module.exports = {
-  serverName: null, // ex : "La commu de MaChaine" — null = ne pas renommer le serveur
+  serverName: 'Les Ronins de haro62190', // null = ne pas renommer le serveur
 
   // Rôles, du plus haut au plus bas dans la hiérarchie.
   // `key` sert de référence dans le code, `name` est ce qui s'affiche sur Discord.
   roles: [
     // `formerNames` : anciens noms du rôle, pour le renommer au lieu d'en créer un nouveau
-    { key: 'streamer', name: '👑 Chef', formerNames: ['👑 Streamer'], color: 0x9146ff, hoist: true, admin: true },
-    { key: 'mod', name: '🛡️ Modérateur', color: 0x2ecc71, hoist: true, mod: true },
+    // Palette Les Ronins : rouge sang, rouge néon, gris acier, noir
+    { key: 'streamer', name: '👑 Chef', formerNames: ['👑 Streamer'], color: 0xff1a1a, hoist: true, admin: true },
+    { key: 'mod', name: '🛡️ Modérateur', color: 0xb30000, hoist: true, mod: true },
     // `allVoice` : peut voir et rejoindre TOUS les salons vocaux (y compris le vocal VIP)
-    { key: 'friend', name: '🤝 Amis', color: 0x00bcd4, hoist: true, allVoice: true },
+    { key: 'friend', name: '🤝 Amis', color: 0xa6a6a6, hoist: true, allVoice: true },
     // Pour les streamers de la commu : accès aux salons VIP
-    { key: 'streamer_role', name: '🎥 Streamer', color: 0xa970ff, hoist: true },
-    { key: 'vip', name: '💎 VIP', color: 0xe91e63, hoist: true },
-    { key: 'sub', name: '⭐ Abonné Twitch', color: 0xf1c40f, hoist: true },
-    { key: 'member', name: '🎮 Membre', color: 0x3498db, hoist: false },
+    { key: 'streamer_role', name: '🎥 Streamer', color: 0xff4d4d, hoist: true },
+    { key: 'vip', name: '🩸 VIP', formerNames: ['💎 VIP'], color: 0xe60000, hoist: true },
+    { key: 'sub', name: '⭐ Abonné Twitch', color: 0xd92b2b, hoist: true },
+    // Grades gagnés avec les niveaux (`levelReward` = niveau à atteindre)
+    { key: 'rank_daimyo', name: '🏯 Daimyō', color: 0xcc1414, hoist: true, levelReward: 30 },
+    { key: 'rank_samurai', name: '⚔️ Samouraï', color: 0x991f1f, hoist: true, levelReward: 15 },
+    { key: 'rank_ashigaru', name: '🗡️ Ashigaru', color: 0x808080, hoist: true, levelReward: 5 },
+    // Rôle donné en acceptant le règlement
+    { key: 'member', name: '⚔️ Ronin', formerNames: ['🎮 Membre'], color: 0x5c5c5c, hoist: false },
     // Rôles que les membres peuvent s'attribuer eux-mêmes dans #rôles
-    { key: 'notif_live', name: '🔴 Notif Live', color: 0xe74c3c, selfAssign: true, emoji: '🔴', description: 'Être notifié quand le live commence' },
-    { key: 'notif_tiktok', name: '📱 Notif TikTok', color: 0xfe2c55, selfAssign: true, emoji: '📱', description: 'Être notifié de mes nouveaux TikTok' },
-    { key: 'notif_news', name: '📢 Notif Annonces', color: 0x95a5a6, selfAssign: true, emoji: '📢', description: 'Être notifié des annonces' },
-    { key: 'gamer', name: '🕹️ Joueur', color: 0x1abc9c, selfAssign: true, emoji: '🕹️', description: 'Jouer avec la commu' },
-    { key: 'artist', name: '🎨 Artiste', color: 0xe67e22, selfAssign: true, emoji: '🎨', description: 'Partager tes créations' },
+    { key: 'notif_live', name: '🔴 Notif Live', color: 0x8c1a1a, selfAssign: true, emoji: '🔴', description: 'Être notifié quand le live commence' },
+    { key: 'notif_tiktok', name: '📱 Notif TikTok', color: 0x8c1a1a, selfAssign: true, emoji: '📱', description: 'Être notifié de mes nouveaux TikTok' },
+    { key: 'notif_news', name: '📢 Notif Annonces', color: 0x737373, selfAssign: true, emoji: '📢', description: 'Être notifié des annonces et événements' },
+    { key: 'gamer', name: '🕹️ Joueur', color: 0x737373, selfAssign: true, emoji: '🕹️', description: 'Jouer avec la commu' },
+    { key: 'artist', name: '🎨 Artiste', color: 0x737373, selfAssign: true, emoji: '🎨', description: 'Partager tes créations' },
   ],
 
   // Catégories et salons, dans l'ordre d'affichage.
@@ -54,8 +60,8 @@ module.exports = {
       ],
     },
     {
-      name: '🏙️ 街 ・ LA VILLE',
-      formerNames: ['💬 COMMUNAUTÉ'],
+      name: '🏯 道場 ・ LE DOJO',
+      formerNames: ['🏙️ 街 ・ LA VILLE', '💬 COMMUNAUTÉ'],
       channels: [
         { key: 'general', name: '🍜┃discussion', formerNames: ['💬・discussion'], type: 'text', access: 'members', topic: 'Discussion générale, sois cool 😎' },
         { key: 'media', name: '📸┃médias', formerNames: ['🖼️・médias'], type: 'text', access: 'members', topic: 'Images, vidéos, liens sympas.' },
@@ -76,11 +82,11 @@ module.exports = {
       ],
     },
     {
-      name: '💠 特別 ・ VIP & ABONNÉS',
-      formerNames: ['⭐ VIP & ABONNÉS'],
+      name: '🩸 特別 ・ VIP & ABONNÉS',
+      formerNames: ['💠 特別 ・ VIP & ABONNÉS', '⭐ VIP & ABONNÉS'],
       channels: [
-        { key: 'vip_chat', name: '💠┃salon-vip', formerNames: ['⭐・salon-vip'], type: 'text', access: 'vip', topic: 'Merci pour votre soutien ❤️' },
-        { key: 'vip_voice', name: '💠 Lounge VIP', formerNames: ['⭐ Vocal VIP'], type: 'voice', access: 'vip' },
+        { key: 'vip_chat', name: '🩸┃salon-vip', formerNames: ['💠┃salon-vip', '⭐・salon-vip'], type: 'text', access: 'vip', topic: 'Merci pour votre soutien ❤️' },
+        { key: 'vip_voice', name: '🩸 Lounge VIP', formerNames: ['💠 Lounge VIP', '⭐ Vocal VIP'], type: 'voice', access: 'vip' },
       ],
     },
     {
@@ -93,6 +99,12 @@ module.exports = {
         { key: 'voice_gaming2', name: '🎮 Akihabara #2', formerNames: ['🎮 Gaming #2'], type: 'voice', access: 'members', userLimit: 5 },
         { key: 'voice_watch', name: '📺 Shinjuku ・ Watch party', formerNames: ['📺 Watch party'], type: 'voice', access: 'members' },
         { key: 'voice_afk', name: '💤 Ryokan ・ AFK', formerNames: ['💤 AFK'], type: 'voice', access: 'members' },
+      ],
+    },
+    {
+      name: '🎫 支援 ・ SUPPORT',
+      channels: [
+        { key: 'tickets', name: '🎫┃ouvrir-un-ticket', type: 'text', access: 'members-readonly', topic: 'Besoin d\'aide ? Clique sur le bouton pour ouvrir un ticket privé avec le staff.' },
       ],
     },
     {
@@ -141,5 +153,7 @@ module.exports = {
     'Respecte les conditions d\'utilisation de Discord (https://discord.com/terms) et de Twitch.',
   ],
 
-  welcomeMessage: '🏮 **いらっしゃいませ** {user} ! Bienvenue dans la ville néon 🌃\nLis le {rules} et clique sur le bouton pour débloquer les portes du serveur ⛩️',
+  // Variables : {user} {username} {server} {count} {rules} — modifiables aussi avec /welcome ou le tableau de bord
+  welcomeMessage: '🏮 **いらっしゃいませ** {user} ! Bienvenue chez **Les Ronins de haro62190** ⚔️\nLis le {rules} et prête serment pour rejoindre le dojo ⛩️',
+  goodbyeMessage: '🌑 **{username}** a quitté le dojo. Que ta lame reste affûtée, ronin.',
 };

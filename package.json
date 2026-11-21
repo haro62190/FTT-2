@@ -1,16 +1,16 @@
 {
-  "name": "twitch-community-discord",
+  "name": "ronin-builder",
   "version": "1.0.0",
-  "description": "Bot qui crée et anime un serveur Discord communautaire pour une chaîne Twitch",
+  "description": "Ronin Builder — bot Discord qui construit et gère le serveur Les Ronins de haro62190",
   "main": "src/bot.js",
   "type": "commonjs",
   "scripts": {
     "setup": "node src/setup.js",
     "start": "node src/bot.js",
-    "check": "node --check src/setup.js && node --check src/bot.js && node --check src/shared.js && node --check src/twitch.js && node --check src/commands.js && node --check src/levels.js && node --check src/store.js && node --check src/tempvoice.js && node --check src/music.js && node --check src/tiktok.js && node --check src/ytdlp.js && node --check src/logs.js && node --check src/security.js && node -e \"require('./config/server')\""
+    "check": "node --check src/setup.js && node --check src/bot.js && node --check src/shared.js && node --check src/twitch.js && node --check src/commands.js && node --check src/levels.js && node --check src/store.js && node --check src/tempvoice.js && node --check src/music.js && node --check src/tiktok.js && node --check src/ytdlp.js && node --check src/logs.js && node --check src/security.js && node --check src/admin.js && node --check src/backup.js && node --check src/tickets.js && node --check src/builder.js && node --check src/settings.js && node --check src/confirm.js && node --check src/dashboard.js && node -e \"require('./config/server')\""
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22.5"
   },
   "dependencies": {
     "@discordjs/voice": "^0.19.2",

@@ -352,7 +352,20 @@ const commands = [
   },
 ];
 
-commands.push(...require('./music').commands, ...require('./security').commands);
+commands.push(
+  ...require('./music').commands,
+  ...require('./security').commands,
+  ...require('./tickets').commands,
+  ...require('./admin').commands,
+  ...require('./backup').commands,
+);
+
+// /help = /aide
+const aide = commands.find((c) => c.data.name === 'aide');
+commands.splice(commands.indexOf(aide) + 1, 0, {
+  ...aide,
+  data: new SlashCommandBuilder().setName('help').setDescription('Liste des commandes de Ronin Builder'),
+});
 
 const byName = new Map(commands.map((c) => [c.data.name, c]));
 

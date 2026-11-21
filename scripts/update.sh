@@ -21,7 +21,7 @@ if grep -qE '^package(-lock)?\.json$' <<<"$CHANGED"; then
   npm ci --omit=dev --no-audit --no-fund
 fi
 # Structure du serveur modifiée (salons, rôles, règlement) ?
-if grep -qE '^(config/server\.js|src/setup\.js|src/shared\.js)$' <<<"$CHANGED"; then
+if grep -qE '^(config/server\.js|src/setup\.js|src/builder\.js|src/shared\.js|assets/.*)$' <<<"$CHANGED"; then
   npm run setup
 fi
 

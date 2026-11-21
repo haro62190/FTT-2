@@ -119,6 +119,7 @@ function startTikTokWatcher(guild) {
   }
   let tick = 0;
   const run = async () => {
+    if (!require('./settings').get('notifications.tiktok')) return;
     await checkLive(guild).catch((err) => logError('live', err));
     // Les vidéos : une vérification sur deux suffit
     if (tick++ % 2 === 0) await checkVideos(guild).catch((err) => logError('vidéos', err));
