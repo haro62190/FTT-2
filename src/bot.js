@@ -189,11 +189,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.inGuild() || interaction.guildId !== GUILD_ID) return;
   if (interaction.isChatInputCommand()) return commands.handle(interaction, ctx);
   if (interaction.isButton() || interaction.isUserSelectMenu() || interaction.isModalSubmit()) {
+    const id = interaction.customId ?? '';
     try {
       if (await tempVoice.handleInteraction(interaction)) return;
       if (await tickets.handleInteraction(interaction)) return;
     } catch (err) {
-      console.error('Vocal temporaire :', err);
+      const module = id.startsWith('ticket:') ? 'Ticket' : id.startsWith('tv:') ? 'Vocal temporaire' : 'Interaction';
+      console.error(`${module} :`, err);
       const msg = { content: '❌ Action impossible.', flags: MessageFlags.Ephemeral };
       if (interaction.replied || interaction.deferred) await interaction.followUp(msg).catch(() => {});
       else await interaction.reply(msg).catch(() => {});

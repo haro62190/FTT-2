@@ -154,7 +154,7 @@ Les données du bot (XP, avertissements, tickets, réglages, sauvegardes) sont d
 
 Pages : accueil (stats, top 10), bienvenue / départ, modération, niveaux & récompenses, notifications, publier une annonce, sauvegardes (créer / restaurer avec confirmation), avertissements, tickets ouverts.
 
-**Sécurité :** connexion **avec Discord** ; seuls le propriétaire et les membres ayant *Gérer le serveur* y accèdent (droits revérifiés à chaque page). Par défaut il n'écoute que sur la machine du bot (`127.0.0.1`) : il n'est **pas exposé sur Internet**.
+**Sécurité :** connexion **avec Discord** ; seuls le propriétaire et les **Administrateurs** y accèdent (droits revérifiés à chaque page). Par défaut il n'écoute que sur la machine du bot (`127.0.0.1`) : il n'est **pas exposé sur Internet**.
 
 **Activer :**
 1. Portail développeur → ton appli → **OAuth2** → **Reset Secret** → copie-le dans `.env` : `DISCORD_CLIENT_SECRET=...`

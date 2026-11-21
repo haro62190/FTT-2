@@ -68,14 +68,30 @@ const getBackup = (id) => {
   const row = sql.prepare('SELECT * FROM backups WHERE id = ?').get(id);
   return row ? { ...row, data: JSON.parse(row.data) } : null;
 };
+/** Vérifie qu'une sauvegarde (base ou fichier importé) a toutes les parties attendues. */
+function isValidBackup(d) {
+  const obj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+  return !!(
+    obj(d) &&
+    d.version === 1 &&
+    obj(d.guild) &&
+    typeof d.guild.id === 'string' &&
+    Array.isArray(d.roles) &&
+    d.roles.every((r) => obj(r) && typeof r.name === 'string' && typeof r.permissions === 'string') &&
+    Array.isArray(d.channels) &&
+    d.channels.every((c) => obj(c) && typeof c.name === 'string' && Number.isInteger(c.type) && Array.isArray(c.overwrites)) &&
+    (d.settings === undefined || obj(d.settings))
+  );
+}
+
 const deleteBackup = (id) => sql.prepare('DELETE FROM backups WHERE id = ?').run(id).changes > 0;
 
 /** Sauvegarde automatique quotidienne (garde les 7 dernières). */
 function autoBackup(guild) {
-  const last = sql.prepare("SELECT created_at FROM backups WHERE name LIKE 'auto-%' ORDER BY id DESC LIMIT 1").get();
+  const last = sql.prepare("SELECT created_at FROM backups WHERE created_by = 'auto' ORDER BY id DESC LIMIT 1").get();
   if (last && Date.now() - last.created_at < 23 * 3600_000) return;
   createBackup(guild, `auto-${new Date().toISOString().slice(0, 10)}`, 'auto');
-  const old = sql.prepare("SELECT id FROM backups WHERE name LIKE 'auto-%' ORDER BY id DESC LIMIT -1 OFFSET ?").all(AUTO_KEEP);
+  const old = sql.prepare("SELECT id FROM backups WHERE created_by = 'auto' ORDER BY id DESC LIMIT -1 OFFSET ?").all(AUTO_KEEP);
   for (const { id } of old) deleteBackup(id);
   console.log('💾 Sauvegarde automatique du serveur effectuée');
 }
@@ -90,6 +106,7 @@ function plan(guild, data) {
 }
 
 async function restore(guild, data, log = console.log) {
+  if (!isValidBackup(data)) throw new Error('Sauvegarde invalide ou incomplète');
   await guild.roles.fetch();
   await guild.channels.fetch();
   const roleMap = new Map([[data.guild.id, guild.id]]); // ancien ID -> ID actuel (@everyone inclus)
@@ -152,8 +169,10 @@ async function restore(guild, data, log = console.log) {
       systemChannel: chMap.get(data.guild.systemChannelId) ?? null,
     })
     .catch((e) => log(`  ⚠ ${e.message}`));
-  settings.replaceAll(data.settings);
-  log('  ✔ Réglages du bot restaurés');
+  if (data.settings && typeof data.settings === 'object') {
+    settings.replaceAll(data.settings);
+    log('  ✔ Réglages du bot restaurés');
+  }
 }
 
 // ───────────────────────── Commandes ─────────────────────────
@@ -175,11 +194,12 @@ const commands = [
     async run(i) {
       const sub = i.options.getSubcommand();
       if (sub === 'creer') {
+        await i.deferReply({ flags: MessageFlags.Ephemeral });
         await i.guild.channels.fetch();
         await i.guild.roles.fetch();
         const name = i.options.getString('nom') || `manuel-${new Date().toISOString().slice(0, 16).replace('T', '-')}`;
         const b = createBackup(i.guild, name, i.user.id);
-        return i.reply({ content: `💾 Sauvegarde **#${b.id}** « ${name} » créée : ${b.roles} rôles, ${b.channels} salons/catégories, réglages du bot.`, flags: MessageFlags.Ephemeral });
+        return i.editReply(`💾 Sauvegarde **#${b.id}** « ${name} » créée : ${b.roles} rôles, ${b.channels} salons/catégories, réglages du bot.`);
       }
       if (sub === 'liste') {
         const list = listBackups().slice(0, 20);
@@ -217,18 +237,20 @@ const commands = [
       let data;
       const file = i.options.getAttachment('fichier');
       const id = i.options.getInteger('id');
+      if (!file && !id) return i.reply({ content: 'Indique `id` (voir `/backup liste`) ou un `fichier`.', flags: MessageFlags.Ephemeral });
+      // Répondre tout de suite à Discord (3 s max), le téléchargement et l'analyse peuvent être longs
+      await i.deferReply({ flags: MessageFlags.Ephemeral });
       if (file) {
         try {
+          if (file.size > 10 * 1024 * 1024) throw new Error();
           data = await (await fetch(file.url)).json();
-          if (data?.version !== 1 || !Array.isArray(data.roles)) throw new Error();
         } catch {
-          return i.reply({ content: '❌ Fichier de sauvegarde invalide.', flags: MessageFlags.Ephemeral });
+          data = null;
         }
-      } else if (id) {
-        data = getBackup(id)?.data;
-        if (!data) return i.reply({ content: `Sauvegarde #${id} introuvable.`, flags: MessageFlags.Ephemeral });
+        if (!isValidBackup(data)) return i.editReply('❌ Fichier de sauvegarde invalide ou incomplet.');
       } else {
-        return i.reply({ content: 'Indique `id` (voir `/backup liste`) ou un `fichier`.', flags: MessageFlags.Ephemeral });
+        data = getBackup(id)?.data;
+        if (!data) return i.editReply(`Sauvegarde #${id} introuvable.`);
       }
       await i.guild.roles.fetch();
       await i.guild.channels.fetch();
@@ -252,4 +274,4 @@ const commands = [
   },
 ];
 
-module.exports = { snapshot, createBackup, listBackups, getBackup, deleteBackup, restore, plan, autoBackup, commands };
+module.exports = { isValidBackup, snapshot, createBackup, listBackups, getBackup, deleteBackup, restore, plan, autoBackup, commands };

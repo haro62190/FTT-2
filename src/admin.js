@@ -52,10 +52,14 @@ function parisDate(str) {
   const m = str.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2})[h:](\d{2})$/i);
   if (!m) return null;
   const [d, mo, y, h, mi] = m.slice(1).map(Number);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59) return null;
   const guess = Date.UTC(y, mo - 1, d, h, mi);
   const offset = (t) => Date.parse(new Date(t).toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).replace(' ', 'T') + 'Z') - t;
   const date = new Date(guess - offset(guess - offset(guess)));
-  return Number.isNaN(date.getTime()) ? null : date;
+  if (Number.isNaN(date.getTime())) return null;
+  // Refuse les dates impossibles (31/02 -> 03/03) : le jour lu à Paris doit être celui saisi
+  const [py, pmo, pd] = date.toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' }).split('-').map(Number);
+  return py === y && pmo === mo && pd === d ? date : null;
 }
 
 async function runBuild(i, title, steps, what) {
@@ -354,10 +358,7 @@ const commands = [
       } else if (sub === 'reinitialiser') {
         const part = i.options.getString('partie');
         if (!(await confirm(i, `♻️ Remettre par défaut : **${part === '*' ? 'tous les réglages' : part}** ?`, { danger: true, yes: 'Réinitialiser' }))) return;
-        const { db, save } = require('./store');
-        if (part === '*') db.settings = {};
-        else for (const k of part.split(',')) delete db.settings?.[k];
-        save();
+        settings.reset(part === '*' ? undefined : part.split(','));
       }
       const s = settings.all();
       const rewards = levels.rewardList(i.guild).map((r) => `niv. ${r.level} → ${r.role}`).join('\n') || '—';

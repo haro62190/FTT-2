@@ -2,7 +2,7 @@
  * Tableau de bord web de Ronin Builder (sans dépendance : module http de Node.js).
  *
  * Sécurité :
- *  - connexion avec Discord (OAuth2) ; accès réservé aux membres du serveur ayant « Gérer le serveur » ou Administrateur
+ *  - connexion avec Discord (OAuth2) ; accès réservé au propriétaire du serveur et aux Administrateurs
  *  - écoute sur 127.0.0.1 par défaut : on y accède par un tunnel SSH (voir README), rien n'est exposé sur Internet
  *  - sessions aléatoires (cookie HttpOnly, SameSite), jeton CSRF sur chaque formulaire, en-têtes de sécurité
  *
@@ -33,8 +33,13 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const rand = () => crypto.randomBytes(32).toString('hex');
 const fmtDate = (t) => new Date(t).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'short', timeStyle: 'short' });
 
-function cookies(req) {
-  return Object.fromEntries((req.headers.cookie ?? '').split(';').map((c) => c.trim().split('=').map(decodeURIComponent)).filter((c) => c[0]));
+/** Lit uniquement notre cookie de session (les autres cookies, même mal formés, sont ignorés). */
+function sessionCookie(req) {
+  for (const part of (req.headers.cookie ?? '').split(';')) {
+    const i = part.indexOf('=');
+    if (i > 0 && part.slice(0, i).trim() === 'ronin_sid') return part.slice(i + 1).trim();
+  }
+  return null;
 }
 
 function send(res, status, body, headers = {}) {
@@ -117,15 +122,26 @@ const checkbox = (name, on, label) => `<label class="check"><input type="checkbo
 
 // ───────────────────────── Pages ─────────────────────────
 
+/** Seuls le propriétaire et les Administrateurs (mêmes droits que /moderation, /backup, /restore) */
+const isAdmin = (guild, member) => !!member && (member.id === guild.ownerId || member.permissions.has(P.Administrator));
+
+/** Charge les membres manquants du cache, par paquets de 100 (limite Discord), sans requête vide. */
+async function fetchMembers(guild, ids) {
+  const missing = [...new Set(ids)].filter((id) => id && !guild.members.cache.has(id));
+  for (let n = 0; n < missing.length; n += 100) {
+    await guild.members.fetch({ user: missing.slice(n, n + 100), time: 10_000 }).catch(() => {});
+  }
+}
+
 function memberName(guild, id) {
   const m = guild.members.cache.get(id);
-  return m ? `${m.displayName} <span class="muted">@${m.user.username}</span>` : `<span class="muted">${esc(id)}</span>`;
+  return m ? `${esc(m.displayName)} <span class="muted">@${esc(m.user.username)}</span>` : `<span class="muted">${esc(id)}</span>`;
 }
 
 const pages = {
   async '/'(guild) {
     const top = levels.leaderboard().slice(0, 10);
-    await guild.members.fetch({ user: top.map((t) => t.userId) }).catch(() => {});
+    await fetchMembers(guild, top.map((t) => t.userId));
     const security = require('./security');
     const stats = [
       [guild.memberCount, 'membres'],
@@ -204,7 +220,7 @@ const pages = {
       .sort((a, b) => b.position - a.position);
     const custom = settings.get('levels.rewards') ?? {};
     const top = levels.leaderboard().slice(0, 25);
-    await guild.members.fetch({ user: top.map((t) => t.userId) }).catch(() => {});
+    await fetchMembers(guild, top.map((t) => t.userId));
     return {
       title: '⚔️ Niveaux & récompenses',
       body: `<form method="post" class="card">${csrf(sess)}<input type="hidden" name="action" value="toggles">
@@ -334,7 +350,7 @@ const pages = {
 
   async '/avertissements'(guild, sess) {
     const entries = Object.entries(db.warns ?? {}).filter(([, l]) => l.length);
-    await guild.members.fetch({ user: entries.map(([id]) => id) }).catch(() => {});
+    await fetchMembers(guild, entries.map(([id]) => id));
     return {
       title: '⚠️ Avertissements',
       body: `<div class="card"><table><tr><th>Membre</th><th>Avertissements</th><th></th></tr>
@@ -351,7 +367,7 @@ const pages = {
 
   async '/tickets'(guild) {
     const open = Object.entries(db.tickets?.open ?? {});
-    await guild.members.fetch({ user: open.map(([, t]) => t.ownerId) }).catch(() => {});
+    await fetchMembers(guild, open.map(([, t]) => t.ownerId));
     return {
       title: '🎫 Tickets ouverts',
       body: `<div class="card"><table><tr><th>#</th><th>Sujet</th><th>Membre</th><th>Ouvert</th><th>Pris en charge</th></tr>
@@ -395,7 +411,7 @@ function start(client, guildId) {
   const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, BASE);
-      const sid = cookies(req).ronin_sid;
+      const sid = sessionCookie(req);
       let sess = sid && sessions.get(sid);
       if (sess && sess.expires < Date.now()) {
         sessions.delete(sid);
@@ -415,7 +431,7 @@ function start(client, guildId) {
         oauthStates.delete(state);
         const user = await exchangeCode(url.searchParams.get('code'), clientId);
         const member = await guild?.members.fetch(user.id).catch(() => null);
-        const allowed = member && (member.id === guild.ownerId || member.permissions.has(P.ManageGuild) || member.permissions.has(P.Administrator));
+        const allowed = isAdmin(guild, member);
         if (!allowed) return send(res, 403, page(null, '', 'Accès refusé', '<p>Seuls les administrateurs du serveur peuvent utiliser le tableau de bord.</p>'));
         const newSid = rand();
         sessions.set(newSid, { userId: user.id, username: user.global_name || user.username, avatar: user.avatar, csrf: rand(), expires: Date.now() + SESSION_MS });
@@ -434,7 +450,7 @@ function start(client, guildId) {
 
       // Les droits sont revérifiés à chaque requête (un admin rétrogradé perd l'accès)
       const member = await guild.members.fetch(sess.userId).catch(() => null);
-      if (!member || !(member.id === guild.ownerId || member.permissions.has(P.ManageGuild))) {
+      if (!isAdmin(guild, member)) {
         sessions.delete(sid);
         return send(res, 403, page(null, '', 'Accès refusé', '<p>Tu n\'as plus les droits d\'administration.</p>'));
       }

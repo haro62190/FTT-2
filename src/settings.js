@@ -48,10 +48,21 @@ function merge(base, over) {
   return out;
 }
 
+// Fusion mise en cache : recalculée seulement quand les réglages changent
+let cache = null;
+let cachedFrom = null;
+
 /** Tous les réglages (défauts + modifications). */
 function all() {
-  return merge(DEFAULTS, db.settings ?? {});
+  if (!cache || cachedFrom !== db.settings) {
+    cachedFrom = db.settings;
+    cache = merge(DEFAULTS, db.settings ?? {});
+  }
+  return cache;
 }
+const invalidate = () => {
+  cache = null;
+};
 
 /** Lire un réglage : get('security.raidJoins') */
 function get(path) {
@@ -65,13 +76,23 @@ function set(path, value) {
   let o = db.settings;
   for (const k of keys.slice(0, -1)) o = o[k] ??= {};
   o[keys.at(-1)] = value;
+  invalidate();
+  save();
+}
+
+/** Remettre des sections par défaut : reset(['security']) ; reset() = tout */
+function reset(sections) {
+  if (!sections) db.settings = {};
+  else for (const k of sections) delete db.settings?.[k];
+  invalidate();
   save();
 }
 
 /** Remplacer tous les réglages (restauration d'une sauvegarde). */
 function replaceAll(settings) {
   db.settings = settings ?? {};
+  invalidate();
   save();
 }
 
-module.exports = { DEFAULTS, all, get, set, replaceAll };
+module.exports = { DEFAULTS, all, get, set, reset, replaceAll };
