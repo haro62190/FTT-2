@@ -329,6 +329,7 @@ client.once(Events.ClientReady, async () => {
   await commands.register(guild).catch((err) => console.error('❌ Enregistrement des commandes / :', err.message));
   startTwitchWatcher(guild);
   startTikTokWatcher(guild);
+  require('./stats').start(guild, twitch).catch((e) => console.error('Stats :', e.message));
 
   require('./dashboard').start(client, GUILD_ID);
   await security.resumeLockdown(guild).catch((e) => console.error('Verrouillage :', e.message));

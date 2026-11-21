@@ -32,6 +32,8 @@ function findRole(guild, key) {
 function findChannel(guild, key) {
   const def = channelDef(key);
   if (!def) return undefined;
+  // Salons compteurs : leur nom change, on les retrouve par leur ID enregistré
+  if (def.stat) return guild.channels.cache.get(require('./store').db.statChannels?.[key]);
   const names = [def.name, ...(def.formerNames ?? [])];
   return guild.channels.cache.find((c) => c.name === def.name) ?? guild.channels.cache.find((c) => names.includes(c.name));
 }

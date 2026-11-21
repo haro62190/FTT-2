@@ -62,6 +62,11 @@ function buildOverwrites(guild, botId, def) {
     case 'staff':
       add(everyone, [], [P.ViewChannel]);
       break;
+    case 'stats':
+      // Visible par tous, personne ne peut s'y connecter (le bot change juste le nom)
+      add(everyone, [P.ViewChannel], [P.Connect]);
+      add(role('mod'), [P.ViewChannel], [P.Connect]);
+      break;
     default:
       throw new Error(`Niveau d'accès inconnu "${def.access}" pour ${def.name}`);
   }
@@ -138,10 +143,11 @@ async function ensureChannels(guild, log = console.log) {
     for (const def of catDef.channels) {
       const permissionOverwrites = buildOverwrites(guild, botId, def);
       const names = [def.name, ...(def.formerNames ?? [])];
-      let channel =
-        guild.channels.cache.find((c) => c.name === def.name && c.type !== ChannelType.GuildCategory) ??
-        guild.channels.cache.find((c) => names.includes(c.name) && c.type !== ChannelType.GuildCategory);
-      if (channel && channel.name !== def.name) {
+      let channel = def.stat
+        ? findChannel(guild, def.key)
+        : guild.channels.cache.find((c) => c.name === def.name && c.type !== ChannelType.GuildCategory) ??
+          guild.channels.cache.find((c) => names.includes(c.name) && c.type !== ChannelType.GuildCategory);
+      if (channel && !def.stat && channel.name !== def.name) {
         log(`     ✎ ${channel.name} → ${def.name}`);
         await channel.setName(def.name);
       }
@@ -158,12 +164,17 @@ async function ensureChannels(guild, log = console.log) {
         } else {
           channel = await guild.channels.create({ ...base, type: ChannelType.GuildText });
         }
+        if (def.stat) {
+          const { db, save } = require('./store');
+          (db.statChannels ??= {})[def.key] = channel.id;
+          save();
+        }
         log(`     ＋ ${def.name}`);
       } else {
         if (channel.parentId !== category.id) await channel.setParent(category.id, { lockPermissions: false });
         await channel.permissionOverwrites.set(permissionOverwrites);
         if (def.topic && 'setTopic' in channel && channel.topic !== def.topic) await channel.setTopic(def.topic);
-        log(`     ✔ ${def.name} (permissions mises à jour)`);
+        log(`     ✔ ${def.stat ? channel.name : def.name} (permissions mises à jour)`);
       }
       await channel.setPosition(chPos++).catch(() => {});
     }
@@ -270,6 +281,7 @@ function plan(guild) {
     else out.rolesUpdate++;
   }
   const find = (def, isCat) => {
+    if (def.stat) return findChannel(guild, def.key);
     const names = [def.name, ...(def.formerNames ?? [])];
     const ok = (c) => (isCat ? c.type === ChannelType.GuildCategory : c.type !== ChannelType.GuildCategory);
     return guild.channels.cache.find((c) => ok(c) && c.name === def.name) ?? guild.channels.cache.find((c) => ok(c) && names.includes(c.name));
@@ -278,7 +290,7 @@ function plan(guild) {
     for (const [def, isCat] of [[cat, true], ...cat.channels.map((d) => [d, false])]) {
       const c = find(def, isCat);
       if (!c) out.chCreate.push(def.name);
-      else if (c.name !== def.name) out.chRename.push(`${c.name} → ${def.name}`);
+      else if (!def.stat && c.name !== def.name) out.chRename.push(`${c.name} → ${def.name}`);
       else out.chUpdate++;
     }
   }

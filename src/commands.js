@@ -381,6 +381,7 @@ commands.push(
   ...require('./tickets').commands,
   ...require('./admin').commands,
   ...require('./backup').commands,
+  ...require('./stats').commands,
 );
 
 // /help = /aide

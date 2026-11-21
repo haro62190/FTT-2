@@ -9,6 +9,8 @@ Thème **samouraï cyberpunk** : noir, rouge néon et gris. Tout passe réelleme
 ## 🗺️ Ce qui est créé
 
 ```
+📊 統計 ・ STATS                (compteurs, visibles par tous)
+   👥 Membres : 128   🟣 Twitch : 1 234   📱 TikTok : 5,6 k
 ⛩️ 入口 ・ ENTRÉE              (visible par tout le monde)
    🏮┃bienvenue                message d'accueil automatique
    ⛩️┃règlement                règlement + bouton « J'accepte » → débloque le serveur
@@ -135,6 +137,15 @@ Chaque commande qui modifie le serveur affiche d'abord **ce qu'elle va faire** e
 Toutes les actions de modération sont notées dans 📋┃logs. Les commandes staff sont cachées aux membres normaux (tu peux ajuster qui les voit dans *Paramètres du serveur → Intégrations → ton bot*).
 
 **Niveaux :** chaque message rapporte 15 à 25 XP (une fois par minute max, anti-spam). Le bot félicite le membre à chaque niveau et donne automatiquement les **grades** : 🗡️ Ashigaru (niv. 5), ⚔️ Samouraï (niv. 15), 🏯 Daimyō (niv. 30) — d'autres récompenses avec `/config recompense` ou le tableau de bord.
+
+## 📊 Salons compteurs
+
+La catégorie **📊 統計 ・ STATS** (tout en haut) contient 3 salons vocaux visibles par tous, où personne ne peut entrer. Leur nom affiche :
+- **👥 Membres** : membres du serveur Discord (sans les bots) ;
+- **🟣 Twitch** : followers de `TWITCH_CHANNEL` (API Twitch officielle, mêmes identifiants que les alertes de live) ;
+- **📱 TikTok** : abonnés de `TIKTOK_USERNAME` (lus sur la page publique du profil, TikTok n'ayant pas d'API).
+
+Mise à jour **toutes les 10 minutes** (Discord limite le renommage d'un salon à 2 fois par 10 minutes). Commandes : `/stats voir`, `/stats rafraichir` et `/stats tiktok nombre:` pour donner une valeur de secours si TikTok bloque la lecture automatique. Les salons sont retrouvés par leur ID : tu peux les déplacer, le bot ne les recrée pas.
 
 ## 🎫 Tickets
 
@@ -268,6 +279,7 @@ src/setup.js       /setup depuis le terminal (npm run setup)
 src/admin.js       /setup /roles /channels /welcome /moderation /config /embed /evenement
 src/backup.js      sauvegardes / restauration, /backup /restore
 src/tickets.js     tickets d'assistance
+src/stats.js       salons compteurs Discord / Twitch / TikTok, /stats
 src/dashboard.js   tableau de bord web
 src/settings.js    réglages modifiables à chaud
 src/store.js       base SQLite (data/ronin.db)

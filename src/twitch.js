@@ -46,6 +46,20 @@ class TwitchClient {
     return stream ?? null;
   }
 
+  /** Nombre total de followers (accessible avec un jeton d'application). */
+  async getFollowerCount(broadcasterId) {
+    const url = `https://api.twitch.tv/helix/channels/followers?${new URLSearchParams({ broadcaster_id: broadcasterId, first: '1' })}`;
+    const doFetch = async () => fetch(url, { headers: { 'Client-Id': this.clientId, Authorization: `Bearer ${await this.getToken()}` } });
+    let res = await doFetch();
+    if (res.status === 401) {
+      this.token = null;
+      res = await doFetch();
+    }
+    if (!res.ok) throw new Error(`Twitch followers ${res.status}: ${await res.text()}`);
+    const { total } = await res.json();
+    return Number.isFinite(total) ? total : null;
+  }
+
   async getUser(login) {
     const [user] = await this.get('users', { login });
     return user ?? null;

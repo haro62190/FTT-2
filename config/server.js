@@ -13,6 +13,7 @@
  *   - "members-readonly" : visible par les membres, seul le staff écrit
  *   - "vip"              : réservé aux VIP, abonnés Twitch, Streamers et staff
  *   - "staff"            : réservé aux modérateurs
+ *   - "stats"            : salon vocal compteur, visible par tous, personne ne peut y entrer
  */
 
 module.exports = {
@@ -47,6 +48,15 @@ module.exports = {
 
   // Catégories et salons, dans l'ordre d'affichage.
   categories: [
+    {
+      // Compteurs mis à jour automatiquement (src/stats.js). Le nom affiché change : le bot retrouve ces salons par leur ID.
+      name: '📊 統計 ・ STATS',
+      channels: [
+        { key: 'stat_discord', name: '👥 Membres : …', type: 'voice', access: 'stats', stat: 'discord' },
+        { key: 'stat_twitch', name: '🟣 Twitch : …', type: 'voice', access: 'stats', stat: 'twitch' },
+        { key: 'stat_tiktok', name: '📱 TikTok : …', type: 'voice', access: 'stats', stat: 'tiktok' },
+      ],
+    },
     {
       name: '⛩️ 入口 ・ ENTRÉE',
       formerNames: ['📌 ACCUEIL'],
