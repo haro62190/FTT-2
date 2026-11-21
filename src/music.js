@@ -2,7 +2,8 @@
  * Musique : YouTube, SoundCloud, Bandcamp… (tout ce que yt-dlp sait lire).
  * Pré-requis sur la machine : ffmpeg et yt-dlp (voir README).
  */
-const { spawn, execFile } = require('child_process');
+const { spawn } = require('child_process');
+const { YTDLP, cookieArgs, ytdlpJson } = require('./ytdlp');
 const {
   AudioPlayerStatus,
   NoSubscriberBehavior,
@@ -16,9 +17,7 @@ const {
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags, PermissionFlagsBits: P } = require('discord.js');
 const { BRAND_COLOR, findRole } = require('./shared');
 
-const YTDLP = process.env.YTDLP_PATH || 'yt-dlp';
 const FFMPEG = process.env.FFMPEG_PATH || 'ffmpeg';
-const COOKIES = process.env.YTDLP_COOKIES; // fichier cookies.txt, utile si YouTube bloque le VPS
 const MAX_PLAYLIST = 50;
 const IDLE_LEAVE_MS = 2 * 60_000;
 
@@ -27,7 +26,6 @@ const queues = new Map();
 
 const ephemeral = (content) => ({ content, flags: MessageFlags.Ephemeral });
 const isUrl = (s) => /^https?:\/\//i.test(s);
-const cookieArgs = () => (COOKIES ? ['--cookies', COOKIES] : []);
 
 function formatDuration(sec) {
   if (!sec && sec !== 0) return 'live';
@@ -40,21 +38,6 @@ function formatDuration(sec) {
 
 // ───────────────────────── yt-dlp ─────────────────────────
 
-function ytdlpJson(args) {
-  return new Promise((resolve, reject) => {
-    execFile(YTDLP, [...args, ...cookieArgs()], { maxBuffer: 50 * 1024 * 1024, timeout: 60_000 }, (err, stdout, stderr) => {
-      if (err) {
-        if (err.code === 'ENOENT') return reject(new Error('yt-dlp n\'est pas installé sur la machine du bot.'));
-        return reject(new Error((stderr || err.message).split('\n').find((l) => l.includes('ERROR')) || 'Lecture impossible.'));
-      }
-      try {
-        resolve(JSON.parse(stdout));
-      } catch {
-        reject(new Error('Réponse illisible de yt-dlp.'));
-      }
-    });
-  });
-}
 
 /** Transforme une recherche ou un lien en liste de morceaux. */
 async function resolveTracks(query, source, requestedBy) {

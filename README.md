@@ -23,7 +23,7 @@ Un bot qui **crée automatiquement tout ton serveur Discord** (rôles, catégori
    🛡️・mod-chat   📋・logs (arrivées, départs, messages supprimés)
 ```
 
-**Rôles :** 👑 Chef · 🛡️ Modérateur · 🤝 Amis (accès à tous les vocaux) · 🎥 Streamer (accès VIP) · 💎 VIP · ⭐ Abonné Twitch · 🎮 Membre · et en libre-service : 🔴 Notif Live · 📢 Notif Annonces · 🕹️ Joueur · 🎨 Artiste.
+**Rôles :** 👑 Chef · 🛡️ Modérateur · 🤝 Amis (accès à tous les vocaux) · 🎥 Streamer (accès VIP) · 💎 VIP · ⭐ Abonné Twitch · 🎮 Membre · et en libre-service : 🔴 Notif Live · 📱 Notif TikTok · 📢 Notif Annonces · 🕹️ Joueur · 🎨 Artiste.
 
 **Réglages de sécurité appliqués :** e-mail vérifié obligatoire, filtre de contenu explicite pour tous, notifications par défaut sur « @mentions uniquement » (évite que les gens quittent à cause du bruit).
 
@@ -129,6 +129,14 @@ pm2 save && pm2 startup        # redémarrage automatique si le VPS redémarre
 
 **Dépôt privé — clé de déploiement (lecture seule) :** sur le VPS, `ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519`, puis `cat ~/.ssh/id_ed25519.pub` et colle la clé dans GitHub → ton dépôt → *Settings → Deploy keys → Add deploy key* (ne coche pas *Allow write access*). Clone ensuite avec `git clone -b <branche> git@github.com:<toi>/<depot>.git /root/bot`.
 
+## 📱 Alertes TikTok
+
+Remplis `TIKTOK_USERNAME` dans `.env` (pseudo sans @) puis redémarre le bot. Il vérifie ton profil toutes les 2 minutes :
+- **nouvelle vidéo** → lien posté dans 📱・tiktok avec mention de 📱 Notif TikTok ;
+- **live TikTok** → alerte dans 🔴・en-live avec mention de 🔴 Notif Live, transformée en « live terminé » à la fin.
+
+Au premier lancement, les vidéos déjà publiées sont mémorisées sans être annoncées. Nécessite yt-dlp (voir Musique). TikTok n'ayant pas d'API publique pour ça, le bot lit ta page publique : si TikTok change son site, il faut mettre yt-dlp à jour (`yt-dlp -U`, fait automatiquement chaque nuit).
+
 ## 🎵 Musique
 
 `/play musique:<lien ou titre>` dans un vocal : YouTube, SoundCloud, Bandcamp… (tout ce que lit [yt-dlp](https://github.com/yt-dlp/yt-dlp)). Les playlists sont acceptées (50 morceaux max).
@@ -169,6 +177,8 @@ src/setup.js       création / mise à jour du serveur
 src/bot.js         bot en continu (accueil, boutons, alertes Twitch, XP, logs)
 src/commands.js    commandes /
 src/music.js       musique (yt-dlp + ffmpeg)
+src/tiktok.js      alertes TikTok
+src/ytdlp.js       appels à yt-dlp
 src/tempvoice.js   vocaux temporaires
 src/levels.js      système de niveaux
 src/store.js       sauvegarde (data/db.json)

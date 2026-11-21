@@ -31,6 +31,7 @@ module.exports = {
     { key: 'member', name: '🎮 Membre', color: 0x3498db, hoist: false },
     // Rôles que les membres peuvent s'attribuer eux-mêmes dans #rôles
     { key: 'notif_live', name: '🔴 Notif Live', color: 0xe74c3c, selfAssign: true, emoji: '🔴', description: 'Être notifié quand le live commence' },
+    { key: 'notif_tiktok', name: '📱 Notif TikTok', color: 0xfe2c55, selfAssign: true, emoji: '📱', description: 'Être notifié de mes nouveaux TikTok' },
     { key: 'notif_news', name: '📢 Notif Annonces', color: 0x95a5a6, selfAssign: true, emoji: '📢', description: 'Être notifié des annonces' },
     { key: 'gamer', name: '🕹️ Joueur', color: 0x1abc9c, selfAssign: true, emoji: '🕹️', description: 'Jouer avec la commu' },
     { key: 'artist', name: '🎨 Artiste', color: 0xe67e22, selfAssign: true, emoji: '🎨', description: 'Partager tes créations' },
@@ -44,7 +45,8 @@ module.exports = {
         { key: 'welcome', name: '👋・bienvenue', type: 'text', access: 'public-readonly', topic: 'Les nouveaux arrivants sont accueillis ici !' },
         { key: 'rules', name: '📜・règlement', type: 'text', access: 'public-readonly', topic: 'Lis le règlement et clique sur le bouton pour accéder au serveur.' },
         { key: 'announcements', name: '📢・annonces', type: 'announcement', access: 'members-readonly', topic: 'Les annonces importantes de la chaîne.' },
-        { key: 'live', name: '🔴・en-live', type: 'text', access: 'members-readonly', topic: 'Alerte automatique quand le stream démarre.' },
+        { key: 'live', name: '🔴・en-live', type: 'text', access: 'members-readonly', topic: 'Alerte automatique quand je suis en live (Twitch / TikTok).' },
+        { key: 'tiktok', name: '📱・tiktok', type: 'text', access: 'members-readonly', topic: 'Mes nouvelles vidéos TikTok, postées automatiquement.' },
         { key: 'roles', name: '🎭・rôles', type: 'text', access: 'members-readonly', topic: 'Choisis tes rôles et tes notifications.' },
       ],
     },

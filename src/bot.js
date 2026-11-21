@@ -10,6 +10,7 @@ const commands = require('./commands');
 const levels = require('./levels');
 const tempVoice = require('./tempvoice');
 const music = require('./music');
+const { startTikTokWatcher } = require('./tiktok');
 const {
   config,
   BRAND_COLOR,
@@ -279,6 +280,7 @@ client.once(Events.ClientReady, async () => {
   await tempVoice.cleanup(guild).catch((err) => console.error('Nettoyage des vocaux temporaires :', err.message));
   await commands.register(guild).catch((err) => console.error('❌ Enregistrement des commandes / :', err.message));
   startTwitchWatcher(guild);
+  startTikTokWatcher(guild);
 });
 
 client.login(DISCORD_TOKEN);
