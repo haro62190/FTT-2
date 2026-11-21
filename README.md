@@ -103,6 +103,32 @@ Toutes les actions de modération sont notées dans 📋・logs. Les commandes s
 
 **Niveaux :** chaque message rapporte 15 à 25 XP (une fois par minute max, anti-spam). Le bot félicite le membre à chaque niveau. Les données (XP, avertissements) sont dans `data/db.json` — ne supprime pas ce fichier.
 
+## ☁️ Héberger 24h/24 sur un VPS, avec mises à jour automatiques
+
+Sur un VPS Debian 12 / Ubuntu, en root :
+
+```bash
+apt update && apt install -y curl git
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+apt install -y nodejs
+npm install -g pm2
+
+git clone -b <branche> https://github.com/<toi>/<depot>.git /root/bot   # dépôt privé : voir « clé de déploiement » ci-dessous
+cd /root/bot
+nano .env                      # colle le contenu de ton .env
+npm ci --omit=dev
+npm run setup
+pm2 start src/bot.js --name bot-discord
+pm2 save && pm2 startup        # redémarrage automatique si le VPS redémarre
+
+# Vérifie GitHub toutes les 5 minutes et met à jour le bot s'il y a du nouveau
+(crontab -l 2>/dev/null; echo "*/5 * * * * /root/bot/scripts/update.sh >> /root/bot/update.log 2>&1") | crontab -
+```
+
+`scripts/update.sh` récupère les nouveautés, réinstalle les dépendances si besoin, relance `npm run setup` si la structure du serveur a changé, puis redémarre le bot. `.env` et `data/` ne sont jamais touchés. Historique des mises à jour : `cat /root/bot/update.log`.
+
+**Dépôt privé — clé de déploiement (lecture seule) :** sur le VPS, `ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519`, puis `cat ~/.ssh/id_ed25519.pub` et colle la clé dans GitHub → ton dépôt → *Settings → Deploy keys → Add deploy key* (ne coche pas *Allow write access*). Clone ensuite avec `git clone -b <branche> git@github.com:<toi>/<depot>.git /root/bot`.
+
 ## ✏️ Personnaliser
 
 Tout se passe dans [`config/server.js`](config/server.js) : noms et couleurs des rôles, salons, niveaux d'accès, règlement, message de bienvenue. Après une modification, relance `npm run setup` : rien n'est recréé en double, les permissions et messages du bot sont simplement mis à jour.
