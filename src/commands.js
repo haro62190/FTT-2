@@ -352,7 +352,7 @@ const commands = [
   },
 ];
 
-commands.push(...require('./music').commands);
+commands.push(...require('./music').commands, ...require('./security').commands);
 
 const byName = new Map(commands.map((c) => [c.data.name, c]));
 

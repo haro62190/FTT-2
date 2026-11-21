@@ -129,6 +129,29 @@ pm2 save && pm2 startup        # redémarrage automatique si le VPS redémarre
 
 **Dépôt privé — clé de déploiement (lecture seule) :** sur le VPS, `ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519`, puis `cat ~/.ssh/id_ed25519.pub` et colle la clé dans GitHub → ton dépôt → *Settings → Deploy keys → Add deploy key* (ne coche pas *Allow write access*). Clone ensuite avec `git clone -b <branche> git@github.com:<toi>/<depot>.git /root/bot`.
 
+## 📋 Logs
+
+- **📋・logs** : expulsions, bans, débans, mutes, ajouts/retraits de rôles, changements de pseudo, salons et rôles créés/supprimés/modifiés, bots et webhooks ajoutés, messages supprimés et modifiés, avertissements et actions des commandes `/`. Chaque entrée indique **qui** a fait l'action (journal d'audit Discord).
+- **🔊・logs-vocal** : arrivées, départs, changements de vocal, et qui a déconnecté / déplacé quelqu'un.
+
+## 🛡️ Sécurité
+
+| Protection | Déclencheur (modifiable dans `config/server.js` → `security`) | Réaction |
+|---|---|---|
+| **Anti-raid** | 8 arrivées en 20 s | Verrouillage 10 min : invitations en pause, nouveaux arrivants expulsés (avec un MP), vague d'arrivées expulsée |
+| **Comptes récents** | `minAccountAgeDays` (désactivé par défaut) | Expulsion des comptes trop récents |
+| **Anti-spam** | 6 messages en 5 s, 5 mentions, invitation Discord | Messages supprimés, mute 10 min |
+| **Anti-nuke** | En 60 s : 3 salons ou 3 rôles supprimés, 4 bans, 5 kicks, 8 salons ou 3 webhooks créés | Tous les rôles de l'auteur retirés (ou bot expulsé), **salons et rôles supprimés recréés**, verrouillage, alerte au staff dans 🚨・alertes-sécurité |
+| **`/lockdown`** | Manuel (staff) | Verrouille / déverrouille le serveur |
+
+Le staff (permission « Gérer les messages ») n'est pas concerné par l'anti-spam. Le propriétaire du serveur et les IDs listés dans `security.whitelist` (ou `SECURITY_WHITELIST` dans `.env`, séparés par des virgules) sont ignorés par l'anti-nuke.
+
+⚠️ Le bot ne peut sanctionner que les rôles **en dessous du sien** : place le rôle du bot **tout en haut** de la liste. Les messages des salons supprimés ne peuvent pas être restaurés.
+
+## 🎨 Images
+
+`assets/icon.png` (icône, appliquée par `npm run setup`) et `assets/banner.png` (bannière, appliquée si le serveur a le niveau de boost 2 ; sinon utilisable pour Twitch, YouTube, X…).
+
 ## 📱 Alertes TikTok
 
 Remplis `TIKTOK_USERNAME` dans `.env` (pseudo sans @) puis redémarre le bot. Il vérifie ton profil toutes les 2 minutes :
@@ -179,6 +202,9 @@ src/commands.js    commandes /
 src/music.js       musique (yt-dlp + ffmpeg)
 src/tiktok.js      alertes TikTok
 src/ytdlp.js       appels à yt-dlp
+src/logs.js        logs (journal d'audit, vocal, messages modifiés)
+src/security.js    anti-raid, anti-spam, anti-nuke, /lockdown
+assets/            icône et bannière du serveur
 src/tempvoice.js   vocaux temporaires
 src/levels.js      système de niveaux
 src/store.js       sauvegarde (data/db.json)

@@ -3,6 +3,8 @@
  * Usage : npm run setup
  */
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
 const {
   Client,
   GatewayIntentBits,
@@ -218,6 +220,15 @@ async function configureGuild(guild) {
     systemChannelFlags: [GuildSystemChannelFlags.SuppressJoinNotifications],
   });
   log('  ✔ Vérification e-mail, filtre de contenu, notifications @mentions uniquement, salon AFK');
+
+  const icon = config.serverIcon && path.join(__dirname, '..', config.serverIcon);
+  if (icon && fs.existsSync(icon)) {
+    await guild.setIcon(icon).then(() => log('  ✔ Icône du serveur')).catch((e) => log(`  ⚠ Icône : ${e.message}`));
+  }
+  const banner = path.join(__dirname, '..', 'assets', 'banner.png');
+  if (fs.existsSync(banner) && guild.features.includes('BANNER')) {
+    await guild.setBanner(banner).then(() => log('  ✔ Bannière du serveur')).catch((e) => log(`  ⚠ Bannière : ${e.message}`));
+  }
 }
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });

@@ -92,7 +92,9 @@ module.exports = {
       name: '🛡️ MODÉRATION',
       channels: [
         { key: 'mod_chat', name: '🛡️・mod-chat', type: 'text', access: 'staff' },
-        { key: 'mod_logs', name: '📋・logs', type: 'text', access: 'staff', topic: 'Journal automatique (arrivées, départs, messages supprimés).' },
+        { key: 'security_alerts', name: '🚨・alertes-sécurité', type: 'text', access: 'staff', topic: 'Anti-raid / anti-nuke : alertes importantes.' },
+        { key: 'mod_logs', name: '📋・logs', type: 'text', access: 'staff', topic: 'Kicks, bans, mutes, rôles, pseudos, salons, messages supprimés/modifiés…' },
+        { key: 'voice_logs', name: '🔊・logs-vocal', type: 'text', access: 'staff', topic: 'Arrivées, départs et déconnexions des vocaux.' },
       ],
     },
   ],
@@ -102,6 +104,21 @@ module.exports = {
     triggerChannel: 'voice_create',
     nameTemplate: '🔊 Salon de {user}',
   },
+
+  // Sécurité (anti-raid, anti-spam, anti-nuke) — valeurs par défaut dans src/security.js
+  security: {
+    raidJoins: 8, // 8 arrivées…
+    raidWindowSec: 20, // …en 20 secondes = raid -> verrouillage
+    lockdownMinutes: 10,
+    minAccountAgeDays: 0, // ex : 3 = refuser les comptes Discord de moins de 3 jours (0 = désactivé)
+    spamMessages: 6, // 6 messages en 5 s = flood -> mute 10 min
+    maxMentions: 5,
+    blockInvites: true, // supprimer les invitations vers d'autres serveurs
+    whitelist: [], // IDs de personnes / bots de confiance ignorés par l'anti-nuke
+  },
+
+  // Icône du serveur (appliquée par `npm run setup`), null pour ne pas y toucher
+  serverIcon: 'assets/icon.png',
 
   // Salon AFK du serveur (clé d'un salon vocal ci-dessus)
   afkChannel: 'voice_afk',

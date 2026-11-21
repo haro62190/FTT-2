@@ -11,6 +11,8 @@ const levels = require('./levels');
 const tempVoice = require('./tempvoice');
 const music = require('./music');
 const { startTikTokWatcher } = require('./tiktok');
+const logs = require('./logs');
+const security = require('./security');
 const {
   config,
   BRAND_COLOR,
@@ -34,6 +36,7 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers, // intent privilégié : arrivées / départs
     GatewayIntentBits.GuildVoiceStates, // salons vocaux temporaires
+    GatewayIntentBits.GuildModeration, // journal d'audit (logs, anti-nuke)
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent, // intent privilégié : contenu des messages supprimés dans les logs
   ],
@@ -66,6 +69,7 @@ async function sendLog(guild, embed) {
 // ───────────────────────── Accueil & logs ─────────────────────────
 
 client.on(Events.GuildMemberAdd, async (member) => {
+  if (security.lockdown.active) return; // pas de bienvenue pendant un raid
   if (member.guild.id !== GUILD_ID) return;
   const welcome = findChannel(member.guild, 'welcome');
   const rules = findChannel(member.guild, 'rules');
@@ -264,6 +268,9 @@ function startTwitchWatcher(guild) {
   setInterval(tick, POLL_MS);
   console.log(`📺 Surveillance de twitch.tv/${TWITCH_CHANNEL} toutes les ${POLL_MS / 1000}s`);
 }
+
+logs.register(client, GUILD_ID);
+security.register(client, GUILD_ID);
 
 // ───────────────────────── Démarrage ─────────────────────────
 
