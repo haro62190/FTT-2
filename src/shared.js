@@ -24,7 +24,9 @@ function channelDef(key) {
 
 function findRole(guild, key) {
   const def = roleDef(key);
-  return def ? guild.roles.cache.find((r) => r.name === def.name) : undefined;
+  if (!def) return undefined;
+  const names = [def.name, ...(def.formerNames ?? [])];
+  return guild.roles.cache.find((r) => r.name === def.name) ?? guild.roles.cache.find((r) => names.includes(r.name));
 }
 
 function findChannel(guild, key) {

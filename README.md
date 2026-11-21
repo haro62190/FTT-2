@@ -23,7 +23,7 @@ Un bot qui **crée automatiquement tout ton serveur Discord** (rôles, catégori
    🛡️・mod-chat   📋・logs (arrivées, départs, messages supprimés)
 ```
 
-**Rôles :** 👑 Streamer · 🛡️ Modérateur · 💎 VIP · ⭐ Abonné Twitch · 🎮 Membre · et en libre-service : 🔴 Notif Live · 📢 Notif Annonces · 🕹️ Joueur · 🎨 Artiste.
+**Rôles :** 👑 Chef · 🛡️ Modérateur · 🤝 Amis (accès à tous les vocaux) · 💎 VIP · ⭐ Abonné Twitch · 🎮 Membre · et en libre-service : 🔴 Notif Live · 📢 Notif Annonces · 🕹️ Joueur · 🎨 Artiste.
 
 **Réglages de sécurité appliqués :** e-mail vérifié obligatoire, filtre de contenu explicite pour tous, notifications par défaut sur « @mentions uniquement » (évite que les gens quittent à cause du bruit).
 
@@ -63,7 +63,7 @@ Pour trouver le `GUILD_ID` : Discord → Paramètres utilisateur → Avancés �
 
 ### 5. Finitions manuelles (2 minutes)
 - **Paramètres du serveur → Rôles** : glisse le rôle du bot **tout en haut** (sinon il ne peut pas donner les rôles).
-- Donne-toi le rôle **👑 Streamer** et donne **🛡️ Modérateur** à tes modos.
+- Donne-toi le rôle **👑 Chef**, donne **🛡️ Modérateur** à tes modos et **🤝 Amis** à tes potes (ils pourront rejoindre tous les vocaux, y compris le vocal VIP).
 - **Abonnés Twitch** : Paramètres utilisateur → Connexions → relie ton compte Twitch, puis dans *Paramètres du serveur → Intégrations → Twitch*, active la synchronisation des abonnés. Discord crée alors un rôle géré automatiquement : tu peux soit l'utiliser à la place de ⭐ Abonné Twitch, soit renommer ce rôle exactement `⭐ Abonné Twitch` dans la config.
 - Remplis **📅・planning** avec ton planning de streams.
 - Crée un lien d'invitation permanent (clic droit sur 👋・bienvenue → Inviter → « Jamais » expirer) et mets-le dans ta bio / tes panneaux Twitch et une commande `!discord` dans ton chat.

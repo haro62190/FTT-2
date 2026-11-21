@@ -44,6 +44,8 @@ function buildOverwrites(guild, botId, def) {
   add(botId, [...READ, ...WRITE, P.ManageMessages]);
   // Les modérateurs voient et écrivent partout
   add(role('mod'), [...READ, ...WRITE, ...staffExtra]);
+  // Les rôles `allVoice` (ex : Amis) rejoignent tous les vocaux
+  if (isVoice) for (const r of config.roles.filter((d) => d.allVoice)) add(role(r.key), [...READ, ...WRITE]);
 
   switch (def.access) {
     case 'public-readonly':
@@ -87,10 +89,15 @@ async function ensureRoles(guild) {
           ? [P.KickMembers, P.BanMembers, P.ModerateMembers, P.ManageMessages, P.ManageNicknames, P.MuteMembers, P.MoveMembers, P.DeafenMembers, P.ViewAuditLog]
           : [],
     };
-    const existing = guild.roles.cache.find((r) => r.name === def.name);
+    const existing = findRole(guild, def.key);
     if (existing) {
-      if (existing.editable) await existing.edit({ color: data.color, hoist: data.hoist, permissions: data.permissions });
-      log(`  ✔ ${def.name} (existe déjà)`);
+      const renamed = existing.name !== def.name ? ` (renommé depuis ${existing.name})` : ' (existe déjà)';
+      if (existing.editable) {
+        await existing.edit({ name: def.name, color: data.color, hoist: data.hoist, permissions: data.permissions });
+      } else {
+        log(`  ⚠ ${existing.name} est au-dessus du rôle du bot : impossible de le modifier`);
+      }
+      log(`  ✔ ${def.name}${renamed}`);
     } else {
       await guild.roles.create({ ...data, reason: 'Setup serveur communautaire' });
       log(`  ＋ ${def.name}`);

@@ -19,8 +19,11 @@ module.exports = {
   // Rôles, du plus haut au plus bas dans la hiérarchie.
   // `key` sert de référence dans le code, `name` est ce qui s'affiche sur Discord.
   roles: [
-    { key: 'streamer', name: '👑 Streamer', color: 0x9146ff, hoist: true, admin: true },
+    // `formerNames` : anciens noms du rôle, pour le renommer au lieu d'en créer un nouveau
+    { key: 'streamer', name: '👑 Chef', formerNames: ['👑 Streamer'], color: 0x9146ff, hoist: true, admin: true },
     { key: 'mod', name: '🛡️ Modérateur', color: 0x2ecc71, hoist: true, mod: true },
+    // `allVoice` : peut voir et rejoindre TOUS les salons vocaux (y compris le vocal VIP)
+    { key: 'friend', name: '🤝 Amis', color: 0x00bcd4, hoist: true, allVoice: true },
     { key: 'vip', name: '💎 VIP', color: 0xe91e63, hoist: true },
     { key: 'sub', name: '⭐ Abonné Twitch', color: 0xf1c40f, hoist: true },
     { key: 'member', name: '🎮 Membre', color: 0x3498db, hoist: false },
