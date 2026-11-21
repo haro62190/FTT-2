@@ -6,7 +6,7 @@ const {
 } = require('discord.js');
 const config = require('../config/server');
 
-const BRAND_COLOR = 0x9146ff; // violet Twitch
+const BRAND_COLOR = 0xff2d7a; // rose néon (thème japonais / cyberpunk)
 const ACCEPT_RULES_ID = 'accept_rules';
 const ROLE_BUTTON_PREFIX = 'role:';
 
@@ -31,16 +31,18 @@ function findRole(guild, key) {
 
 function findChannel(guild, key) {
   const def = channelDef(key);
-  return def ? guild.channels.cache.find((c) => c.name === def.name) : undefined;
+  if (!def) return undefined;
+  const names = [def.name, ...(def.formerNames ?? [])];
+  return guild.channels.cache.find((c) => c.name === def.name) ?? guild.channels.cache.find((c) => names.includes(c.name));
 }
 
 function rulesPayload(guild) {
   const embed = new EmbedBuilder()
     .setColor(BRAND_COLOR)
-    .setTitle(`📜 Règlement de ${guild.name}`)
+    .setTitle(`⛩️ 掟 ・ Règlement de ${guild.name}`)
     .setDescription(
       config.rules.map((rule, i) => `**${i + 1}.** ${rule}`).join('\n\n') +
-        '\n\nEn cliquant sur le bouton ci-dessous, tu acceptes ce règlement et tu débloques l\'accès au serveur.',
+        '\n\nEn cliquant sur le bouton ci-dessous, tu acceptes ce règlement et les portes de la ville s\'ouvrent ⛩️',
     )
     .setFooter({ text: 'Le non-respect du règlement peut entraîner un avertissement, un mute ou un ban.' });
 
@@ -59,7 +61,7 @@ function rolesPayload() {
   const selfRoles = config.roles.filter((r) => r.selfAssign);
   const embed = new EmbedBuilder()
     .setColor(BRAND_COLOR)
-    .setTitle('🎭 Choisis tes rôles')
+    .setTitle('🎴 役割 ・ Choisis tes rôles')
     .setDescription(
       'Clique sur un bouton pour ajouter le rôle, reclique pour le retirer.\n\n' +
         selfRoles.map((r) => `${r.emoji} **${r.name.replace(/^\S+\s/, '')}** — ${r.description}`).join('\n'),

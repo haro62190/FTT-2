@@ -16,7 +16,7 @@ const {
   GuildDefaultMessageNotifications,
   GuildSystemChannelFlags,
 } = require('discord.js');
-const { config, findRole, rulesPayload, rolesPayload, BRAND_COLOR } = require('./shared');
+const { config, findRole, findChannel, rulesPayload, rolesPayload, BRAND_COLOR } = require('./shared');
 
 const { DISCORD_TOKEN, GUILD_ID } = process.env;
 if (!DISCORD_TOKEN || !GUILD_ID) {
@@ -113,7 +113,14 @@ async function ensureChannels(guild, botId) {
   log('\n📁 Salons');
   let catPos = 0;
   for (const catDef of config.categories) {
-    let category = guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory && c.name === catDef.name);
+    const catNames = [catDef.name, ...(catDef.formerNames ?? [])];
+    let category =
+      guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory && c.name === catDef.name) ??
+      guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory && catNames.includes(c.name));
+    if (category && category.name !== catDef.name) {
+      log(`  ✎ ${category.name} → ${catDef.name}`);
+      await category.setName(catDef.name);
+    }
     if (!category) {
       category = await guild.channels.create({ name: catDef.name, type: ChannelType.GuildCategory });
       log(`  ＋ ${catDef.name}`);
@@ -125,7 +132,14 @@ async function ensureChannels(guild, botId) {
     let chPos = 0;
     for (const def of catDef.channels) {
       const permissionOverwrites = buildOverwrites(guild, botId, def);
-      let channel = guild.channels.cache.find((c) => c.name === def.name && c.type !== ChannelType.GuildCategory);
+      const names = [def.name, ...(def.formerNames ?? [])];
+      let channel =
+        guild.channels.cache.find((c) => c.name === def.name && c.type !== ChannelType.GuildCategory) ??
+        guild.channels.cache.find((c) => names.includes(c.name) && c.type !== ChannelType.GuildCategory);
+      if (channel && channel.name !== def.name) {
+        log(`     ✎ ${channel.name} → ${def.name}`);
+        await channel.setName(def.name);
+      }
 
       if (!channel) {
         const base = { name: def.name, parent: category.id, permissionOverwrites, topic: def.topic, userLimit: def.userLimit };
@@ -155,7 +169,9 @@ async function ensureChannels(guild, botId) {
 async function upsertBotMessage(channel, payload) {
   const title = payload.embeds[0].data?.title ?? payload.embeds[0].title;
   const messages = await channel.messages.fetch({ limit: 50 });
-  const existing = messages.find((m) => m.author.id === channel.client.user.id && m.embeds[0]?.title === title);
+  const mine = messages.filter((m) => m.author.id === channel.client.user.id && m.embeds[0]?.title);
+  // Même titre, sinon le message « fixe » du bot dans ce salon (le titre a pu changer)
+  const existing = mine.find((m) => m.embeds[0].title === title) ?? mine.last();
   if (existing) {
     await existing.edit(payload);
     log(`  ✎ Message mis à jour dans #${channel.name}`);
@@ -167,12 +183,7 @@ async function upsertBotMessage(channel, payload) {
 
 async function postMessages(guild) {
   log('\n💬 Messages du bot');
-  const byKey = (key) => {
-    for (const cat of config.categories) {
-      const def = cat.channels.find((c) => c.key === key);
-      if (def) return guild.channels.cache.find((c) => c.name === def.name);
-    }
-  };
+  const byKey = (key) => findChannel(guild, key);
 
   const rules = byKey('rules');
   if (rules) await upsertBotMessage(rules, rulesPayload(guild));
@@ -186,15 +197,15 @@ async function postMessages(guild) {
       embeds: [
         {
           color: BRAND_COLOR,
-          title: `👋 Bienvenue sur ${guild.name} !`,
+          title: `🏮 ようこそ ・ Bienvenue sur ${guild.name}`,
           description: [
-            'Ici, c\'est le QG de la communauté du stream 💜',
+            'Les néons s\'allument, la ville t\'attend 🌃',
             '',
-            `1️⃣ Lis et accepte le règlement dans ${rules ?? '#règlement'}`,
-            `2️⃣ Choisis tes rôles et notifications dans ${roles ?? '#rôles'}`,
-            `3️⃣ Viens dire bonjour dans ${byKey('general') ?? '#discussion'} !`,
+            `⛩️ **一** ・ Lis et accepte le règlement dans ${rules ?? '#règlement'}`,
+            `🎴 **二** ・ Choisis tes rôles et notifications dans ${roles ?? '#rôles'}`,
+            `🍜 **三** ・ Viens dire こんにちは dans ${byKey('general') ?? '#discussion'} !`,
             '',
-            process.env.TWITCH_CHANNEL ? `📺 La chaîne : https://twitch.tv/${process.env.TWITCH_CHANNEL}` : '',
+            process.env.TWITCH_CHANNEL ? `📡 Le stream : https://twitch.tv/${process.env.TWITCH_CHANNEL}` : '',
           ].join('\n'),
         },
       ],

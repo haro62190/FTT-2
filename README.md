@@ -5,23 +5,23 @@ Un bot qui **crée automatiquement tout ton serveur Discord** (rôles, catégori
 ## 🗺️ Ce qui est créé
 
 ```
-📌 ACCUEIL                    (visible par tout le monde)
-   👋・bienvenue               message d'accueil automatique
-   📜・règlement               règlement + bouton « J'accepte » → débloque le serveur
-   📢・annonces                (lecture seule)
-   🔴・en-live                 alerte automatique quand le stream démarre
-   🎭・rôles                   boutons pour choisir ses notifs / rôles
-💬 COMMUNAUTÉ                 (membres ayant accepté le règlement)
-   💬・discussion  🖼️・médias  😂・memes  🎮・gaming  🎵・musique  🤖・commandes-bot
-📺 STREAM
-   📅・planning (lecture seule)  ✂️・clips  🎨・fan-art  💡・suggestions
-⭐ VIP & ABONNÉS              (VIP, abonnés Twitch, staff)
-   ⭐・salon-vip   🔊 Vocal VIP
-🔊 VOCAUX
-   🔊 Général  🎮 Gaming #1  🎮 Gaming #2  📺 Watch party  💤 AFK
-🛡️ MODÉRATION                 (modérateurs uniquement)
-   🛡️・mod-chat   📋・logs (arrivées, départs, messages supprimés)
+⛩️ 入口 ・ ENTRÉE              (visible par tout le monde)
+   🏮┃bienvenue                message d'accueil automatique
+   ⛩️┃règlement                règlement + bouton « J'accepte » → débloque le serveur
+   📡┃annonces  🔴┃en-live  📱┃tiktok  🎴┃rôles
+🏙️ 街 ・ LA VILLE              (membres ayant accepté le règlement)
+   🍜┃discussion  📸┃médias  👾┃memes  🕹️┃gaming  🎧┃musique  🤖┃commandes
+📡 配信 ・ STREAM
+   🗓️┃planning  🎬┃clips  🖌️┃fan-art  💡┃suggestions
+💠 特別 ・ VIP & ABONNÉS        (VIP, abonnés Twitch, streamers, staff)
+   💠┃salon-vip   💠 Lounge VIP
+🎧 音 ・ VOCAUX
+   ➕ Créer ton vocal  🌃 Shibuya  🎮 Akihabara #1 / #2  📺 Shinjuku ・ Watch party  💤 Ryokan ・ AFK
+🛡️ 守 ・ STAFF                  (modérateurs uniquement)
+   🛡️┃staff  🚨┃alertes-sécurité  📋┃logs  🔊┃logs-vocal
 ```
+
+Thème **japonais / cyberpunk** : 入口 = entrée, 街 = la ville, 配信 = stream, 特別 = spécial, 音 = son, 守 = protection ; les vocaux portent des noms de quartiers de Tokyo.
 
 **Rôles :** 👑 Chef · 🛡️ Modérateur · 🤝 Amis (accès à tous les vocaux) · 🎥 Streamer (accès VIP) · 💎 VIP · ⭐ Abonné Twitch · 🎮 Membre · et en libre-service : 🔴 Notif Live · 📱 Notif TikTok · 📢 Notif Annonces · 🕹️ Joueur · 🎨 Artiste.
 
@@ -65,8 +65,8 @@ Pour trouver le `GUILD_ID` : Discord → Paramètres utilisateur → Avancés �
 - **Paramètres du serveur → Rôles** : glisse le rôle du bot **tout en haut** (sinon il ne peut pas donner les rôles).
 - Donne-toi le rôle **👑 Chef**, donne **🛡️ Modérateur** à tes modos et **🤝 Amis** à tes potes (ils pourront rejoindre tous les vocaux, y compris le vocal VIP).
 - **Abonnés Twitch** : Paramètres utilisateur → Connexions → relie ton compte Twitch, puis dans *Paramètres du serveur → Intégrations → Twitch*, active la synchronisation des abonnés. Discord crée alors un rôle géré automatiquement : tu peux soit l'utiliser à la place de ⭐ Abonné Twitch, soit renommer ce rôle exactement `⭐ Abonné Twitch` dans la config.
-- Remplis **📅・planning** avec ton planning de streams.
-- Crée un lien d'invitation permanent (clic droit sur 👋・bienvenue → Inviter → « Jamais » expirer) et mets-le dans ta bio / tes panneaux Twitch et une commande `!discord` dans ton chat.
+- Remplis **🗓️┃planning** avec ton planning de streams.
+- Crée un lien d'invitation permanent (clic droit sur 🏮┃bienvenue → Inviter → « Jamais » expirer) et mets-le dans ta bio / tes panneaux Twitch et une commande `!discord` dans ton chat.
 
 ---
 
@@ -74,11 +74,11 @@ Pour trouver le `GUILD_ID` : Discord → Paramètres utilisateur → Avancés �
 
 | Fonction | Détail |
 |---|---|
-| Accueil | Message de bienvenue personnalisé dans 👋・bienvenue avec le numéro du membre |
+| Accueil | Message de bienvenue personnalisé dans 🏮┃bienvenue avec le numéro du membre |
 | Règlement | Le bouton ✅ donne le rôle 🎮 Membre, qui débloque le reste du serveur |
-| Rôles libre-service | Boutons dans 🎭・rôles (cliquer à nouveau retire le rôle) |
+| Rôles libre-service | Boutons dans 🎴┃rôles (cliquer à nouveau retire le rôle) |
 | Alerte live | Toutes les 60 s, vérifie Twitch ; au début du live, poste titre + jeu + miniature et mentionne 🔴 Notif Live. À la fin, l'annonce passe en « live terminé ». Pas de doublon si le bot redémarre pendant un live. |
-| Logs | Arrivées, départs et messages supprimés dans 📋・logs |
+| Logs | Arrivées, départs et messages supprimés dans 📋┃logs |
 
 Le bot doit tourner en permanence : sur ton PC pendant les streams, ou mieux sur un petit hébergement (Raspberry Pi, VPS, Railway, fly.io…).
 
@@ -93,13 +93,13 @@ Tape `/` dans Discord pour voir la liste. `/aide` affiche les commandes auxquell
 | `/profil [membre]` `/serveur` | tous | infos sur un membre / le serveur |
 | `/sondage` | tous | sondage Discord (2 à 4 choix, durée en heures) |
 | `/rang [membre]` `/classement` | tous | niveau, XP, top 10 |
-| `/annonce` | staff | publie une annonce dans 📢・annonces (option : mentionner 📢 Notif Annonces) |
+| `/annonce` | staff | publie une annonce dans 📡┃annonces (option : mentionner 📢 Notif Annonces) |
 | `/clear nombre [membre]` | staff | supprime jusqu'à 100 messages |
 | `/warn` `/warns` `/clearwarns` | staff | avertissements (le membre reçoit un MP) |
 | `/mute` `/unmute` | staff | rendre muet de 1 min à 1 semaine |
 | `/kick` `/ban` | staff | expulser / bannir |
 
-Toutes les actions de modération sont notées dans 📋・logs. Les commandes staff sont cachées aux membres normaux (tu peux ajuster qui les voit dans *Paramètres du serveur → Intégrations → ton bot*).
+Toutes les actions de modération sont notées dans 📋┃logs. Les commandes staff sont cachées aux membres normaux (tu peux ajuster qui les voit dans *Paramètres du serveur → Intégrations → ton bot*).
 
 **Niveaux :** chaque message rapporte 15 à 25 XP (une fois par minute max, anti-spam). Le bot félicite le membre à chaque niveau. Les données (XP, avertissements) sont dans `data/db.json` — ne supprime pas ce fichier.
 
@@ -131,8 +131,8 @@ pm2 save && pm2 startup        # redémarrage automatique si le VPS redémarre
 
 ## 📋 Logs
 
-- **📋・logs** : expulsions, bans, débans, mutes, ajouts/retraits de rôles, changements de pseudo, salons et rôles créés/supprimés/modifiés, bots et webhooks ajoutés, messages supprimés et modifiés, avertissements et actions des commandes `/`. Chaque entrée indique **qui** a fait l'action (journal d'audit Discord).
-- **🔊・logs-vocal** : arrivées, départs, changements de vocal, et qui a déconnecté / déplacé quelqu'un.
+- **📋┃logs** : expulsions, bans, débans, mutes, ajouts/retraits de rôles, changements de pseudo, salons et rôles créés/supprimés/modifiés, bots et webhooks ajoutés, messages supprimés et modifiés, avertissements et actions des commandes `/`. Chaque entrée indique **qui** a fait l'action (journal d'audit Discord).
+- **🔊┃logs-vocal** : arrivées, départs, changements de vocal, et qui a déconnecté / déplacé quelqu'un.
 
 ## 🛡️ Sécurité
 
@@ -141,7 +141,7 @@ pm2 save && pm2 startup        # redémarrage automatique si le VPS redémarre
 | **Anti-raid** | 8 arrivées en 20 s | Verrouillage 10 min : invitations en pause, nouveaux arrivants expulsés (avec un MP), vague d'arrivées expulsée |
 | **Comptes récents** | `minAccountAgeDays` (désactivé par défaut) | Expulsion des comptes trop récents |
 | **Anti-spam** | 6 messages en 5 s, 5 mentions, invitation Discord | Messages supprimés, mute 10 min |
-| **Anti-nuke** | En 60 s : 3 salons ou 3 rôles supprimés, 4 bans, 5 kicks, 8 salons ou 3 webhooks créés | Tous les rôles de l'auteur retirés (ou bot expulsé), **salons et rôles supprimés recréés**, verrouillage, alerte au staff dans 🚨・alertes-sécurité |
+| **Anti-nuke** | En 60 s : 3 salons ou 3 rôles supprimés, 4 bans, 5 kicks, 8 salons ou 3 webhooks créés | Tous les rôles de l'auteur retirés (ou bot expulsé), **salons et rôles supprimés recréés**, verrouillage, alerte au staff dans 🚨┃alertes-sécurité |
 | **`/lockdown`** | Manuel (staff) | Verrouille / déverrouille le serveur |
 
 Le staff (permission « Gérer les messages ») n'est pas concerné par l'anti-spam. Le propriétaire du serveur et les IDs listés dans `security.whitelist` (ou `SECURITY_WHITELIST` dans `.env`, séparés par des virgules) sont ignorés par l'anti-nuke.
@@ -155,8 +155,8 @@ Le staff (permission « Gérer les messages ») n'est pas concerné par l'anti-s
 ## 📱 Alertes TikTok
 
 Remplis `TIKTOK_USERNAME` dans `.env` (pseudo sans @) puis redémarre le bot. Il vérifie ton profil toutes les 2 minutes :
-- **nouvelle vidéo** → lien posté dans 📱・tiktok avec mention de 📱 Notif TikTok ;
-- **live TikTok** → alerte dans 🔴・en-live avec mention de 🔴 Notif Live, transformée en « live terminé » à la fin.
+- **nouvelle vidéo** → lien posté dans 📱┃tiktok avec mention de 📱 Notif TikTok ;
+- **live TikTok** → alerte dans 🔴┃en-live avec mention de 🔴 Notif Live, transformée en « live terminé » à la fin.
 
 Au premier lancement, les vidéos déjà publiées sont mémorisées sans être annoncées. Nécessite yt-dlp (voir Musique). TikTok n'ayant pas d'API publique pour ça, le bot lit ta page publique : si TikTok change son site, il faut mettre yt-dlp à jour (`yt-dlp -U`, fait automatiquement chaque nuit).
 

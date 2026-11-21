@@ -21,7 +21,7 @@ const {
 const { config, BRAND_COLOR, findRole, findChannel } = require('./shared');
 const { db, save } = require('./store');
 
-const settings = { triggerChannel: 'voice_create', nameTemplate: '🔊 Salon de {user}', ...config.tempVoice };
+const settings = { triggerChannel: 'voice_create', nameTemplate: '🏮 Salon de {user}', ...config.tempVoice };
 const PREFIX = 'tv:';
 
 const VOICE_USE = [P.ViewChannel, P.Connect, P.Speak, P.Stream, P.UseVAD, P.SendMessages, P.ReadMessageHistory, P.AddReactions, P.EmbedLinks, P.AttachFiles];
