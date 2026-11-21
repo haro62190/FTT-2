@@ -78,6 +78,7 @@ module.exports = {
     {
       name: '🔊 VOCAUX',
       channels: [
+        { key: 'voice_create', name: '➕ Créer ton vocal', type: 'voice', access: 'members' },
         { key: 'voice_general', name: '🔊 Général', type: 'voice', access: 'members' },
         { key: 'voice_gaming1', name: '🎮 Gaming #1', type: 'voice', access: 'members', userLimit: 5 },
         { key: 'voice_gaming2', name: '🎮 Gaming #2', type: 'voice', access: 'members', userLimit: 5 },
@@ -93,6 +94,12 @@ module.exports = {
       ],
     },
   ],
+
+  // Vocaux temporaires : rejoindre ce salon crée un vocal perso (supprimé quand il est vide)
+  tempVoice: {
+    triggerChannel: 'voice_create',
+    nameTemplate: '🔊 Salon de {user}',
+  },
 
   // Salon AFK du serveur (clé d'un salon vocal ci-dessus)
   afkChannel: 'voice_afk',

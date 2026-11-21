@@ -8,6 +8,7 @@ const {
   GatewayIntentBits,
   ChannelType,
   PermissionFlagsBits: P,
+  OverwriteType,
   GuildVerificationLevel,
   GuildExplicitContentFilter,
   GuildDefaultMessageNotifications,
@@ -38,10 +39,10 @@ function buildOverwrites(guild, botId, def) {
   const everyone = guild.roles.everyone.id;
   const role = (key) => findRole(guild, key)?.id;
   const ow = [];
-  const add = (id, allow = [], deny = []) => id && ow.push({ id, allow, deny });
+  const add = (id, allow = [], deny = [], type = OverwriteType.Role) => id && ow.push({ id, type, allow, deny });
 
   // Le bot voit et écrit partout (utile s'il n'a pas la permission Administrateur)
-  add(botId, [...READ, ...WRITE, P.ManageMessages]);
+  add(botId, [...READ, ...WRITE, P.ManageMessages], [], OverwriteType.Member);
   // Les modérateurs voient et écrivent partout
   add(role('mod'), [...READ, ...WRITE, ...staffExtra]);
   // Les rôles `allVoice` (ex : Amis) rejoignent tous les vocaux

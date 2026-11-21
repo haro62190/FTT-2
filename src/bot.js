@@ -8,6 +8,7 @@ const { Client, GatewayIntentBits, Partials, EmbedBuilder, Events, MessageFlags 
 const { TwitchClient } = require('./twitch');
 const commands = require('./commands');
 const levels = require('./levels');
+const tempVoice = require('./tempvoice');
 const {
   config,
   BRAND_COLOR,
@@ -30,6 +31,7 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers, // intent privilégié : arrivées / départs
+    GatewayIntentBits.GuildVoiceStates, // salons vocaux temporaires
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent, // intent privilégié : contenu des messages supprimés dans les logs
   ],
@@ -133,11 +135,29 @@ client.on(Events.MessageCreate, async (message) => {
   }
 });
 
+// ───────────────────────── Vocaux temporaires ─────────────────────────
+
+client.on(Events.VoiceStateUpdate, (oldState, newState) => {
+  if (newState.guild.id !== GUILD_ID) return;
+  tempVoice.onVoiceStateUpdate(oldState, newState).catch((err) => console.error('Vocal temporaire :', err.message));
+});
+
 // ───────────────────────── Boutons ─────────────────────────
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.inGuild() || interaction.guildId !== GUILD_ID) return;
   if (interaction.isChatInputCommand()) return commands.handle(interaction, ctx);
+  if (interaction.isButton() || interaction.isUserSelectMenu() || interaction.isModalSubmit()) {
+    try {
+      if (await tempVoice.handleInteraction(interaction)) return;
+    } catch (err) {
+      console.error('Vocal temporaire :', err);
+      const msg = { content: '❌ Action impossible.', flags: MessageFlags.Ephemeral };
+      if (interaction.replied || interaction.deferred) await interaction.followUp(msg).catch(() => {});
+      else await interaction.reply(msg).catch(() => {});
+      return;
+    }
+  }
   if (!interaction.isButton()) return;
   const reply = (content) => interaction.reply({ content, flags: MessageFlags.Ephemeral });
 
@@ -254,6 +274,7 @@ client.once(Events.ClientReady, async () => {
   await guild.roles.fetch();
   console.log(`✅ Connecté en tant que ${client.user.tag} sur "${guild.name}"`);
   client.user.setActivity(TWITCH_CHANNEL ? `twitch.tv/${TWITCH_CHANNEL}` : 'la commu 💜', { type: 3 /* Watching */ });
+  await tempVoice.cleanup(guild).catch((err) => console.error('Nettoyage des vocaux temporaires :', err.message));
   await commands.register(guild).catch((err) => console.error('❌ Enregistrement des commandes / :', err.message));
   startTwitchWatcher(guild);
 });
