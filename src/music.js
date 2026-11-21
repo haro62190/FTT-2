@@ -144,6 +144,7 @@ class GuildQueue {
   }
 
   next() {
+    if (this.destroyed) return; // file arrêtée : ne pas relancer de minuteur
     this.stream?.kill();
     this.stream = null;
     if (this.loop && this.current) this.tracks.unshift(this.current);
@@ -177,13 +178,16 @@ class GuildQueue {
   }
 
   destroy() {
+    if (this.destroyed) return;
+    this.destroyed = true;
     clearTimeout(this.idleTimer);
     this.tracks = [];
     this.current = null;
     this.stream?.kill();
     this.player.stop(true);
     if (this.connection.state.status !== VoiceConnectionStatus.Destroyed) this.connection.destroy();
-    queues.delete(this.guild.id);
+    // Ne supprime que SA file (une nouvelle file a pu être créée depuis)
+    if (queues.get(this.guild.id) === this) queues.delete(this.guild.id);
   }
 }
 
@@ -254,7 +258,9 @@ const commands = [
       }
       if (!tracks.length) return i.editReply('🔍 Aucun résultat.');
 
-      let q = existing;
+      // Relire la file : un autre /play a pu en créer une pendant la recherche
+      let q = queues.get(i.guildId);
+      if (q && q.channelId !== voice.id) return i.editReply(`Je suis déjà en train de jouer dans <#${q.channelId}>.`);
       if (!q) {
         q = new GuildQueue(i.guild, voice, i.channel);
         queues.set(i.guildId, q);

@@ -252,9 +252,12 @@ async function checkTwitch(twitch, guild) {
 
   if (stream && stream.id !== liveState.streamId) {
     // Nouveau live (ou redémarrage du bot pendant un live déjà annoncé)
-    liveState.streamId = stream.id;
-    liveState.message = await findExistingLiveMessage(channel, stream.id);
-    if (liveState.message) return;
+    const existing = await findExistingLiveMessage(channel, stream.id);
+    if (existing) {
+      liveState.streamId = stream.id;
+      liveState.message = existing;
+      return;
+    }
 
     const user = await twitch.getUser(TWITCH_CHANNEL);
     const url = `https://twitch.tv/${stream.user_login}`;
@@ -276,6 +279,7 @@ async function checkTwitch(twitch, guild) {
           .setTimestamp(new Date(stream.started_at)),
       ],
     });
+    liveState.streamId = stream.id; // seulement une fois l'annonce envoyée : sinon on réessaie au prochain passage
     console.log(`🔴 Live détecté : ${stream.title}`);
   } else if (!stream && liveState.streamId) {
     // Fin du live : on met à jour l'annonce
@@ -327,6 +331,7 @@ client.once(Events.ClientReady, async () => {
   startTikTokWatcher(guild);
 
   require('./dashboard').start(client, GUILD_ID);
+  await security.resumeLockdown(guild).catch((e) => console.error('Verrouillage :', e.message));
 
   // Sauvegarde automatique quotidienne du serveur
   const backup = require('./backup');

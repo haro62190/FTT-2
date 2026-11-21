@@ -171,19 +171,30 @@ async function ensureChannels(guild, log = console.log) {
 }
 
 /** Publie un message du bot, ou modifie celui déjà publié (même titre d'embed). */
-async function upsertBotMessage(channel, payload, log = console.log) {
-  const title = payload.embeds[0].data?.title ?? payload.embeds[0].title;
-  const messages = await channel.messages.fetch({ limit: 50 });
-  const mine = messages.filter((m) => m.author.id === channel.client.user.id && m.embeds[0]?.title);
-  // Même titre, sinon le message « fixe » du bot dans ce salon (le titre a pu changer)
-  const existing = mine.find((m) => m.embeds[0].title === title) ?? mine.last();
+/**
+ * Publie un message « fixe » du bot (règlement, rôles, tickets, accueil) ou modifie celui déjà publié.
+ * L'ID est mémorisé en base : le message est retrouvé même s'il est enfoui sous des centaines d'autres.
+ */
+async function upsertBotMessage(channel, payload, log = console.log, key = channel.id) {
+  const { db, save } = require('./store');
+  const ids = (db.fixedMessages ??= {});
+  let existing = ids[key] ? await channel.messages.fetch(ids[key]).catch(() => null) : null;
+  if (!existing) {
+    // Ancienne version sans ID mémorisé : chercher dans les messages récents
+    const title = payload.embeds[0].data?.title ?? payload.embeds[0].title;
+    const messages = await channel.messages.fetch({ limit: 100 });
+    const mine = messages.filter((m) => m.author.id === channel.client.user.id && m.embeds[0]?.title);
+    existing = mine.find((m) => m.embeds[0].title === title) ?? mine.last() ?? null;
+  }
   if (existing) {
     await existing.edit(payload);
     log(`  ✎ Message mis à jour dans #${channel.name}`);
   } else {
-    await channel.send(payload);
+    existing = await channel.send(payload);
     log(`  ＋ Message publié dans #${channel.name}`);
   }
+  ids[key] = existing.id;
+  save();
 }
 
 async function postMessages(guild, log = console.log) {

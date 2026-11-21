@@ -16,6 +16,16 @@ const ephemeral = (content) => ({ content, flags: MessageFlags.Ephemeral });
 const memberOpt = (o, desc = 'Le membre') => o.setName('membre').setDescription(desc).setRequired(true);
 const reasonOpt = (o) => o.setName('raison').setDescription('La raison').setRequired(false);
 
+/** Le modérateur peut-il agir sur cette cible ? (comme dans Discord : rôle le plus haut strictement supérieur) */
+function hierarchyError(i, target) {
+  if (!target) return null;
+  if (target.id === i.user.id) return '❌ Tu ne peux pas faire ça sur toi-même.';
+  if (target.id === i.guild.ownerId) return '❌ Impossible d\'agir sur le propriétaire du serveur.';
+  if (i.user.id === i.guild.ownerId) return null;
+  if (target.roles.highest.position >= i.member.roles.highest.position) return '❌ Ce membre a un rôle égal ou supérieur au tien.';
+  return null;
+}
+
 const MUTE_DURATIONS = [
   ['1 minute', 1], ['5 minutes', 5], ['10 minutes', 10], ['30 minutes', 30],
   ['1 heure', 60], ['6 heures', 360], ['1 jour', 1440], ['1 semaine', 10080],
@@ -68,7 +78,8 @@ const commands = [
       .setDescription('Infos sur un membre')
       .addUserOption((o) => o.setName('membre').setDescription('Le membre (toi par défaut)')),
     async run(i) {
-      const member = i.options.getMember('membre') ?? i.member;
+      const member = i.options.getUser('membre') ? i.options.getMember('membre') : i.member;
+      if (!member) return i.reply(ephemeral('Ce membre n\'est pas (ou plus) sur le serveur.'));
       const roles = member.roles.cache.filter((r) => r.id !== i.guild.id).sort((a, b) => b.position - a.position);
       const embed = new EmbedBuilder()
         .setColor(member.displayColor || BRAND_COLOR)
@@ -223,6 +234,8 @@ const commands = [
       .addStringOption((o) => o.setName('raison').setDescription('La raison').setRequired(true)),
     async run(i, ctx) {
       const user = i.options.getUser('membre');
+      const denied = hierarchyError(i, i.options.getMember('membre'));
+      if (denied) return i.reply(ephemeral(denied));
       const reason = i.options.getString('raison');
       (db.warns[user.id] ??= []).push({ reason, by: i.user.id, at: Date.now() });
       save();
@@ -244,12 +257,14 @@ const commands = [
       const user = i.options.getUser('membre');
       const list = db.warns[user.id] ?? [];
       if (!list.length) return i.reply(ephemeral(`✅ ${user} n'a aucun avertissement.`));
-      return i.reply(
-        ephemeral(
-          `**Avertissements de ${user}** (${list.length}) :\n` +
-            list.map((w, n) => `${n + 1}. <t:${Math.floor(w.at / 1000)}:d> par <@${w.by}> — ${w.reason}`).join('\n'),
-        ),
-      );
+      const shown = list.slice(-15); // les 15 plus récents
+      const lines = shown.map((w, n) => `${list.length - shown.length + n + 1}. <t:${Math.floor(w.at / 1000)}:d> par <@${w.by}> — ${w.reason.slice(0, 200)}`);
+      const embed = new EmbedBuilder()
+        .setColor(0xe67e22)
+        .setTitle(`⚠️ Avertissements (${list.length})`)
+        .setDescription(`${user}\n\n${lines.join('\n')}`.slice(0, 4000));
+      if (list.length > shown.length) embed.setFooter({ text: `${list.length - shown.length} plus ancien(s) non affiché(s) — voir le tableau de bord` });
+      return i.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     },
   },
   {
@@ -282,6 +297,8 @@ const commands = [
       .addStringOption(reasonOpt),
     async run(i, ctx) {
       const member = i.options.getMember('membre');
+      const denied = hierarchyError(i, member);
+      if (denied) return i.reply(ephemeral(denied));
       if (!member?.moderatable) return i.reply(ephemeral('❌ Impossible de rendre ce membre muet (rôle trop haut ou membre introuvable).'));
       const minutes = i.options.getInteger('duree');
       const reason = i.options.getString('raison') ?? 'Aucune raison';
@@ -301,6 +318,8 @@ const commands = [
       .addUserOption((o) => memberOpt(o)),
     async run(i, ctx) {
       const member = i.options.getMember('membre');
+      const denied = hierarchyError(i, member);
+      if (denied) return i.reply(ephemeral(denied));
       if (!member?.moderatable) return i.reply(ephemeral('❌ Impossible de modifier ce membre.'));
       await member.timeout(null, `Unmute par ${i.user.tag}`);
       await ctx.modLog(i, '🔊 Unmute', `${member}`);
@@ -318,6 +337,8 @@ const commands = [
       .addStringOption(reasonOpt),
     async run(i, ctx) {
       const member = i.options.getMember('membre');
+      const denied = hierarchyError(i, member);
+      if (denied) return i.reply(ephemeral(denied));
       if (!member?.kickable) return i.reply(ephemeral('❌ Impossible d\'expulser ce membre (rôle trop haut ou membre introuvable).'));
       const reason = i.options.getString('raison') ?? 'Aucune raison';
       await member.send(`👢 Tu as été expulsé de **${i.guild.name}** : ${reason}`).catch(() => {});
@@ -339,6 +360,8 @@ const commands = [
     async run(i, ctx) {
       const user = i.options.getUser('membre');
       const member = i.options.getMember('membre');
+      const denied = hierarchyError(i, member);
+      if (denied) return i.reply(ephemeral(denied));
       if (member && !member.bannable) return i.reply(ephemeral('❌ Impossible de bannir ce membre (rôle trop haut).'));
       const reason = i.options.getString('raison') ?? 'Aucune raison';
       await user.send(`🔨 Tu as été banni de **${i.guild.name}** : ${reason}`).catch(() => {});

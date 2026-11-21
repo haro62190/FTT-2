@@ -74,7 +74,6 @@ async function checkLive(guild) {
   if (!channel) return;
 
   if (live && String(live.id) !== s.liveId) {
-    s.liveId = String(live.id);
     const role = findRole(guild, 'notif_live');
     const url = `${profileUrl()}/live`;
     const msg = await channel.send({
@@ -91,6 +90,8 @@ async function checkLive(guild) {
           .setTimestamp(),
       ],
     });
+    // Enregistré seulement après l'envoi : en cas d'échec, on réessaie au prochain passage
+    s.liveId = String(live.id);
     s.liveMessageId = msg.id;
     save();
     console.log('🔴 Live TikTok détecté');

@@ -159,6 +159,8 @@ async function closeTicket(i, ticket) {
   await owner?.send({ content: `🎫 Ton ticket **${ticket.subject}** sur **${i.guild.name}** a été fermé. Voici la transcription :`, files: [file()] }).catch(() => {});
 
   delete state().open[channel.id];
+  module.exports.closedRecently.add(channel.id);
+  setTimeout(() => module.exports.closedRecently.delete(channel.id), 10 * 60_000);
   save();
   setTimeout(() => channel.delete(`Ticket fermé par ${i.user.tag}`).catch(() => {}), 5000);
 }
@@ -262,4 +264,8 @@ const commands = [
   },
 ];
 
-module.exports = { panelPayload, handleInteraction, commands };
+/** Salons de tickets (ouverts ou fermés récemment) : ignorés par l'anti-nuke */
+const closedRecently = new Set();
+const isTicketChannel = (id) => !!state().open[id] || closedRecently.has(id);
+
+module.exports = { panelPayload, handleInteraction, commands, isTicketChannel, closedRecently };

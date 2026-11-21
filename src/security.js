@@ -49,6 +49,7 @@ const isStaff = (member) =>
 // ───────────────────────── Verrouillage ─────────────────────────
 
 const lockdown = { active: false, until: 0, timer: null, kicked: 0 };
+const { db, save } = require('./store');
 
 async function startLockdown(guild, why, minutes = S.lockdownMinutes) {
   clearTimeout(lockdown.timer);
@@ -56,6 +57,8 @@ async function startLockdown(guild, why, minutes = S.lockdownMinutes) {
   lockdown.active = true;
   lockdown.until = Date.now() + minutes * 60_000;
   lockdown.timer = setTimeout(() => endLockdown(guild, 'fin du délai'), minutes * 60_000);
+  db.lockdown = { until: lockdown.until }; // survit à un redémarrage du bot
+  save();
   await guild.disableInvites(true).catch(() => {});
   if (!wasActive) {
     lockdown.kicked = 0;
@@ -67,10 +70,12 @@ async function startLockdown(guild, why, minutes = S.lockdownMinutes) {
   }
 }
 
-async function endLockdown(guild, why) {
-  if (!lockdown.active) return;
+async function endLockdown(guild, why, force = false) {
+  if (!lockdown.active && !force) return;
   clearTimeout(lockdown.timer);
   lockdown.active = false;
+  delete db.lockdown;
+  save();
   await guild.disableInvites(false).catch(() => {});
   const channel = findChannel(guild, 'security_alerts') ?? findChannel(guild, 'mod_logs');
   await channel
@@ -194,7 +199,16 @@ const LABELS = {
   webhookCreate: 'webhooks créés',
 };
 
+/** Salons « jetables » gérés par le bot : vocaux temporaires et tickets */
+const ignoredChannels = new Set();
+const isDisposable = (id) => require('./tempvoice').isTempChannel(id) || require('./tickets').isTicketChannel(id);
+
 function snapshotChannel(channel) {
+  if (isDisposable(channel.id)) {
+    ignoredChannels.add(channel.id);
+    setTimeout(() => ignoredChannels.delete(channel.id), 10 * 60_000);
+    return;
+  }
   if (!channel.guild) return;
   deletedChannels.set(channel.id, {
     id: channel.id,
@@ -234,6 +248,8 @@ async function onAuditEntry(entry, guild) {
     return;
   }
   if (!type || !S.antiNuke) return;
+  // Supprimer un vocal temporaire ou un ticket n'est pas une attaque
+  if (entry.action === A.ChannelDelete && (ignoredChannels.has(entry.targetId) || isDisposable(entry.targetId))) return;
   const id = entry.executorId;
   if (!id || id === guild.client.user.id || id === guild.ownerId || WHITELIST.has(id)) return;
 
@@ -332,8 +348,8 @@ const commands = [
         await startLockdown(i.guild, `activé manuellement par ${i.user.tag}`, i.options.getInteger('minutes') ?? S.lockdownMinutes);
         return i.reply({ content: '🔒 Serveur verrouillé.', flags: MessageFlags.Ephemeral });
       }
-      if (!lockdown.active) return i.reply({ content: 'Le serveur n\'est pas verrouillé.', flags: MessageFlags.Ephemeral });
-      await endLockdown(i.guild, `désactivé par ${i.user.tag}`);
+      // Toujours réactiver les invitations, même si le bot a redémarré entre-temps
+      await endLockdown(i.guild, `désactivé par ${i.user.tag}`, true);
       return i.reply({ content: '🔓 Verrouillage levé.', flags: MessageFlags.Ephemeral });
     },
   },
@@ -348,4 +364,19 @@ function register(client, guildId) {
   client.on(Events.GuildAuditLogEntryCreate, (e, g) => mine(g) && onAuditEntry(e, g).catch((err) => console.error('Anti-nuke :', err.message)));
 }
 
-module.exports = { register, commands, lockdown };
+/** Au démarrage : reprendre un verrouillage en cours, ou rouvrir les invitations s'il a expiré pendant l'arrêt. */
+async function resumeLockdown(guild) {
+  const saved = db.lockdown;
+  if (!saved) return;
+  const left = saved.until - Date.now();
+  if (left > 0) {
+    lockdown.active = true;
+    lockdown.until = saved.until;
+    lockdown.timer = setTimeout(() => endLockdown(guild, 'fin du délai'), left);
+    console.log(`🔒 Verrouillage repris jusqu'à ${new Date(saved.until).toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris' })}`);
+  } else {
+    await endLockdown(guild, 'expiré pendant le redémarrage du bot', true);
+  }
+}
+
+module.exports = { register, commands, lockdown, resumeLockdown };

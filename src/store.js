@@ -35,9 +35,13 @@ sql.exec(`
 `);
 
 const db = { warns: {}, levels: {} };
+// Dernière valeur écrite de chaque section : on n'écrit que ce qui a changé, pour ne pas écraser
+// les données d'un autre processus (ex : `npm run setup` lancé pendant que le bot tourne)
+const written = new Map();
 for (const row of sql.prepare('SELECT key, value FROM kv').all()) {
   try {
     db[row.key] = JSON.parse(row.value);
+    written.set(row.key, row.value);
   } catch {}
 }
 
@@ -58,8 +62,16 @@ function flush() {
   const upsert = sql.prepare('INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value');
   sql.exec('BEGIN');
   try {
-    for (const [key, value] of Object.entries(db)) upsert.run(key, JSON.stringify(value ?? null));
+    const changed = [];
+    for (const [key, value] of Object.entries(db)) {
+      const json = JSON.stringify(value ?? null);
+      if (written.get(key) !== json) {
+        upsert.run(key, json);
+        changed.push([key, json]);
+      }
+    }
     sql.exec('COMMIT');
+    for (const [key, json] of changed) written.set(key, json);
   } catch (err) {
     sql.exec('ROLLBACK');
     throw err;

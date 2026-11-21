@@ -123,7 +123,13 @@ async function createFor(member, trigger) {
   }
 }
 
+/** Salons temporaires supprimés récemment (pour que l'anti-nuke les ignore) */
+const recentlyRemoved = new Set();
+const isTempChannel = (id) => !!state()[id] || recentlyRemoved.has(id);
+
 async function remove(channel) {
+  recentlyRemoved.add(channel.id);
+  setTimeout(() => recentlyRemoved.delete(channel.id), 10 * 60_000);
   delete state()[channel.id];
   save();
   await channel.delete('Salon temporaire vide').catch(() => {});
@@ -300,4 +306,4 @@ async function handleInteraction(i) {
   return true;
 }
 
-module.exports = { onVoiceStateUpdate, handleInteraction, cleanup };
+module.exports = { onVoiceStateUpdate, handleInteraction, cleanup, isTempChannel };
