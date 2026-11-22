@@ -182,6 +182,16 @@ Laisse cette fenêtre ouverte et va sur <http://localhost:3000>. Si le bot tourn
 
 > Pour l'ouvrir sans tunnel (depuis ton téléphone par exemple), il faut un nom de domaine et HTTPS : mets `DASHBOARD_HOST=127.0.0.1`, `DASHBOARD_URL=https://ton-domaine` et place devant un reverse proxy comme [Caddy](https://caddyserver.com) (certificat HTTPS gratuit). Ne l'expose jamais en HTTP simple.
 
+## 🧪 Tester en local (VS Code)
+
+```bash
+npm run dev
+```
+
+Lance le bot et le **redémarre automatiquement** quand tu modifies un fichier de `src/`, `config/` ou `assets/`. Toutes les 2 minutes, il **récupère aussi les nouveautés de GitHub** (puis `npm install` / `npm run setup` si besoin, et redémarre). `Ctrl+C` pour arrêter.
+
+⚠️ Un même bot ne doit pas tourner à deux endroits (il répondrait deux fois). Pour tester sans toucher au vrai serveur, crée un **bot de test** (nouvelle application dans le portail développeur, ex. « Ronin Builder TEST ») et un **serveur Discord de test**, et mets leur token / ID dans le `.env` de ton PC. Sinon, arrête le bot du VPS pendant tes tests (`pm2 stop bot-discord`, puis `pm2 start bot-discord`).
+
 ## ☁️ Héberger 24h/24 sur un VPS, avec mises à jour automatiques
 
 Sur un VPS Debian 12 / Ubuntu, en root :
@@ -295,7 +305,8 @@ src/tempvoice.js   vocaux temporaires
 src/tiktok.js      alertes TikTok · src/twitch.js client Twitch · src/ytdlp.js appels yt-dlp
 src/shared.js      messages et utilitaires communs
 assets/            icône et bannière (浪人 · Les Ronins)
-scripts/update.sh  mise à jour automatique depuis GitHub
+scripts/update.sh  mise à jour automatique depuis GitHub (VPS)
+scripts/dev.js     mode test local : redémarrage auto + mises à jour GitHub (npm run dev)
 ```
 
 **Pourquoi JavaScript et pas TypeScript ?** Le bot tourne sans étape de compilation : `git pull` + redémarrage suffisent, ce qui rend la mise à jour automatique du VPS fiable. Le code est découpé en modules documentés ; une migration TypeScript reste possible plus tard.
