@@ -260,8 +260,8 @@ async function configureGuild(guild, log = console.log) {
   });
   log('  ✔ Vérification e-mail, filtre de contenu, notifications @mentions uniquement, salon AFK');
 
-  const icon = config.serverIcon && path.join(__dirname, '..', config.serverIcon);
-  if (icon && fs.existsSync(icon)) {
+  const icon = config.serverIcon !== null && require('./shared').iconPath();
+  if (icon) {
     await guild.setIcon(icon).then(() => log('  ✔ Icône du serveur')).catch((e) => log(`  ⚠ Icône : ${e.message}`));
   }
   const banner = path.join(__dirname, '..', 'assets', 'banner.png');

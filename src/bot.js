@@ -313,6 +313,18 @@ function startTwitchWatcher(guild) {
 logs.register(client, GUILD_ID);
 security.register(client, GUILD_ID);
 
+/** Ronin Builder est réservé aux Ronins : il quitte tout autre serveur et prévient le staff. */
+async function leaveForeignGuild(other) {
+  console.warn(`🚫 Ajouté sur un autre serveur « ${other.name} » (${other.id}) : je le quitte.`);
+  await other.leave().catch(() => {});
+  const home = client.guilds.cache.get(GUILD_ID);
+  const channel = home && (findChannel(home, 'security_alerts') ?? findChannel(home, 'mod_logs'));
+  await channel
+    ?.send(`🚫 Quelqu'un a ajouté le bot sur un autre serveur (**${other.name}**, ${other.memberCount} membres, propriétaire <@${other.ownerId}>). Je l'ai quitté automatiquement. Pense à décocher « Public Bot » dans le portail développeur.`)
+    .catch(() => {});
+}
+client.on(Events.GuildCreate, (g) => g.id !== GUILD_ID && leaveForeignGuild(g));
+
 // ───────────────────────── Démarrage ─────────────────────────
 
 client.once(Events.ClientReady, async () => {
@@ -324,6 +336,8 @@ client.once(Events.ClientReady, async () => {
   await guild.channels.fetch();
   await guild.roles.fetch();
   console.log(`✅ Connecté en tant que ${client.user.tag} sur "${guild.name}"`);
+  // Bot privé : il quitte tout autre serveur où il aurait été ajouté
+  for (const other of client.guilds.cache.values()) if (other.id !== GUILD_ID) await leaveForeignGuild(other);
   client.user.setActivity('Les Ronins de haro62190 ⚔️', { type: 3 /* Watching */ });
   await tempVoice.cleanup(guild).catch((err) => console.error('Nettoyage des vocaux temporaires :', err.message));
   await commands.register(guild).catch((err) => console.error('❌ Enregistrement des commandes / :', err.message));

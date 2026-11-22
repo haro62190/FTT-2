@@ -115,6 +115,7 @@ Tape `/` dans Discord pour voir la liste. `/help` (ou `/aide`) affiche les comma
 | `/config voir · niveaux · recompense · notifications · reinitialiser` | Niveaux, rôles de récompense, alertes Twitch / TikTok |
 | `/backup creer · liste · exporter · supprimer` | Sauvegardes du serveur |
 | `/restore id` ou `/restore fichier` | Restauration (recrée ce qui manque, ne supprime rien) |
+| `/logo image:` | Change l'icône du serveur et/ou l'avatar du bot depuis Discord (`reinitialiser:True` = logo officiel) |
 | `/embed` | Message intégré personnalisé (titre, couleur, image, mention…) |
 | `/evenement` | Crée un **événement Discord** (date, durée, lieu) et l'annonce |
 | `/ticket ajouter · retirer · fermer` | Gestion d'un ticket |
@@ -181,6 +182,14 @@ ssh -L 3000:localhost:3000 root@IP_DU_VPS
 Laisse cette fenêtre ouverte et va sur <http://localhost:3000>. Si le bot tourne sur ton PC, ouvre directement <http://localhost:3000>.
 
 > Pour l'ouvrir sans tunnel (depuis ton téléphone par exemple), il faut un nom de domaine et HTTPS : mets `DASHBOARD_HOST=127.0.0.1`, `DASHBOARD_URL=https://ton-domaine` et place devant un reverse proxy comme [Caddy](https://caddyserver.com) (certificat HTTPS gratuit). Ne l'expose jamais en HTTP simple.
+
+## 🔒 Bot privé
+
+Ronin Builder ne sert que le serveur `GUILD_ID` : s'il est ajouté ailleurs, il **quitte ce serveur immédiatement** et prévient le staff dans 🚨┃alertes-sécurité. Il ne lit pas les messages privés et ses commandes `/` n'existent que sur ton serveur.
+
+À régler aussi dans le portail développeur (sinon le bouton « Ajouter l'appli » reste visible) :
+1. Onglet **Bot** → décoche **Public Bot** → *Save*. Seul toi peux alors l'inviter.
+2. Onglet **Installation** → *Install Link* : **None**, et décoche **User Install** (garde seulement *Guild Install*).
 
 ## 🧪 Tester en local (VS Code)
 

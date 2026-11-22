@@ -420,7 +420,8 @@ function start(client, guildId) {
       const guild = client.guilds.cache.get(guildId);
 
       if (url.pathname === '/logo.png') {
-        const file = require('path').join(__dirname, '..', 'assets', 'icon.png');
+        const file = require('./shared').iconPath();
+        if (!file) return send(res, 404, '');
         return require('fs').readFile(file, (err, data) =>
           err ? send(res, 404, '') : res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' }).end(data),
         );

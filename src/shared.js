@@ -10,6 +10,16 @@ const BRAND_COLOR = 0xe10600; // rouge néon — Les Ronins de haro62190
 const ACCEPT_RULES_ID = 'accept_rules';
 const ROLE_BUTTON_PREFIX = 'role:';
 
+/** Logo utilisé (icône du serveur + avatar du bot) : celui envoyé avec /logo, sinon assets/icon.png */
+function iconPath() {
+  const fs = require('fs');
+  const path = require('path');
+  const custom = path.join(__dirname, '..', 'data', 'custom-icon.img');
+  if (fs.existsSync(custom)) return custom;
+  const def = path.join(__dirname, '..', config.serverIcon || 'assets/icon.png');
+  return fs.existsSync(def) ? def : null;
+}
+
 function roleDef(key) {
   return config.roles.find((r) => r.key === key);
 }
@@ -89,6 +99,7 @@ function rolesPayload() {
 
 module.exports = {
   config,
+  iconPath,
   BRAND_COLOR,
   ACCEPT_RULES_ID,
   ROLE_BUTTON_PREFIX,

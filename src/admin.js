@@ -44,8 +44,8 @@ async function brandBot(client, log) {
     await client.user.setUsername(BOT_NAME).then(() => log(`  ✔ Bot renommé « ${BOT_NAME} »`)).catch(() => log('  ⚠ Nom du bot : change-le dans le portail développeur'));
   }
   // Avatar = assets/icon.png ; remis à jour automatiquement quand l'image change
-  const icon = path.join(__dirname, '..', 'assets', 'icon.png');
-  if (!fs.existsSync(icon)) return;
+  const icon = require('./shared').iconPath();
+  if (!icon) return;
   const { db, save } = require('./store');
   const hash = require('crypto').createHash('sha1').update(fs.readFileSync(icon)).digest('hex');
   if (db.botAvatarHash === hash && client.user.avatar) return;
@@ -142,6 +142,62 @@ const commands = [
         },
         `📁 **/channels**\n\n📁${planText(builder.plan(i.guild)).split('\n📁')[1] ?? ''}`,
       ),
+  },
+
+  // ───────── Logo ─────────
+  {
+    category: '🏯 Ronin Builder',
+    staff: true,
+    data: new SlashCommandBuilder()
+      .setName('logo')
+      .setDescription('Changer le logo du serveur et l\'avatar du bot')
+      .setDefaultMemberPermissions(P.Administrator)
+      .addAttachmentOption((o) => o.setName('image').setDescription('Image carrée PNG, JPG, GIF ou WEBP (8 Mo max)'))
+      .addStringOption((o) =>
+        o
+          .setName('appliquer')
+          .setDescription('Où l\'appliquer (les deux par défaut)')
+          .addChoices({ name: 'Serveur + bot', value: 'both' }, { name: 'Serveur seulement', value: 'guild' }, { name: 'Bot seulement', value: 'bot' }),
+      )
+      .addBooleanOption((o) => o.setName('reinitialiser').setDescription('Revenir au logo officiel (assets/icon.png)')),
+    async run(i) {
+      const file = i.options.getAttachment('image');
+      const reset = i.options.getBoolean('reinitialiser');
+      const where = i.options.getString('appliquer') ?? 'both';
+      const custom = path.join(__dirname, '..', 'data', 'custom-icon.img');
+      if (!file && !reset) return i.reply(ephemeral('Envoie une `image`, ou choisis `reinitialiser:True`.'));
+      if (file && (!/^image\/(png|jpe?g|gif|webp)$/.test(file.contentType ?? '') || file.size > 8 * 1024 * 1024)) {
+        return i.reply(ephemeral('❌ Image PNG, JPG, GIF ou WEBP de 8 Mo maximum.'));
+      }
+      await i.deferReply({ flags: MessageFlags.Ephemeral });
+      const target = where === 'both' ? 'l\'icône du serveur et l\'avatar du bot' : where === 'guild' ? 'l\'icône du serveur' : 'l\'avatar du bot';
+      const ok = await confirm(i, `🖼️ Remplacer ${target} par ${reset ? 'le **logo officiel**' : 'cette image'} ?${file ? `\n${file.url}` : ''}`);
+      if (!ok) return;
+      let image;
+      if (reset) {
+        fs.rmSync(custom, { force: true });
+        image = require('./shared').iconPath();
+      } else {
+        image = Buffer.from(await (await fetch(file.url)).arrayBuffer());
+        // Gardé pour que /setup et les redémarrages réutilisent ce logo
+        fs.mkdirSync(path.dirname(custom), { recursive: true });
+        fs.writeFileSync(custom, image);
+      }
+      const done = [];
+      if (where !== 'bot') await i.guild.setIcon(image).then(() => done.push('✅ Icône du serveur')).catch((e) => done.push(`⚠️ Serveur : ${e.message}`));
+      if (where !== 'guild') {
+        await i.client.user
+          .setAvatar(image)
+          .then(() => {
+            const { db, save } = require('./store');
+            db.botAvatarHash = require('crypto').createHash('sha1').update(fs.readFileSync(require('./shared').iconPath())).digest('hex');
+            save();
+            done.push('✅ Avatar du bot');
+          })
+          .catch((e) => done.push(`⚠️ Bot : ${e.message.includes('too fast') || e.status === 429 ? 'Discord limite les changements d\'avatar, réessaie dans une heure' : e.message}`));
+      }
+      return i.editReply({ content: done.join('\n'), components: [] });
+    },
   },
 
   // ───────── Bienvenue ─────────
