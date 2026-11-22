@@ -34,6 +34,17 @@ function onMessage(userId) {
   return after > before ? after : null;
 }
 
+/** XP gagnée en vocal (une minute). Renvoie le nouveau niveau en cas de passage, sinon null. */
+function addXp(userId, amount) {
+  const before = levelInfo(db.levels[userId]?.xp ?? 0).level;
+  const entry = (db.levels[userId] ??= { xp: 0, messages: 0 });
+  entry.xp += amount;
+  entry.voiceMinutes = (entry.voiceMinutes ?? 0) + 1;
+  save();
+  const after = levelInfo(entry.xp).level;
+  return after > before ? after : null;
+}
+
 function leaderboard() {
   return Object.entries(db.levels)
     .map(([userId, e]) => ({ userId, ...levelInfo(e.xp), messages: e.messages }))
@@ -77,4 +88,4 @@ async function applyRewards(member, level) {
   return granted;
 }
 
-module.exports = { onMessage, leaderboard, rankOf, levelInfo, rewardList, applyRewards };
+module.exports = { addXp, onMessage, leaderboard, rankOf, levelInfo, rewardList, applyRewards };

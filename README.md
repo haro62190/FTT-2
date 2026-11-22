@@ -150,6 +150,38 @@ La catégorie **📊 統計 ・ STATS** (tout en haut) contient 3 salons vocaux 
 
 Mise à jour **toutes les 10 minutes** (Discord limite le renommage d'un salon à 2 fois par 10 minutes). Commandes : `/stats voir`, `/stats rafraichir` et `/stats tiktok nombre:` pour donner une valeur de secours si TikTok bloque la lecture automatique. Les salons sont retrouvés par leur ID : tu peux les déplacer, le bot ne les recrée pas.
 
+## 📺 Twitch : live, récap, clips, planning
+
+- **Alerte de live** dans 🔴┃en-live (mention 🔴 Notif Live), et **récap automatique à la fin** : durée, pic de viewers, jeux joués, lien de la rediffusion.
+- **Clips** : chaque nouveau clip de ta chaîne est posté dans 🎬┃clips (vérification toutes les 5 min).
+- **Planning** : ton planning Twitch est affiché et tenu à jour dans 🗓️┃planning, et chaque stream des 7 prochains jours devient un **événement Discord** (supprimé s'il disparaît du planning Twitch). Remplis ton planning sur *Twitch → Tableau de bord créateur → Planning*.
+
+Activables / désactivables avec `/config notifications` ou le tableau de bord.
+
+## 💰 Économie « ryō » (両) et mini-jeux
+
+| Gagner | Dépenser / jouer |
+|---|---|
+| 5-10 両 par message (1 fois par minute) | `/boutique` puis `/acheter` : couleurs de pseudo (🌸 Sakura, 🩸 Sang, ⚙️ Acier, 🌑 Ombre, 🏮 Lanterne), 🩸 VIP 7 jours |
+| 2 両 par minute en vocal (à 2 minimum) | `/duel @membre mise:` — duel de samouraïs, le gagnant rafle la mise |
+| `/daily` : 100 両 + bonus de série (jusqu'à 7 jours) | `/chifoumi choix: mise:` contre le bot |
+| 500 両 le jour de ton anniversaire | `/donner @membre montant:` |
+
+`/bourse` (solde), `/richesse` (top 10), `/ryo` (staff : ajouter / retirer). Les articles se règlent dans `config/server.js` → `shop`.
+
+## 🎉 Animation
+
+- **🎁 `/giveaway lancer prix: duree: gagnants:`** — bouton « Participer », tirage automatique (même après un redémarrage), `/giveaway relancer` pour un nouveau gagnant.
+- **🎂 `/anniversaire definir jour: mois:`** — le jour J, message dans 🍜┃discussion, rôle 🎂 Anniversaire pendant 24 h et 500 両 offerts. `/anniversaire prochains`.
+- **💡 Suggestions** — tout message posté dans 💡┃suggestions devient une carte avec votes 👍/👎, un fil de discussion et des boutons staff (acceptée / en cours / refusée, l'auteur est prévenu en MP).
+- **🏯 Hall of Fame** — un message qui reçoit 5 réactions ⚔️ est mis à l'honneur dans 🏯┃hall-of-fame.
+- **🎙️ XP en vocal** — 10 XP par minute passée en vocal à au moins 2 (pas en sourdine, pas en AFK).
+
+## 🛡️ AutoMod Discord et vérification anti-bot
+
+- **AutoMod natif** (créé par `/setup`, géré avec `/automod`) : mots interdits, arnaques et invitations, contenu choquant, spam de mentions (mute 10 min), spam. Appliqué par Discord lui-même, **même bot éteint**. Les modos ne sont pas concernés ; alertes dans 📋┃logs. `/automod ajouter-mot` / `retirer-mot`.
+- **Vérification anti-bot** : après « Je prête serment », il faut cliquer sur le bon emoji (le katana, la lanterne…) pour obtenir ⚔️ Ronin. 3 erreurs = 5 min d'attente.
+
 ## 🎫 Tickets
 
 Dans 🎫┃ouvrir-un-ticket, le bouton **Ouvrir un ticket** demande un sujet puis crée un salon privé visible seulement par le membre et les modos. Boutons **Prendre en charge** et **Fermer** (avec confirmation). À la fermeture, la transcription complète est envoyée dans 📋┃logs et en MP au membre. Un ticket ouvert à la fois par membre.
@@ -301,6 +333,14 @@ src/admin.js       /setup /roles /channels /welcome /moderation /config /embed /
 src/backup.js      sauvegardes / restauration, /backup /restore
 src/tickets.js     tickets d'assistance
 src/stats.js       salons compteurs Discord / Twitch / TikTok, /stats
+src/twitchlive.js  live + récap, clips, planning Twitch → événements Discord
+src/economy.js     ryō, /daily, boutique, /duel, /chifoumi
+src/giveaway.js    giveaways
+src/birthdays.js   anniversaires
+src/community.js   suggestions, Hall of Fame, vérification anti-bot
+src/automod.js     règles AutoMod natives de Discord
+src/voicexp.js     XP et ryō en vocal
+src/temproles.js   rôles temporaires (VIP 7 jours, anniversaire)
 src/dashboard.js   tableau de bord web
 src/settings.js    réglages modifiables à chaud
 src/store.js       base SQLite (data/ronin.db)

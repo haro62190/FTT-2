@@ -34,9 +34,17 @@ const DEFAULTS = {
     whitelist: [],
     ...config.security,
   },
+  economy: { enabled: true, daily: 100, voicePerMinute: 2 },
+  voiceXp: { enabled: true, xpPerMinute: 10 },
+  hallOfFame: { emoji: '⚔️', threshold: 5 },
+  verification: { captcha: true },
+  birthdays: { enabled: true, gift: 500 },
+  automod: { enabled: true, extraWords: [] },
   notifications: {
     twitch: true,
     tiktok: true,
+    clips: true,
+    schedule: true,
   },
 };
 

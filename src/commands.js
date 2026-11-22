@@ -382,6 +382,10 @@ commands.push(
   ...require('./admin').commands,
   ...require('./backup').commands,
   ...require('./stats').commands,
+  ...require('./economy').commands,
+  ...require('./giveaway').commands,
+  ...require('./birthdays').commands,
+  ...require('./automod').commands,
 );
 
 // /help = /aide

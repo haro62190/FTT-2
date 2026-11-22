@@ -32,6 +32,14 @@ module.exports = {
     { key: 'streamer_role', name: '🎥 Streamer', color: 0xff4d4d, hoist: true },
     { key: 'vip', name: '🩸 VIP', formerNames: ['💎 VIP'], color: 0xe60000, hoist: true },
     { key: 'sub', name: '⭐ Abonné Twitch', color: 0xd92b2b, hoist: true },
+    // Couleurs de pseudo achetables dans la boutique (au-dessus des grades pour que la couleur s'affiche)
+    { key: 'color_sakura', name: '🌸 Sakura', color: 0xff8fb3 },
+    { key: 'color_blood', name: '🩸 Sang', color: 0xb00000 },
+    { key: 'color_steel', name: '⚙️ Acier', color: 0x9ea7b0 },
+    { key: 'color_lantern', name: '🏮 Lanterne', color: 0xffb300 },
+    { key: 'color_shadow', name: '🌑 Ombre', color: 0x2b2b2b },
+    // Donné automatiquement pendant 24 h le jour de l'anniversaire
+    { key: 'birthday', name: '🎂 Anniversaire', color: 0xff6fa8, hoist: true },
     // Grades gagnés avec les niveaux (`levelReward` = niveau à atteindre)
     { key: 'rank_daimyo', name: '🏯 Daimyō', color: 0xcc1414, hoist: true, levelReward: 30 },
     { key: 'rank_samurai', name: '⚔️ Samouraï', color: 0x991f1f, hoist: true, levelReward: 15 },
@@ -78,6 +86,7 @@ module.exports = {
         { key: 'memes', name: '👾┃memes', formerNames: ['😂・memes'], type: 'text', access: 'members' },
         { key: 'gaming', name: '🕹️┃gaming', formerNames: ['🎮・gaming'], type: 'text', access: 'members', topic: 'Parle de tes jeux du moment.' },
         { key: 'music', name: '🎧┃musique', formerNames: ['🎵・musique'], type: 'text', access: 'members' },
+        { key: 'hall_of_fame', name: '🏯┃hall-of-fame', type: 'text', access: 'members-readonly', topic: 'Les meilleurs messages du dojo (⚔️ x5 pour y entrer).' },
         { key: 'bot_commands', name: '🤖┃commandes', formerNames: ['🤖・commandes-bot'], type: 'text', access: 'members' },
       ],
     },
@@ -149,6 +158,21 @@ module.exports = {
 
   // Icône du serveur (appliquée par `npm run setup`), null pour ne pas y toucher
   serverIcon: 'assets/icon.png',
+
+  // Boutique (/boutique, /acheter) — `role` = clé d'un rôle ci-dessus, `group` = un seul équipé à la fois, `days` = temporaire
+  shop: [
+    { key: 'color_sakura', name: '🌸 Pseudo Sakura', price: 1500, role: 'color_sakura', group: 'couleur', description: 'Ton pseudo en rose fleur de cerisier.' },
+    { key: 'color_blood', name: '🩸 Pseudo Sang', price: 1500, role: 'color_blood', group: 'couleur', description: 'Ton pseudo en rouge sang.' },
+    { key: 'color_steel', name: '⚙️ Pseudo Acier', price: 1500, role: 'color_steel', group: 'couleur', description: 'Ton pseudo gris acier.' },
+    { key: 'color_shadow', name: '🌑 Pseudo Ombre', price: 2500, role: 'color_shadow', group: 'couleur', description: 'Ton pseudo noir comme la nuit.' },
+    { key: 'color_lantern', name: '🏮 Pseudo Lanterne', price: 4000, role: 'color_lantern', group: 'couleur', description: 'Ton pseudo doré de lanterne.' },
+    { key: 'vip_week', name: '🩸 VIP 7 jours', price: 12000, role: 'vip', days: 7, description: 'Accès au salon et au vocal VIP pendant une semaine.' },
+  ],
+
+  // AutoMod Discord (/automod) : mots interdits (* = joker). Les modos ne sont pas concernés.
+  automod: {
+    blockedWords: ['fdp', 'ntm', 'nique ta mere', 'nique ta mère', '*enculé*', '*encule*', 'salope', 'pute', 'tg', 'connasse', 'batard', 'bâtard'],
+  },
 
   // Salon AFK du serveur (clé d'un salon vocal ci-dessus)
   afkChannel: 'voice_afk',

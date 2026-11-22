@@ -60,6 +60,27 @@ class TwitchClient {
     return Number.isFinite(total) ? total : null;
   }
 
+  /** Clips créés depuis `startedAt` (ISO), les plus vus d'abord. */
+  async getClips(broadcasterId, startedAt) {
+    return this.get('clips', { broadcaster_id: broadcasterId, started_at: startedAt, first: '20' });
+  }
+
+  /** Dernière rediffusion (VOD) de la chaîne. */
+  async getLatestVod(userId) {
+    const [video] = await this.get('videos', { user_id: userId, type: 'archive', first: '1' });
+    return video ?? null;
+  }
+
+  /** Planning Twitch (null s'il n'y en a pas). */
+  async getSchedule(broadcasterId) {
+    try {
+      return await this.get('schedule', { broadcaster_id: broadcasterId, first: '20' });
+    } catch (err) {
+      if (/ 404/.test(err.message)) return null;
+      throw err;
+    }
+  }
+
   async getUser(login) {
     const [user] = await this.get('users', { login });
     return user ?? null;

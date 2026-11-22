@@ -307,6 +307,7 @@ async function buildAll(guild, log = console.log) {
   await guild.channels.fetch();
   await postMessages(guild, log);
   await configureGuild(guild, log);
+  await require('./automod').ensureAutoMod(guild, log);
 }
 
-module.exports = { buildAll, plan, ensureRoles, ensureChannels, postMessages, configureGuild, buildOverwrites };
+module.exports = { upsertBotMessage, buildAll, plan, ensureRoles, ensureChannels, postMessages, configureGuild, buildOverwrites };
