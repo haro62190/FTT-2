@@ -1,5 +1,7 @@
 # ⚔️ Ronin Builder
 
+<p align="center"><img src="assets/icon.png" width="220" alt="Les Ronins de haro62190"></p>
+
 ![Les Ronins de haro62190](assets/banner.png)
 
 Bot Discord qui **construit automatiquement** le serveur **Les Ronins de haro62190** (rôles, catégories, salons, permissions, règlement) avec une seule commande **`/setup`**, puis **l'anime et le protège** : bienvenue / départ, tickets, niveaux et grades, alertes Twitch & TikTok, événements, musique, vocaux temporaires, anti-raid / anti-nuke, logs, sauvegardes et **tableau de bord web**.
@@ -227,7 +229,7 @@ Le staff (permission « Gérer les messages ») n'est pas concerné par l'anti-s
 
 ## 🎨 Images
 
-`assets/icon.png` (icône, appliquée par `npm run setup`) et `assets/banner.png` (bannière, appliquée si le serveur a le niveau de boost 2 ; sinon utilisable pour Twitch, YouTube, X…).
+`assets/icon.png` (logo officiel Les Ronins : icône du serveur appliquée par `/setup`, avatar du bot mis à jour automatiquement quand l'image change) et `assets/banner.png` (bannière, appliquée si le serveur a le niveau de boost 2 ; sinon utilisable pour Twitch, YouTube, X…).
 
 ## 📱 Alertes TikTok
 

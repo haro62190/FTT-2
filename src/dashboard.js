@@ -48,7 +48,7 @@ function send(res, status, body, headers = {}) {
     'X-Frame-Options': 'DENY',
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'no-referrer',
-    'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; img-src https://cdn.discordapp.com data:; form-action 'self' https://discord.com; base-uri 'none'",
+    'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' https://cdn.discordapp.com data:; form-action 'self' https://discord.com; base-uri 'none'",
     ...headers,
   });
   res.end(body);
@@ -112,7 +112,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px so
 code{background:#1c1c1f;padding:1px 5px;border-radius:4px}form.inline{display:inline}
 @media(max-width:760px){.wrap{flex-direction:column}nav{width:auto;border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;gap:4px}nav a{white-space:nowrap}main{padding:16px}}
 </style></head><body>
-<header><h1>浪人 <span>RONIN</span> BUILDER</h1><div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
+<header><img src="/logo.png" alt="" style="width:36px;height:36px;border-radius:50%"><h1>浪人 <span>RONIN</span> BUILDER</h1><div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
 <div class="wrap">${sess ? `<nav>${NAV.map(([href, label]) => `<a href="${href}" class="${href === path ? 'on' : ''}">${label}</a>`).join('')}</nav>` : ''}
 <main>${flash ? `<div class="flash${flash.startsWith('❌') ? ' err' : ''}">${esc(flash)}</div>` : ''}<h2>${esc(title)}</h2>${body}</main></div></body></html>`;
 }
@@ -419,6 +419,12 @@ function start(client, guildId) {
       }
       const guild = client.guilds.cache.get(guildId);
 
+      if (url.pathname === '/logo.png') {
+        const file = require('path').join(__dirname, '..', 'assets', 'icon.png');
+        return require('fs').readFile(file, (err, data) =>
+          err ? send(res, 404, '') : res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' }).end(data),
+        );
+      }
       if (url.pathname === '/login') {
         const state = rand();
         oauthStates.set(state, Date.now() + 600_000);

@@ -332,6 +332,7 @@ client.once(Events.ClientReady, async () => {
   require('./stats').start(guild, twitch).catch((e) => console.error('Stats :', e.message));
 
   require('./dashboard').start(client, GUILD_ID);
+  await require('./admin').brandBot(client, console.log).catch(() => {});
   await security.resumeLockdown(guild).catch((e) => console.error('Verrouillage :', e.message));
 
   // Sauvegarde automatique quotidienne du serveur

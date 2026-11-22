@@ -43,8 +43,20 @@ async function brandBot(client, log) {
   if (client.user.username !== BOT_NAME) {
     await client.user.setUsername(BOT_NAME).then(() => log(`  ✔ Bot renommé « ${BOT_NAME} »`)).catch(() => log('  ⚠ Nom du bot : change-le dans le portail développeur'));
   }
+  // Avatar = assets/icon.png ; remis à jour automatiquement quand l'image change
   const icon = path.join(__dirname, '..', 'assets', 'icon.png');
-  if (!client.user.avatar && fs.existsSync(icon)) await client.user.setAvatar(icon).then(() => log('  ✔ Avatar du bot')).catch(() => {});
+  if (!fs.existsSync(icon)) return;
+  const { db, save } = require('./store');
+  const hash = require('crypto').createHash('sha1').update(fs.readFileSync(icon)).digest('hex');
+  if (db.botAvatarHash === hash && client.user.avatar) return;
+  await client.user
+    .setAvatar(icon)
+    .then(() => {
+      db.botAvatarHash = hash;
+      save();
+      log('  ✔ Avatar du bot mis à jour');
+    })
+    .catch((e) => log(`  ⚠ Avatar du bot : ${e.message}`));
 }
 
 /** Date « JJ/MM/AAAA HH:MM » à l'heure de Paris -> Date */
@@ -464,4 +476,4 @@ const commands = [
   },
 ];
 
-module.exports = { commands, parisDate };
+module.exports = { commands, parisDate, brandBot };
