@@ -92,6 +92,15 @@ function save() {
   }, 2000);
 }
 
+// Arrêt demandé par `npm run dev` (fonctionne aussi sous Windows, où SIGTERM coupe net)
+process.on('message', (m) => {
+  if (m !== 'shutdown') return;
+  try {
+    flush();
+  } catch {}
+  process.exit(0);
+});
+
 for (const sig of ['SIGINT', 'SIGTERM']) {
   process.on(sig, () => {
     try {

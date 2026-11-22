@@ -26,14 +26,33 @@ function run(cmd, args) {
 
 let bot = null;
 let restarting = false;
+let stopping = false;
+
+/** Arrête UN processus précis : demande polie (enregistre les données), puis forcé après 5 s. */
+function stopProcess(child) {
+  return new Promise((resolve) => {
+    if (!child || child.exitCode !== null || child.signalCode !== null) return resolve();
+    child.stopRequested = true;
+    child.once('exit', resolve);
+    try {
+      child.send('shutdown');
+    } catch {
+      child.kill('SIGTERM');
+    }
+    setTimeout(() => {
+      if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+    }, 5000);
+  });
+}
 
 function startBot() {
   say('▶️  Démarrage du bot…');
-  bot = spawn(process.execPath, ['src/bot.js'], { cwd: ROOT, stdio: 'inherit' });
-  bot.on('exit', (code, signal) => {
-    const wanted = restarting;
-    bot = null;
-    if (!wanted && signal !== 'SIGINT') say(`⛔ Le bot s'est arrêté (code ${code}). Corrige l'erreur : il redémarrera à la prochaine modification.`);
+  // Canal 'ipc' : permet de demander au bot de s'arrêter proprement (aussi sous Windows)
+  const child = spawn(process.execPath, ['src/bot.js'], { cwd: ROOT, stdio: ['inherit', 'inherit', 'inherit', 'ipc'] });
+  bot = child;
+  child.on('exit', (code, signal) => {
+    if (bot === child) bot = null;
+    if (!child.stopRequested && !stopping) say(`⛔ Le bot s'est arrêté (code ${code ?? signal}). Corrige l'erreur : il redémarrera à la prochaine modification.`);
   });
 }
 
@@ -41,14 +60,10 @@ function restartBot(reason) {
   if (restarting) return;
   restarting = true;
   say(`🔄 Redémarrage (${reason})`);
-  const go = () => {
+  stopProcess(bot).then(() => {
     restarting = false;
     startBot();
-  };
-  if (!bot) return go();
-  bot.once('exit', go);
-  bot.kill('SIGTERM'); // le bot enregistre ses données avant de quitter
-  setTimeout(() => bot?.kill('SIGKILL'), 5000);
+  });
 }
 
 // ───────────────────────── Fichiers modifiés ─────────────────────────
@@ -112,8 +127,8 @@ startBot();
 if (gitOk) setInterval(checkGitHub, GIT_INTERVAL_MS);
 
 process.on('SIGINT', () => {
+  if (stopping) return;
+  stopping = true;
   say('👋 Arrêt');
-  restarting = true;
-  bot?.kill('SIGTERM');
-  setTimeout(() => process.exit(0), 1500);
+  stopProcess(bot).then(() => process.exit(0));
 });
