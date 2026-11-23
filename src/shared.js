@@ -3,6 +3,7 @@ const {
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
+  PermissionFlagsBits,
 } = require('discord.js');
 const config = require('../config/server');
 
@@ -46,6 +47,24 @@ function findChannel(guild, key) {
   if (def.stat) return guild.channels.cache.get(require('./store').db.statChannels?.[key]);
   const names = [def.name, ...(def.formerNames ?? [])];
   return guild.channels.cache.find((c) => c.name === def.name) ?? guild.channels.cache.find((c) => names.includes(c.name));
+}
+
+// ───────── Grades du staff ─────────
+const STAFF_LEVELS = { helper: 1, mod: 2, senior: 3 };
+
+/** Rôles du staff d'au moins ce grade (helper < mod < senior), du plus haut au plus bas. */
+function staffRoles(guild, min = 'helper') {
+  return config.roles
+    .filter((d) => d.staff && STAFF_LEVELS[d.staff] >= STAFF_LEVELS[min])
+    .map((d) => findRole(guild, d.key))
+    .filter(Boolean);
+}
+
+/** Ce membre fait-il partie du staff (au moins ce grade) ? Le propriétaire et les admins aussi. */
+function isStaffMember(member, min = 'helper') {
+  if (!member?.guild) return false;
+  if (member.id === member.guild.ownerId || member.permissions?.has?.(PermissionFlagsBits.Administrator)) return true;
+  return staffRoles(member.guild, min).some((r) => member.roles.cache.has(r.id));
 }
 
 function rulesPayload(guild) {
@@ -99,6 +118,9 @@ function rolesPayload() {
 
 module.exports = {
   config,
+  staffRoles,
+  isStaffMember,
+  STAFF_LEVELS,
   iconPath,
   BRAND_COLOR,
   ACCEPT_RULES_ID,

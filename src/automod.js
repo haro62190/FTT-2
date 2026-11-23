@@ -72,9 +72,9 @@ async function ensureAutoMod(guild, log = console.log) {
   if (settings.get('automod.enabled') === false) return log('\n🛡️ AutoMod Discord : désactivé (/automod)');
   log('\n🛡️ AutoMod Discord');
   const existing = await guild.autoModerationRules.fetch();
-  const mod = findRole(guild, 'mod');
+  const exempt = require('./shared').staffRoles(guild).map((r) => r.id);
   for (const r of rules(guild)) {
-    const data = { ...r, eventType: AutoModerationRuleEventType.MessageSend, enabled: true, exemptRoles: mod ? [mod.id] : [] };
+    const data = { ...r, eventType: AutoModerationRuleEventType.MessageSend, enabled: true, exemptRoles: exempt };
     // Une seule règle Spam / KeywordPreset / MentionSpam par serveur : on réutilise celle qui existe
     const unique = [Trigger.Spam, Trigger.KeywordPreset, Trigger.MentionSpam].includes(r.triggerType);
     const current = existing.find((x) => x.name === r.name) ?? (unique ? existing.find((x) => x.triggerType === r.triggerType) : null);

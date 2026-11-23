@@ -14,7 +14,7 @@ const {
   GuildDefaultMessageNotifications,
   GuildSystemChannelFlags,
 } = require('discord.js');
-const { config, findRole, findChannel, rulesPayload, rolesPayload, BRAND_COLOR } = require('./shared');
+const { config, findRole, findChannel, rulesPayload, rolesPayload, BRAND_COLOR, staffRoles } = require('./shared');
 
 const TEXT_READ = [P.ViewChannel, P.ReadMessageHistory];
 const TEXT_WRITE = [P.SendMessages, P.SendMessagesInThreads, P.CreatePublicThreads, P.AddReactions, P.AttachFiles, P.EmbedLinks];
@@ -36,8 +36,10 @@ function buildOverwrites(guild, botId, def) {
 
   // Le bot voit et écrit partout (utile s'il n'a pas la permission Administrateur)
   add(botId, [...READ, ...WRITE, P.ManageMessages], [], OverwriteType.Member);
-  // Les modérateurs voient et écrivent partout
-  add(role('mod'), [...READ, ...WRITE, ...staffExtra]);
+  // Le staff (tous grades) voit et écrit partout, sauf les salons réservés aux Gardiens
+  const staff = staffRoles(guild).map((r) => r.id);
+  const senior = staffRoles(guild, 'senior').map((r) => r.id);
+  for (const id of def.access === 'staff-senior' ? senior : staff) add(id, [...READ, ...WRITE, ...staffExtra]);
   // Les rôles `allVoice` (ex : Amis) rejoignent tous les vocaux
   if (isVoice) for (const r of config.roles.filter((d) => d.allVoice)) add(role(r.key), [...READ, ...WRITE]);
 
@@ -60,12 +62,13 @@ function buildOverwrites(guild, botId, def) {
       add(role('streamer_role'), [...READ, ...WRITE]);
       break;
     case 'staff':
+    case 'staff-senior':
       add(everyone, [], [P.ViewChannel]);
       break;
     case 'stats':
       // Visible par tous, personne ne peut s'y connecter (le bot change juste le nom)
       add(everyone, [P.ViewChannel], [P.Connect]);
-      add(role('mod'), [P.ViewChannel], [P.Connect]);
+      for (const id of staff) add(id, [P.ViewChannel], [P.Connect]);
       break;
     default:
       throw new Error(`Niveau d'accès inconnu "${def.access}" pour ${def.name}`);
@@ -85,9 +88,10 @@ async function ensureRoles(guild, log = console.log) {
       mentionable: false, // seuls le staff et le bot peuvent mentionner les rôles
       permissions: def.admin
         ? [P.Administrator]
-        : def.mod
-          ? [P.KickMembers, P.BanMembers, P.ModerateMembers, P.ManageMessages, P.ManageNicknames, P.MuteMembers, P.MoveMembers, P.DeafenMembers, P.ViewAuditLog]
-          : [],
+        : (def.permissions ?? []).map((n) => {
+            if (!(n in P)) throw new Error(`Permission inconnue « ${n} » pour le rôle ${def.name}`);
+            return P[n];
+          }),
     };
     const existing = findRole(guild, def.key);
     if (existing) {

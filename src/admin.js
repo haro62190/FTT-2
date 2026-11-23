@@ -461,7 +461,7 @@ const commands = [
     data: new SlashCommandBuilder()
       .setName('embed')
       .setDescription('Publier un message intégré personnalisé')
-      .setDefaultMemberPermissions(P.ManageMessages)
+      .setDefaultMemberPermissions(P.KickMembers)
       .addStringOption((o) => o.setName('description').setDescription('Texte (\\n = retour à la ligne)').setRequired(true).setMaxLength(4000))
       .addStringOption((o) => o.setName('titre').setDescription('Titre').setMaxLength(256))
       .addChannelOption((o) => o.setName('salon').setDescription('Où publier (ici par défaut)').addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))

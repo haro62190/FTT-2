@@ -11,10 +11,7 @@ const { db, save } = require('./store');
 const settings = require('./settings');
 
 const ephemeral = (content, extra = {}) => ({ content, flags: MessageFlags.Ephemeral, ...extra });
-const isStaff = (member) => {
-  const mod = findRole(member.guild, 'mod');
-  return member.permissions.has(P.ManageMessages) || (mod && member.roles.cache.has(mod.id));
-};
+const isStaff = (member) => member.permissions.has(P.ManageMessages) || require('./shared').isStaffMember(member);
 
 // ───────────────────────── Suggestions ─────────────────────────
 

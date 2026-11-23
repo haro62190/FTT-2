@@ -12,7 +12,8 @@
  *   - "members"          : visible et ouvert aux membres (règlement accepté)
  *   - "members-readonly" : visible par les membres, seul le staff écrit
  *   - "vip"              : réservé aux VIP, abonnés Twitch, Streamers et staff
- *   - "staff"            : réservé aux modérateurs
+ *   - "staff"            : réservé au staff (Gardiens, Modérateurs, Sentinelles)
+ *   - "staff-senior"     : réservé aux Gardiens (et administrateurs)
  *   - "stats"            : salon vocal compteur, visible par tous, personne ne peut y entrer
  */
 
@@ -31,7 +32,19 @@ module.exports = {
     // `formerNames` : anciens noms du rôle, pour le renommer au lieu d'en créer un nouveau
     // Palette Les Ronins : rouge sang, rouge néon, gris acier, noir
     { key: 'streamer', name: '👑 Chef', formerNames: ['👑 Streamer'], color: 0xff1a1a, hoist: true, admin: true },
-    { key: 'mod', name: '🛡️ Modérateur', color: 0xb30000, hoist: true, mod: true },
+    // Grades de modération (`staff` : senior > mod > helper). Chacun ne peut sanctionner que les grades en dessous.
+    {
+      key: 'senior_mod', name: '🏯 Gardien', color: 0xd10000, hoist: true, staff: 'senior',
+      permissions: ['KickMembers', 'BanMembers', 'ModerateMembers', 'ManageMessages', 'ManageNicknames', 'ManageThreads', 'MuteMembers', 'MoveMembers', 'DeafenMembers', 'ViewAuditLog', 'ManageEvents'],
+    },
+    {
+      key: 'mod', name: '🛡️ Modérateur', color: 0xb30000, hoist: true, staff: 'mod',
+      permissions: ['KickMembers', 'ModerateMembers', 'ManageMessages', 'ManageNicknames', 'ManageThreads', 'MuteMembers', 'MoveMembers', 'DeafenMembers', 'ViewAuditLog'],
+    },
+    {
+      key: 'helper', name: '🔰 Sentinelle', color: 0x8c2a2a, hoist: true, staff: 'helper',
+      permissions: ['ModerateMembers', 'ManageMessages', 'MuteMembers', 'MoveMembers'],
+    },
     // `allVoice` : peut voir et rejoindre TOUS les salons vocaux (y compris le vocal VIP)
     { key: 'friend', name: '🤝 Amis', color: 0xa6a6a6, hoist: true, allVoice: true },
     // Pour les streamers de la commu : accès aux salons VIP
@@ -143,7 +156,7 @@ module.exports = {
         { key: 'guide_staff', name: '📘┃guide-staff', type: 'text', access: 'staff', topic: 'Les commandes et réflexes du staff.' },
         { key: 'security_alerts', name: '🚨┃alertes-sécurité', formerNames: ['🚨・alertes-sécurité'], type: 'text', access: 'staff', topic: 'Anti-raid / anti-nuke : alertes importantes.' },
         { key: 'mod_logs', name: '📋┃logs', formerNames: ['📋・logs'], type: 'text', access: 'staff', topic: 'Kicks, bans, mutes, rôles, pseudos, salons, messages supprimés/modifiés…' },
-        { key: 'db_backups', name: '💾┃sauvegardes', type: 'text', access: 'staff', topic: 'Copie quotidienne de la base du bot (à garder !).' },
+        { key: 'db_backups', name: '💾┃sauvegardes', type: 'text', access: 'staff-senior', topic: 'Copie quotidienne de la base du bot (à garder !).' },
         { key: 'voice_logs', name: '🔊┃logs-vocal', formerNames: ['🔊・logs-vocal'], type: 'text', access: 'staff', topic: 'Arrivées, départs et déconnexions des vocaux.' },
       ],
     },

@@ -209,7 +209,7 @@ const commands = [
     data: new SlashCommandBuilder()
       .setName('annonce')
       .setDescription('Publier une annonce dans le salon annonces')
-      .setDefaultMemberPermissions(P.ManageMessages)
+      .setDefaultMemberPermissions(P.KickMembers)
       .addStringOption((o) => o.setName('message').setDescription('Le texte (\\n pour un retour à la ligne)').setRequired(true))
       .addStringOption((o) => o.setName('titre').setDescription('Titre de l\'annonce'))
       .addBooleanOption((o) => o.setName('mention').setDescription('Mentionner le rôle 📢 Notif Annonces ?')),
@@ -297,7 +297,7 @@ const commands = [
     data: new SlashCommandBuilder()
       .setName('clearwarns')
       .setDescription('Effacer les avertissements d\'un membre')
-      .setDefaultMemberPermissions(P.ModerateMembers)
+      .setDefaultMemberPermissions(P.KickMembers)
       .addUserOption((o) => memberOpt(o)),
     async run(i, ctx) {
       const user = i.options.getUser('membre');
@@ -325,6 +325,10 @@ const commands = [
       if (denied) return i.reply(ephemeral(denied));
       if (!member?.moderatable) return i.reply(ephemeral('❌ Impossible de rendre ce membre muet (rôle trop haut ou membre introuvable).'));
       const minutes = i.options.getInteger('duree');
+      // Les Sentinelles (sans le droit d'expulser) sont limitées à 1 heure de mute
+      if (minutes > 60 && !i.memberPermissions.has(P.KickMembers)) {
+        return i.reply(ephemeral('🔰 En tant que Sentinelle, tu peux rendre muet 1 heure maximum. Demande à un Modérateur pour plus long.'));
+      }
       const reason = i.options.getString('raison') ?? 'Aucune raison';
       await member.timeout(minutes * 60_000, `${reason} — par ${i.user.tag}`);
       const label = MUTE_DURATIONS.find(([, v]) => v === minutes)?.[0] ?? `${minutes} min`;

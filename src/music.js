@@ -204,10 +204,7 @@ function trackEmbed(title, track) {
 
 // ───────────────────────── Commandes ─────────────────────────
 
-function isMod(member) {
-  const mod = findRole(member.guild, 'mod');
-  return member.permissions.has(P.Administrator) || (mod && member.roles.cache.has(mod.id));
-}
+const isMod = (member) => require('./shared').isStaffMember(member);
 
 /** Vérifie que la personne est dans le même vocal que le bot. */
 function getQueueFor(i) {

@@ -77,8 +77,13 @@ function features(guild) {
 }
 
 const STAFF_TIPS = [
+  '**🎖️ Les grades du staff**',
+  '🏯 **Gardien** — responsable de la modération : bannir, expulser, mute, `/lockdown`, événements, copie de la base.',
+  '🛡️ **Modérateur** — expulser, mute sans limite, avertissements (et les effacer), annonces, pseudos. Pas de ban.',
+  '🔰 **Sentinelle** — supprimer des messages, avertir, mute 1 h maximum, déplacer en vocal. Ni kick ni ban : appelle un Modérateur.',
+  '',
   '**🧭 Rappels pour le staff**',
-  '• Les commandes de modération respectent la hiérarchie : impossible d\'agir sur un rôle égal ou supérieur au sien.',
+  '• Les commandes de modération respectent la hiérarchie : impossible d\'agir sur un grade égal ou supérieur au sien.',
   '• Toutes les actions (kick, ban, mute, rôles, messages supprimés…) sont notées dans 📋┃logs, avec leur auteur.',
   '• En cas de raid : `/lockdown action:Activer`. L\'anti-raid et l\'anti-nuke se déclenchent aussi tout seuls (alertes dans 🚨┃alertes-sécurité).',
   '• Les commandes qui modifient le serveur (`/setup`, `/restore`…) montrent d\'abord ce qu\'elles vont faire et demandent une confirmation.',

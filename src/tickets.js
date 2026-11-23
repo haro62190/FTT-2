@@ -30,10 +30,7 @@ const ephemeral = (content, extra = {}) => ({ content, flags: MessageFlags.Ephem
 
 const ACCESS = [P.ViewChannel, P.SendMessages, P.ReadMessageHistory, P.AttachFiles, P.EmbedLinks, P.AddReactions];
 
-function isStaff(member) {
-  const mod = findRole(member.guild, 'mod');
-  return member.permissions.has(P.ManageMessages) || (mod && member.roles.cache.has(mod.id));
-}
+const isStaff = (member) => member.permissions.has(P.ManageMessages) || require('./shared').isStaffMember(member);
 
 /** Message avec le bouton « Ouvrir un ticket » (publié par /setup dans le salon tickets). */
 function panelPayload() {
@@ -77,7 +74,7 @@ async function openTicket(i, subject, details) {
 
   await i.deferReply({ flags: MessageFlags.Ephemeral });
   const panel = findChannel(i.guild, 'tickets');
-  const mod = findRole(i.guild, 'mod');
+  const staff = require('./shared').staffRoles(i.guild);
   const number = ++s.counter;
   const slug = i.user.username.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20) || 'membre';
 
@@ -90,7 +87,7 @@ async function openTicket(i, subject, details) {
       { id: i.guild.roles.everyone.id, type: OverwriteType.Role, deny: [P.ViewChannel] },
       { id: i.client.user.id, type: OverwriteType.Member, allow: [...ACCESS, P.ManageChannels, P.ManageMessages] },
       { id: i.user.id, type: OverwriteType.Member, allow: ACCESS },
-      ...(mod ? [{ id: mod.id, type: OverwriteType.Role, allow: [...ACCESS, P.ManageMessages] }] : []),
+      ...staff.map((r) => ({ id: r.id, type: OverwriteType.Role, allow: [...ACCESS, P.ManageMessages] })),
     ],
     reason: `Ticket #${number} ouvert par ${i.user.tag}`,
   });
@@ -98,8 +95,8 @@ async function openTicket(i, subject, details) {
   save();
 
   await channel.send({
-    content: `${i.user} ${mod ?? ''}`.trim(),
-    allowedMentions: { users: [i.user.id], roles: mod ? [mod.id] : [] },
+    content: `${i.user} ${staff.join(' ')}`.trim(),
+    allowedMentions: { users: [i.user.id], roles: staff.map((r) => r.id) },
     embeds: [
       new EmbedBuilder()
         .setColor(BRAND_COLOR)

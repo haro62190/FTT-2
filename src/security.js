@@ -33,7 +33,7 @@ const WHITELIST = {
 
 function alert(guild, title, description) {
   const channel = findChannel(guild, 'security_alerts') ?? findChannel(guild, 'mod_chat') ?? findChannel(guild, 'mod_logs');
-  const pings = ['streamer', 'mod'].map((k) => findRole(guild, k)).filter(Boolean);
+  const pings = [findRole(guild, 'streamer'), ...require('./shared').staffRoles(guild, 'mod')].filter(Boolean);
   return channel
     ?.send({
       content: pings.join(' ') || undefined,
@@ -338,7 +338,7 @@ const commands = [
     data: new SlashCommandBuilder()
       .setName('lockdown')
       .setDescription('Verrouiller le serveur (raid) : invitations en pause, nouveaux arrivants expulsés')
-      .setDefaultMemberPermissions(P.ManageGuild)
+      .setDefaultMemberPermissions(P.BanMembers)
       .addStringOption((o) =>
         o.setName('action').setDescription('Activer ou désactiver').setRequired(true).addChoices({ name: 'Activer', value: 'on' }, { name: 'Désactiver', value: 'off' }),
       )

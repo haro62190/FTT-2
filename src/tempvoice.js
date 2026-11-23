@@ -35,7 +35,7 @@ const allVoiceRoles = (guild) => config.roles.filter((r) => r.allVoice).map((r) 
 
 function buildOverwrites(guild, ownerId, data) {
   const member = findRole(guild, 'member');
-  const mod = findRole(guild, 'mod');
+  const staff = require('./shared').staffRoles(guild);
   const R = OverwriteType.Role;
   const M = OverwriteType.Member;
   const ow = [
@@ -43,7 +43,7 @@ function buildOverwrites(guild, ownerId, data) {
     { id: guild.client.user.id, type: M, allow: [...VOICE_USE, ...OWNER_EXTRA, P.ManageRoles] },
     { id: ownerId, type: M, allow: [...VOICE_USE, ...OWNER_EXTRA] },
   ];
-  if (mod) ow.push({ id: mod.id, type: R, allow: [...VOICE_USE, ...OWNER_EXTRA] });
+  for (const r of staff) ow.push({ id: r.id, type: R, allow: [...VOICE_USE, ...OWNER_EXTRA] });
   for (const role of allVoiceRoles(guild)) ow.push({ id: role.id, type: R, allow: VOICE_USE });
   if (member) {
     ow.push(
@@ -182,10 +182,7 @@ async function cleanup(guild) {
   save();
 }
 
-function isModerator(member) {
-  const mod = findRole(member.guild, 'mod');
-  return member.permissions.has(P.Administrator) || (mod && member.roles.cache.has(mod.id));
-}
+const isModerator = (member) => require('./shared').isStaffMember(member);
 
 /** Gère les boutons / menus / formulaires du panneau. Renvoie true si l'interaction a été traitée. */
 async function handleInteraction(i) {

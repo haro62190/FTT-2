@@ -33,7 +33,7 @@ Thème **samouraï cyberpunk** : noir, rouge néon et gris. Tout passe réelleme
 
 Kanji des catégories : 入口 = entrée, 道場 = dojo, 配信 = stream, 特別 = spécial, 音 = son, 支援 = assistance, 守 = protection ; les vocaux portent des noms de quartiers de Tokyo.
 
-**Rôles (du plus haut au plus bas) :** 👑 Chef · 🛡️ Modérateur · 🤝 Amis (accès à tous les vocaux) · 🎥 Streamer (accès VIP) · 🩸 VIP · ⭐ Abonné Twitch · 🏯 Daimyō (niv. 30) · ⚔️ Samouraï (niv. 15) · 🗡️ Ashigaru (niv. 5) · ⚔️ Ronin (règlement accepté) · et en libre-service : 🔴 Notif Live · 📱 Notif TikTok · 📢 Notif Annonces · 🕹️ Joueur · 🎨 Artiste.
+**Rôles (du plus haut au plus bas) :** 👑 Chef · 🏯 Gardien · 🛡️ Modérateur · 🔰 Sentinelle · 🤝 Amis (accès à tous les vocaux) · 🎥 Streamer (accès VIP) · 🩸 VIP · ⭐ Abonné Twitch · 🏯 Daimyō (niv. 30) · ⚔️ Samouraï (niv. 15) · 🗡️ Ashigaru (niv. 5) · ⚔️ Ronin (règlement accepté) · et en libre-service : 🔴 Notif Live · 📱 Notif TikTok · 📢 Notif Annonces · 🕹️ Joueur · 🎨 Artiste.
 
 **Réglages de sécurité appliqués :** e-mail vérifié obligatoire, filtre de contenu explicite pour tous, notifications par défaut sur « @mentions uniquement » (évite que les gens quittent à cause du bruit).
 
@@ -231,6 +231,16 @@ ssh -L 3000:localhost:3000 root@IP_DU_VPS
 Laisse cette fenêtre ouverte et va sur <http://localhost:3000>. Si le bot tourne sur ton PC, ouvre directement <http://localhost:3000>.
 
 > Pour l'ouvrir sans tunnel (depuis ton téléphone par exemple), il faut un nom de domaine et HTTPS : mets `DASHBOARD_HOST=127.0.0.1`, `DASHBOARD_URL=https://ton-domaine` et place devant un reverse proxy comme [Caddy](https://caddyserver.com) (certificat HTTPS gratuit). Ne l'expose jamais en HTTP simple.
+
+## 🎖️ Grades du staff
+
+| Grade | Peut | Ne peut pas |
+|---|---|---|
+| 🏯 **Gardien** | bannir, expulser, mute, avertir, `/lockdown`, événements, salon 💾┃sauvegardes | (tout le reste est réservé à 👑 Chef / admins) |
+| 🛡️ **Modérateur** | expulser, mute sans limite, avertir / effacer les avertissements, `/annonce`, `/embed`, pseudos | bannir, `/lockdown` |
+| 🔰 **Sentinelle** | supprimer des messages (`/clear`), avertir, mute **1 h max**, déplacer en vocal | expulser, bannir, effacer les avertissements |
+
+Chaque grade ne peut sanctionner que les grades en dessous du sien. Tous voient les salons staff, les tickets et ne sont pas concernés par l'AutoMod. Les permissions se règlent dans `config/server.js` (champ `permissions` de chaque rôle).
 
 ## 📖 Guide des commandes
 

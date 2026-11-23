@@ -123,3 +123,21 @@ test('guide : embeds dans les limites de Discord', () => {
   }
   assert.match(guide.markdown(), /\/rang/);
 });
+
+test('grades du staff : niveaux et accès', () => {
+  const { staffRoles, isStaffMember, config } = require('../src/shared');
+  const { Collection, PermissionsBitField } = require('discord.js');
+  const defs = Object.fromEntries(config.roles.filter((d) => d.staff).map((d) => [d.staff, d]));
+  assert.deepEqual(Object.keys(defs).sort(), ['helper', 'mod', 'senior']);
+  const roles = new Collection(Object.values(defs).map((d) => [d.key, { id: d.key, name: d.name }]));
+  const guild = { ownerId: 'owner', roles: { cache: roles } };
+  assert.equal(staffRoles(guild).length, 3);
+  assert.deepEqual(staffRoles(guild, 'mod').map((r) => r.id).sort(), ['mod', 'senior_mod']);
+  const member = (roleIds) => ({ id: 'x', guild, permissions: new PermissionsBitField(0n), roles: { cache: new Collection(roleIds.map((id) => [id, {}])) } });
+  assert.equal(isStaffMember(member(['helper'])), true);
+  assert.equal(isStaffMember(member(['helper']), 'mod'), false);
+  assert.equal(isStaffMember(member([])), false);
+  // Les Sentinelles ne peuvent ni expulser ni bannir, seuls les Gardiens bannissent
+  assert.ok(!defs.helper.permissions.includes('KickMembers') && !defs.helper.permissions.includes('BanMembers'));
+  assert.ok(!defs.mod.permissions.includes('BanMembers') && defs.senior.permissions.includes('BanMembers'));
+});
