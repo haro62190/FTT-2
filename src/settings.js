@@ -35,6 +35,7 @@ const DEFAULTS = {
     ...config.security,
   },
   economy: { enabled: true, daily: 100, voicePerMinute: 2 },
+  seasons: { enabled: true, rewards: [3000, 2000, 1000] },
   voiceXp: { enabled: true, xpPerMinute: 10 },
   hallOfFame: { emoji: '⚔️', threshold: 5 },
   verification: { captcha: true },

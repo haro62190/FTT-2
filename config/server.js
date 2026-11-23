@@ -38,6 +38,8 @@ module.exports = {
     { key: 'streamer_role', name: '🎥 Streamer', color: 0xff4d4d, hoist: true },
     { key: 'vip', name: '🩸 VIP', formerNames: ['💎 VIP'], color: 0xe60000, hoist: true },
     { key: 'sub', name: '⭐ Abonné Twitch', color: 0xd92b2b, hoist: true },
+    // Donné chaque mois au premier de la saison (/saison)
+    { key: 'champion', name: '🏆 Champion du mois', color: 0xffc400, hoist: true },
     // Couleurs de pseudo achetables dans la boutique (au-dessus des grades pour que la couleur s'affiche)
     { key: 'color_sakura', name: '🌸 Sakura', color: 0xff8fb3 },
     { key: 'color_blood', name: '🩸 Sang', color: 0xb00000 },
@@ -139,6 +141,7 @@ module.exports = {
         { key: 'mod_chat', name: '🛡️┃staff', formerNames: ['🛡️・mod-chat'], type: 'text', access: 'staff' },
         { key: 'security_alerts', name: '🚨┃alertes-sécurité', formerNames: ['🚨・alertes-sécurité'], type: 'text', access: 'staff', topic: 'Anti-raid / anti-nuke : alertes importantes.' },
         { key: 'mod_logs', name: '📋┃logs', formerNames: ['📋・logs'], type: 'text', access: 'staff', topic: 'Kicks, bans, mutes, rôles, pseudos, salons, messages supprimés/modifiés…' },
+        { key: 'db_backups', name: '💾┃sauvegardes', type: 'text', access: 'staff', topic: 'Copie quotidienne de la base du bot (à garder !).' },
         { key: 'voice_logs', name: '🔊┃logs-vocal', formerNames: ['🔊・logs-vocal'], type: 'text', access: 'staff', topic: 'Arrivées, départs et déconnexions des vocaux.' },
       ],
     },

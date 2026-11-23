@@ -487,5 +487,146 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
       const errors = lines.filter((l) => l.startsWith('⚠'));
       return errors.length ? `❌ ${errors.join(' · ')}` : `✅ ${words.length} mot(s) ajouté(s), règles à jour.`;
     },
+
+    // ───────────────────────── Graphiques ─────────────────────────
+    '/graphiques'(guild, sess, query) {
+      const { lineChart, dataTable, fmt } = require('./charts');
+      const days = [7, 30, 90].includes(Number(query.get('jours'))) ? Number(query.get('jours')) : 30;
+      const pts = require('./history').series(days);
+      const last = (k) => [...pts].reverse().find((p) => typeof p[k] === 'number')?.[k];
+      const first = (k) => pts.find((p) => typeof p[k] === 'number')?.[k];
+      const sum = (k) => pts.reduce((n, p) => n + (p[k] ?? 0), 0);
+      const delta = (k) => {
+        const a = first(k);
+        const b = last(k);
+        if (a === undefined || b === undefined) return '';
+        const d = b - a;
+        return `<span class="muted">${d >= 0 ? '+' : ''}${fmt(d)} sur ${days} j</span>`;
+      };
+      const tile = (v, label, extra = '') => `<div class="stat"><b>${v}</b><span>${label}</span>${extra ? `<br>${extra}` : ''}</div>`;
+      const chart = (title, series, opts = {}) =>
+        `<div class="card"><h3>${title}</h3>${lineChart({ points: pts, series, ...opts })}${dataTable(pts, series)}</div>`;
+      const range = [7, 30, 90].map((d) => `<a class="btn ${d === days ? '' : 'ghost'}" style="margin:0 4px 0 0" href="/graphiques?jours=${d}">${d} jours</a>`).join('');
+      return {
+        title: '📈 Graphiques',
+        body: `<div style="margin-bottom:14px">${range}</div>
+        <div class="grid">${tile(fmt(last('discord')), '👥 membres', delta('discord'))}${tile(fmt(last('twitch')), '🟣 followers Twitch', delta('twitch'))}${tile(fmt(last('tiktok')), '📱 abonnés TikTok', delta('tiktok'))}${tile(fmt(sum('messages')), `💬 messages (${days} j)`)}${tile(fmt(Math.round(sum('voice') / 60)), `🎙️ heures de vocal (${days} j)`)}</div>
+        <p class="muted">Survole un graphique pour voir la valeur de chaque jour. Les données s'accumulent depuis l'installation de cette version.</p>
+        ${chart('👥 Membres du serveur', [{ key: 'discord', label: 'Membres' }], { zeroBased: false })}
+        ${chart('🟣 Followers Twitch', [{ key: 'twitch', label: 'Followers' }], { zeroBased: false })}
+        ${chart('📱 Abonnés TikTok', [{ key: 'tiktok', label: 'Abonnés' }], { zeroBased: false })}
+        ${chart('💬 Messages par jour', [{ key: 'messages', label: 'Messages' }])}
+        ${chart('🎙️ Minutes de vocal par jour', [{ key: 'voice', label: 'Minutes' }], { unit: ' min' })}
+        ${chart('🚪 Arrivées et départs par jour', [{ key: 'joins', label: 'Arrivées' }, { key: 'leaves', label: 'Départs' }])}`,
+      };
+    },
+
+    // ───────────────────────── Saisons ─────────────────────────
+    async '/saisons'(guild, sess) {
+      const seasons = require('./seasons');
+      const cur = seasons.top(25);
+      const hist = db.seasonsHistory ?? [];
+      await fetchMembers(guild, [...cur.map((p) => p.userId), ...hist.flatMap((h) => h.top.slice(0, 3).map((p) => p.userId))]);
+      const s = settings.get('seasons');
+      const medals = ['🥇', '🥈', '🥉'];
+      return {
+        title: '🏆 Saisons du mois',
+        body: `<form method="post" class="card">${csrf(sess)}${hidden('action', 'settings')}
+        ${checkbox('enabled', s.enabled !== false, 'Saisons activées (podium le 1er du mois, rôle 🏆 Champion du mois)')}
+        <div class="row">${[0, 1, 2].map((n) => `<div><label>Récompense ${medals[n]} (両)</label><input type="number" name="r${n}" value="${esc(s.rewards?.[n] ?? 0)}" min="0" max="1000000"></div>`).join('')}</div>
+        <button>Enregistrer</button></form>
+        <div class="card"><h3>Saison de ${esc(seasons.monthName(db.season?.month ?? new Date().toISOString().slice(0, 7)))}</h3><table><tr><th>#</th><th>Membre</th><th>XP du mois</th></tr>
+        ${cur.map((p, n) => `<tr><td>${medals[n] ?? n + 1}</td><td>${memberName(guild, p.userId)}</td><td>${p.xp.toLocaleString('fr-FR')}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Personne n\'a encore gagné d\'XP ce mois-ci.</td></tr>'}</table></div>
+        <div class="card"><h3>Saisons passées</h3><table><tr><th>Mois</th><th>Podium</th></tr>
+        ${hist.map((h) => `<tr><td>${esc(seasons.monthName(h.month))}</td><td>${h.top.slice(0, 3).map((p, n) => `${medals[n]} ${memberName(guild, p.userId)} (${p.xp.toLocaleString('fr-FR')} XP)`).join('<br>')}</td></tr>`).join('') || '<tr><td colspan="2" class="muted">Aucune saison terminée pour l\'instant.</td></tr>'}</table></div>`,
+      };
+    },
+    async 'POST /saisons'(guild, sess, body) {
+      settings.set('seasons.enabled', body.has('enabled'));
+      settings.set('seasons.rewards', [0, 1, 2].map((n) => int(body.get(`r${n}`), 0, 1000000) ?? 0));
+      return '✅ Saisons enregistrées.';
+    },
+
+    // ───────────────────────── Commandes personnalisées ─────────────────────────
+    '/commandes'(guild, sess) {
+      const custom = require('./custom');
+      const list = Object.entries(db.customCommands ?? {}).sort();
+      return {
+        title: '⌨️ Commandes personnalisées',
+        body: `<form method="post" class="card">${csrf(sess)}${hidden('action', 'save')}<h3>Créer / modifier</h3>
+        <div class="row"><div><label>Nom (sans le préfixe)</label><input type="text" name="name" maxlength="32" placeholder="discord" required></div>
+        <div><label>Préfixe</label><input type="text" name="prefix" value="${esc(custom.PREFIX())}" maxlength="3"></div></div>
+        <label>Réponse — <code>{user}</code> = la personne, <code>{server}</code> = le serveur</label><textarea name="response" maxlength="2000" required placeholder="Rejoins le Discord : https://discord.gg/…"></textarea>
+        ${checkbox('embed', false, 'Réponse dans un encadré')}<button>Enregistrer</button></form>
+        <div class="card"><table><tr><th>Commande</th><th>Réponse</th><th>Utilisations</th><th></th></tr>
+        ${list.map(([n, c]) => `<tr><td><code>${esc(custom.PREFIX())}${esc(n)}</code></td><td>${esc(c.response.slice(0, 200))}</td><td>${c.uses ?? 0}</td>
+          <td><form method="post">${csrf(sess)}${hidden('action', 'delete')}${hidden('name', n)}<button class="ghost" style="margin:0">Supprimer</button></form></td></tr>`).join('') || '<tr><td colspan="4" class="muted">Aucune commande. Exemples : !discord, !planning, !reseaux, !setup.</td></tr>'}</table></div>`,
+      };
+    },
+    async 'POST /commandes'(guild, sess, body) {
+      const custom = require('./custom');
+      if (body.get('action') === 'delete') return custom.deleteCommand(body.get('name')) ? '🗑️ Commande supprimée.' : '❌ Introuvable.';
+      const prefix = String(body.get('prefix') ?? '').trim();
+      if (prefix && prefix.length <= 3 && !/\s/.test(prefix)) {
+        db.customPrefix = prefix;
+        save();
+      }
+      const n = custom.setCommand(body.get('name'), String(body.get('response') ?? ''), body.has('embed'));
+      return n ? `✅ ${custom.PREFIX()}${n} enregistrée.` : '❌ Nom ou réponse invalide.';
+    },
+
+    // ───────────────────────── Menus de rôles ─────────────────────────
+    '/menus-roles'(guild, sess) {
+      const custom = require('./custom');
+      const roles = guild.roles.cache.filter((r) => custom.safeRole(r)).sort((a, b) => b.position - a.position);
+      const list = Object.entries(db.roleMenus ?? {});
+      return {
+        title: '🎭 Menus de rôles',
+        body: `<form method="post" class="card">${csrf(sess)}${hidden('action', 'create')}<h3>Nouveau menu</h3>
+        <p class="muted">Un message avec des boutons : chacun prend ou enlève lui-même les rôles choisis (jeux, plateformes, régions…). Seuls les rôles sans permission de modération et sous le rôle du bot sont proposés.</p>
+        <div class="row"><div><label>Salon</label>${channelSelect(guild, 'channel', findChannel(guild, 'roles')?.id)}</div><div><label>Titre</label><input type="text" name="title" maxlength="200" value="🎮 Tes jeux" required></div></div>
+        <label>Description</label><textarea name="description" maxlength="2000" placeholder="Choisis les jeux auxquels tu joues pour trouver des coéquipiers !"></textarea>
+        <label>Rôles (25 max) et emoji facultatif</label>
+        <table>${roles.map((r) => `<tr><td style="width:32px"><input type="checkbox" name="role" value="${r.id}"></td><td>${esc(r.name)}</td><td style="width:110px"><input type="text" name="emoji_${r.id}" maxlength="8" placeholder="emoji"></td></tr>`).join('') || '<tr><td class="muted">Aucun rôle utilisable : crée d\'abord des rôles (ex : « 🎮 Valorant ») dans Discord.</td></tr>'}</table>
+        ${checkbox('exclusive', false, 'Un seul rôle à la fois dans ce menu')}<button>Publier le menu</button></form>
+        <div class="card"><h3>Menus publiés</h3><table><tr><th>Titre</th><th>Salon</th><th>Rôles</th><th></th></tr>
+        ${list.map(([id, m]) => `<tr><td>${esc(m.title)}</td><td>#${esc(guild.channels.cache.get(m.channelId)?.name ?? '?')}</td><td>${m.roles.map((r) => `${esc(r.emoji ?? '')} ${esc(guild.roles.cache.get(r.roleId)?.name ?? '?')}`).join('<br>')}</td>
+          <td><form method="post">${csrf(sess)}${hidden('action', 'delete')}${hidden('id', id)}<button class="ghost" style="margin:0">Supprimer</button></form></td></tr>`).join('') || '<tr><td colspan="4" class="muted">Aucun menu.</td></tr>'}</table></div>`,
+      };
+    },
+    async 'POST /menus-roles'(guild, sess, body) {
+      const custom = require('./custom');
+      if (body.get('action') === 'delete') return (await custom.deleteMenu(guild, body.get('id'))) ? '🗑️ Menu supprimé.' : '❌ Introuvable.';
+      const roles = body.getAll('role').map((roleId) => ({ roleId, emoji: String(body.get(`emoji_${roleId}`) ?? '').trim().slice(0, 8) || null }));
+      if (!roles.length) return '❌ Choisis au moins un rôle.';
+      await custom.publishMenu(guild, { channelId: body.get('channel'), title: body.get('title') || 'Rôles', description: body.get('description'), roles, exclusive: body.has('exclusive') });
+      return '✅ Menu publié.';
+    },
+
+    // ───────────────────────── État du bot ─────────────────────────
+    '/statut'(guild, sess) {
+      const s = require('./health').status(guild.client);
+      const up = Math.floor(s.uptime / 60000);
+      return {
+        title: '🩺 État du bot',
+        body: `<div class="grid">
+          <div class="stat"><b>${s.ok ? '✅' : '❌'}</b><span>${s.ok ? 'connecté à Discord' : 'déconnecté'}</span></div>
+          <div class="stat"><b>${up >= 1440 ? `${Math.floor(up / 1440)} j` : up >= 60 ? `${Math.floor(up / 60)} h` : `${up} min`}</b><span>en marche</span></div>
+          <div class="stat"><b>${s.ping} ms</b><span>latence</span></div>
+          <div class="stat"><b>${s.memoryMb} Mo</b><span>mémoire</span></div></div>
+        <div class="card" style="margin-top:16px"><table>
+          <tr><td>Version</td><td><code>${esc(s.version.sha)}</code> ${esc(s.version.subject.slice(0, 120))}${s.version.date ? ` <span class="muted">(${fmtDate(new Date(s.version.date))})</span>` : ''}</td></tr>
+          <tr><td>Node.js</td><td>${esc(s.node)}</td></tr>
+          <tr><td>Base de données</td><td>${s.dbKb} Ko</td></tr>
+          <tr><td>Dernière sauvegarde du serveur</td><td>${s.lastBackup ? fmtDate(s.lastBackup) : 'jamais'}</td></tr>
+          <tr><td>Dernière copie de la base (💾┃sauvegardes)</td><td>${s.lastOffsite ? fmtDate(s.lastOffsite) : 'jamais'}</td></tr></table></div>
+        <form method="post" class="card">${csrf(sess)}<h3>📦 Copie de la base</h3><p class="muted">Envoie tout de suite une copie compressée de la base dans 💾┃sauvegardes.</p><button class="ghost">Envoyer une copie</button></form>
+        <div class="card"><h3>Surveillance</h3><p class="muted">Pour être prévenu par mail si le bot tombe : crée une sonde gratuite sur UptimeRobot vers <code>${esc((process.env.DASHBOARD_URL || 'http://localhost:3000').replace(/\/$/, ''))}/health</code> (le site doit être accessible depuis Internet).</p></div>`,
+      };
+    },
+    async 'POST /statut'(guild) {
+      const name = await require('./backup').offsiteBackup(guild, { force: true });
+      return name ? `📦 Copie ${name} envoyée.` : '❌ Salon 💾┃sauvegardes introuvable (lance la construction) ou base trop lourde.';
+    },
   };
 };

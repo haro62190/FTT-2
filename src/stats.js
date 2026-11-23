@@ -92,6 +92,8 @@ async function refresh(guild) {
       }
     }
     s.updatedAt = Date.now();
+    const history = require('./history');
+    for (const k of ['discord', 'twitch', 'tiktok']) history.gauge(k, s[k]);
     save();
     return s;
   } finally {

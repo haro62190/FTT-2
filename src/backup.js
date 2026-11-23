@@ -6,7 +6,7 @@
  */
 const { AttachmentBuilder, ChannelType, EmbedBuilder, MessageFlags, OverwriteType, PermissionFlagsBits: P, SlashCommandBuilder } = require('discord.js');
 const { BRAND_COLOR } = require('./shared');
-const { db, sql } = require('./store');
+const { db, sql, save } = require('./store');
 const settings = require('./settings');
 const { confirm, progress } = require('./confirm');
 
@@ -94,6 +94,42 @@ function autoBackup(guild) {
   const old = sql.prepare("SELECT id FROM backups WHERE created_by = 'auto' ORDER BY id DESC LIMIT -1 OFFSET ?").all(AUTO_KEEP);
   for (const { id } of old) deleteBackup(id);
   console.log('💾 Sauvegarde automatique du serveur effectuée');
+}
+
+/**
+ * Copie de la base hors du serveur : chaque nuit, data/ronin.db (XP, ryō, tickets, réglages, sauvegardes)
+ * est compressée et envoyée dans 💾┃sauvegardes (salon staff). Si le VPS disparaît, rien n'est perdu.
+ */
+async function offsiteBackup(guild, { force = false } = {}) {
+  const fs = require('fs');
+  const path = require('path');
+  const zlib = require('zlib');
+  const { AttachmentBuilder: Attachment } = require('discord.js');
+  const { findChannel } = require('./shared');
+  if (!force && db.lastOffsiteBackup && Date.now() - db.lastOffsiteBackup < 23 * 3600_000) return null;
+  const channel = findChannel(guild, 'db_backups');
+  if (!channel) return null;
+  const tmp = path.join(require('./store').DIR, `copie-${Date.now()}.db`);
+  try {
+    // Copie cohérente de la base même pendant que le bot écrit
+    sql.exec(`VACUUM INTO '${tmp.replaceAll("'", "''")}'`);
+    const gz = zlib.gzipSync(fs.readFileSync(tmp), { level: 9 });
+    const name = `ronin-${new Date().toISOString().slice(0, 10)}.db.gz`;
+    if (gz.length > 9.5 * 1024 * 1024) {
+      await channel.send(`⚠️ La base fait ${(gz.length / 1024 / 1024).toFixed(1)} Mo compressée : trop lourde pour Discord. Copie-la depuis le VPS : \`scp root@IP:/root/bot/data/ronin.db .\``);
+      return null;
+    }
+    await channel.send({
+      content: `📦 Copie de la base du **${new Date().toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })}** (${(gz.length / 1024).toFixed(0)} Ko).\n_Pour restaurer : décompresse le fichier (7-Zip) en \`ronin.db\` et remplace \`data/ronin.db\` bot arrêté._`,
+      files: [new Attachment(gz, { name })],
+    });
+    db.lastOffsiteBackup = Date.now();
+    save();
+    console.log('📦 Copie de la base envoyée dans le salon des sauvegardes');
+    return name;
+  } finally {
+    fs.rmSync(tmp, { force: true });
+  }
 }
 
 /** Ce que la restauration va faire (pour la confirmation). */
@@ -189,6 +225,7 @@ const commands = [
       .setDefaultMemberPermissions(P.Administrator)
       .addSubcommand((s) => s.setName('creer').setDescription('Créer une sauvegarde').addStringOption((o) => o.setName('nom').setDescription('Nom de la sauvegarde').setMaxLength(50)))
       .addSubcommand((s) => s.setName('liste').setDescription('Voir les sauvegardes'))
+      .addSubcommand((s) => s.setName('copie-base').setDescription('Envoyer maintenant une copie de la base dans 💾┃sauvegardes'))
       .addSubcommand((s) => s.setName('exporter').setDescription('Télécharger une sauvegarde (fichier .json)').addIntegerOption((o) => o.setName('id').setDescription('Numéro').setRequired(true)))
       .addSubcommand((s) => s.setName('supprimer').setDescription('Supprimer une sauvegarde').addIntegerOption((o) => o.setName('id').setDescription('Numéro').setRequired(true))),
     async run(i) {
@@ -200,6 +237,11 @@ const commands = [
         const name = i.options.getString('nom') || `manuel-${new Date().toISOString().slice(0, 16).replace('T', '-')}`;
         const b = createBackup(i.guild, name, i.user.id);
         return i.editReply(`💾 Sauvegarde **#${b.id}** « ${name} » créée : ${b.roles} rôles, ${b.channels} salons/catégories, réglages du bot.`);
+      }
+      if (sub === 'copie-base') {
+        await i.deferReply({ flags: MessageFlags.Ephemeral });
+        const name = await offsiteBackup(i.guild, { force: true }).catch((e) => `❌ ${e.message}`);
+        return i.editReply(name ? (name.startsWith('❌') ? name : `📦 Copie \`${name}\` envoyée.`) : 'Salon 💾┃sauvegardes introuvable (lance /setup) ou base trop lourde.');
       }
       if (sub === 'liste') {
         const list = listBackups().slice(0, 20);
@@ -274,4 +316,4 @@ const commands = [
   },
 ];
 
-module.exports = { isValidBackup, snapshot, createBackup, listBackups, getBackup, deleteBackup, restore, plan, autoBackup, commands };
+module.exports = { offsiteBackup, isValidBackup, snapshot, createBackup, listBackups, getBackup, deleteBackup, restore, plan, autoBackup, commands };

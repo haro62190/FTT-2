@@ -75,16 +75,20 @@ function readBody(req) {
 const NAV = [
   ['#', 'Serveur'],
   ['/', '🏯 Accueil'],
+  ['/graphiques', '📈 Graphiques'],
   ['/serveur', '🏗️ Construction'],
   ['/logo', '🖼️ Logo & identité'],
   ['#', 'Communauté'],
   ['/bienvenue', '🏮 Bienvenue & départ'],
   ['/niveaux', '⚔️ Niveaux & grades'],
+  ['/saisons', '🏆 Saisons du mois'],
   ['/economie', '💰 Économie & boutique'],
   ['/giveaways', '🎁 Giveaways'],
   ['/evenements', '🎌 Événements'],
   ['/anniversaires', '🎂 Anniversaires'],
   ['/suggestions', '💡 Suggestions'],
+  ['/commandes', '⌨️ Commandes perso'],
+  ['/menus-roles', '🎭 Menus de rôles'],
   ['/communaute', '🏯 Hall of Fame & vocal'],
   ['#', 'Stream'],
   ['/notifications', '📡 Twitch & TikTok'],
@@ -94,6 +98,7 @@ const NAV = [
   ['/vocaux', '🔊 Vocaux temporaires'],
   ['#', 'Sécurité'],
   ['/moderation', '🛡️ Modération & raid'],
+  ['/statut', '🩺 État du bot'],
   ['/automod', '🤖 AutoMod'],
   ['/avertissements', '⚠️ Avertissements'],
   ['/tickets', '🎫 Tickets'],
@@ -126,7 +131,7 @@ button:hover,.btn:hover{background:var(--red2)}button[disabled]{opacity:.4;curso
 table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted);font-weight:500;font-size:13px}
 .flash{background:#0f2a17;border:1px solid #1f5a33;color:#bff3cf;padding:10px 14px;border-radius:8px;margin-bottom:16px}
 .flash.err{background:#2a0f0f;border-color:#5a1f1f;color:#f3bfbf}.muted{color:var(--muted)}.row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1;min-width:140px}
-code{background:#1c1c1f;padding:1px 5px;border-radius:4px}form.inline{display:inline}
+code{background:#1c1c1f;padding:1px 5px;border-radius:4px}.legend{display:flex;gap:16px;margin:0 0 6px;font-size:13px;color:#c3c2b7}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}details{margin-top:8px}details table{font-size:13px}form.inline{display:inline}
 @media(max-width:760px){nav .sec{display:none}.wrap{flex-direction:column}nav{width:auto;border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;gap:4px}nav a{white-space:nowrap}main{padding:16px}}
 </style></head><body>
 <header><img src="/logo.png" alt="" style="width:36px;height:36px;border-radius:50%"><h1>剣聖 <span>KENSEI</span></h1><div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
@@ -468,6 +473,12 @@ function start(client, guildId) {
       }
       const guild = client.guilds.cache.get(guildId);
 
+      if (url.pathname === '/health') {
+        // Pour un service de surveillance (UptimeRobot…) : aucune donnée sensible
+        const s = require('./health').status(client);
+        res.writeHead(s.ok ? 200 : 503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        return res.end(JSON.stringify({ ok: s.ok, uptime: Math.round(s.uptime / 1000), ping: s.ping, version: s.version.sha }));
+      }
       if (url.pathname === '/logo.png') {
         const file = require('./shared').iconPath();
         if (!file) return send(res, 404, '');

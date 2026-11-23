@@ -17,6 +17,7 @@ async function tick(guild) {
     for (const member of humans.values()) {
       if (member.voice.selfDeaf || member.voice.serverDeaf) continue;
       economy.onVoiceMinute(member.id);
+      require('./history').bump('voice');
       const lvl = levels.addXp(member.id, xp);
       if (lvl !== null) {
         const rewards = await levels.applyRewards(member, lvl);

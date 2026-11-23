@@ -27,8 +27,10 @@ function onMessage(userId) {
 
   const before = levelInfo(db.levels[userId]?.xp ?? 0).level;
   const entry = (db.levels[userId] ??= { xp: 0, messages: 0 });
-  entry.xp += 15 + Math.floor(Math.random() * 11);
+  const gain = 15 + Math.floor(Math.random() * 11);
+  entry.xp += gain;
   entry.messages++;
+  require('./seasons').add(userId, gain);
   save();
   const after = levelInfo(entry.xp).level;
   return after > before ? after : null;
@@ -40,6 +42,7 @@ function addXp(userId, amount) {
   const entry = (db.levels[userId] ??= { xp: 0, messages: 0 });
   entry.xp += amount;
   entry.voiceMinutes = (entry.voiceMinutes ?? 0) + 1;
+  require('./seasons').add(userId, amount);
   save();
   const after = levelInfo(entry.xp).level;
   return after > before ? after : null;

@@ -7,6 +7,7 @@ const {
   EmbedBuilder,
   MessageFlags,
   ChannelType,
+  AttachmentBuilder,
 } = require('discord.js');
 const { BRAND_COLOR, findChannel, findRole } = require('./shared');
 const { db, save } = require('./store');
@@ -150,6 +151,29 @@ const commands = [
     async run(i) {
       const user = i.options.getUser('membre') ?? i.user;
       const r = levels.rankOf(user.id);
+      // Carte en image ; si le rendu échoue (polices…), on retombe sur le message texte
+      try {
+        await i.deferReply();
+        const member = await i.guild.members.fetch(user.id).catch(() => null);
+        const grade = member && levels.rewardList(i.guild).filter((x) => member.roles.cache.has(x.role.id)).at(-1)?.role.name;
+        const png = await require('./rankcard').renderRankCard({
+          username: member?.displayName ?? user.username,
+          avatarUrl: user.displayAvatarURL({ extension: 'png', size: 256 }),
+          level: r.level,
+          xp: r.xp,
+          needed: r.needed,
+          rank: r.rank,
+          totalXp: r.totalXp,
+          messages: r.messages,
+          voiceMinutes: db.levels[user.id]?.voiceMinutes ?? 0,
+          ryo: db.economy?.[user.id]?.bal ?? 0,
+          grade: grade ?? (member ? '⚔️ Ronin' : 'Ronin'),
+          seasonRank: require('./seasons').rankOf(user.id),
+        });
+        return i.editReply({ files: [new AttachmentBuilder(png, { name: 'rang.png' })] });
+      } catch (err) {
+        console.error('Carte de rang :', err.message);
+      }
       const filled = Math.round((r.xp / r.needed) * 20);
       const embed = new EmbedBuilder()
         .setColor(BRAND_COLOR)
@@ -158,7 +182,7 @@ const commands = [
           `**Niveau ${r.level}** · Rang ${r.rank ? `#${r.rank}` : '—'} · ${r.messages} messages\n` +
             `\`${'█'.repeat(filled)}${'░'.repeat(20 - filled)}\` ${r.xp} / ${r.needed} XP`,
         );
-      return i.reply({ embeds: [embed] });
+      return i.deferred ? i.editReply({ embeds: [embed] }) : i.reply({ embeds: [embed] });
     },
   },
   {
@@ -386,6 +410,9 @@ commands.push(
   ...require('./giveaway').commands,
   ...require('./birthdays').commands,
   ...require('./automod').commands,
+  ...require('./health').commands,
+  ...require('./seasons').commands,
+  ...require('./custom').commands,
 );
 
 // /help = /aide

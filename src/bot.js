@@ -18,6 +18,8 @@ const tickets = require('./tickets');
 const economy = require('./economy');
 const giveaway = require('./giveaway');
 const community = require('./community');
+const health = require('./health');
+const custom = require('./custom');
 const {
   config,
   BRAND_COLOR,
@@ -47,6 +49,8 @@ const client = new Client({
   ],
   partials: [Partials.Message, Partials.GuildMember, Partials.Reaction, Partials.User],
 });
+
+health.installErrorHandlers(client);
 
 const twitch =
   TWITCH_CHANNEL && TWITCH_CLIENT_ID && TWITCH_CLIENT_SECRET ? new TwitchClient(TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET) : null;
@@ -84,6 +88,7 @@ function fillTemplate(text, member, rules) {
 }
 
 client.on(Events.GuildMemberAdd, async (member) => {
+  if (member.guild.id === GUILD_ID) require('./history').bump('joins');
   if (security.lockdown.active) return; // pas de bienvenue pendant un raid
   if (member.guild.id !== GUILD_ID) return;
   const welcome = findChannel(member.guild, 'welcome');
@@ -114,6 +119,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
 });
 
 client.on(Events.GuildMemberRemove, async (member) => {
+  if (member.guild.id === GUILD_ID) require('./history').bump('leaves');
   if (member.guild.id !== GUILD_ID) return;
   const channel = findChannel(member.guild, 'welcome');
   if (channel && settings.get('goodbye.enabled') && !security.lockdown.active) {
@@ -162,6 +168,7 @@ client.on(Events.MessageDelete, async (message) => {
 client.on(Events.MessageCreate, async (message) => {
   if (!message.guild || message.guild.id !== GUILD_ID || message.author.bot) return;
   economy.onMessage(message.author.id);
+  require('./history').bump('messages');
   if (!settings.get('levels.enabled')) return;
   const newLevel = levels.onMessage(message.author.id);
   if (newLevel !== null) {
@@ -199,6 +206,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (await tickets.handleInteraction(interaction)) return;
       if (await giveaway.handleInteraction(interaction)) return;
       if (await community.handleInteraction(interaction)) return;
+      if (await custom.handleInteraction(interaction)) return;
     } catch (err) {
       const module = id.startsWith('ticket:') ? 'Ticket' : id.startsWith('tv:') ? 'Vocal temporaire' : 'Interaction';
       console.error(`${module} :`, err);
@@ -256,6 +264,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 logs.register(client, GUILD_ID);
 security.register(client, GUILD_ID);
 community.register(client, GUILD_ID);
+custom.register(client, GUILD_ID);
 
 /** Kensei est réservé aux Ronins : il quitte tout autre serveur et prévient le staff. */
 async function leaveForeignGuild(other) {
@@ -287,8 +296,10 @@ client.once(Events.ClientReady, async () => {
   await commands.register(guild).catch((err) => console.error('❌ Enregistrement des commandes / :', err.message));
   require('./twitchlive').start(guild, twitch);
   require('./temproles').start(guild);
+  await health.start(client, guild);
   require('./voicexp').start(guild);
   require('./birthdays').start(guild);
+  require('./seasons').start(guild);
   giveaway.start(client);
   startTikTokWatcher(guild);
   require('./stats').start(guild, twitch).catch((e) => console.error('Stats :', e.message));
@@ -299,7 +310,7 @@ client.once(Events.ClientReady, async () => {
 
   // Sauvegarde automatique quotidienne du serveur
   const backup = require('./backup');
-  const auto = () => guild.channels.fetch().then(() => backup.autoBackup(guild)).catch((e) => console.error('Sauvegarde auto :', e.message));
+  const auto = () => guild.channels.fetch().then(() => { backup.autoBackup(guild); return backup.offsiteBackup(guild); }).catch((e) => console.error('Sauvegarde auto :', e.message));
   auto();
   setInterval(auto, 6 * 3600_000);
 });

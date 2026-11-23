@@ -19,7 +19,8 @@ try {
 }
 process.emitWarning = emitWarning;
 
-const DIR = path.join(__dirname, '..', 'data');
+// RONIN_DATA_DIR : dossier de données différent (utilisé par les tests automatiques)
+const DIR = process.env.RONIN_DATA_DIR || path.join(__dirname, '..', 'data');
 fs.mkdirSync(DIR, { recursive: true });
 const sql = new DatabaseSync(path.join(DIR, 'ronin.db'));
 sql.exec(`
@@ -110,4 +111,4 @@ for (const sig of ['SIGINT', 'SIGTERM']) {
   });
 }
 
-module.exports = { db, save, flush, sql };
+module.exports = { db, save, flush, sql, DIR };
