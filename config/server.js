@@ -79,6 +79,7 @@ module.exports = {
       channels: [
         { key: 'welcome', name: '🏮┃bienvenue', formerNames: ['👋・bienvenue'], type: 'text', access: 'public-readonly', topic: 'Les nouveaux arrivants sont accueillis ici !' },
         { key: 'rules', name: '⛩️┃règlement', formerNames: ['📜・règlement'], type: 'text', access: 'public-readonly', topic: 'Lis le règlement et clique sur le bouton pour accéder au serveur.' },
+        { key: 'guide', name: '📖┃guide', type: 'text', access: 'public-readonly', topic: 'Le guide du serveur et de toutes les commandes (/guide pour le relire).' },
         { key: 'announcements', name: '📡┃annonces', formerNames: ['📢・annonces'], type: 'announcement', access: 'members-readonly', topic: 'Les annonces importantes de la chaîne.' },
         { key: 'live', name: '🔴┃en-live', formerNames: ['🔴・en-live'], type: 'text', access: 'members-readonly', topic: 'Alerte automatique quand je suis en live (Twitch / TikTok).' },
         { key: 'tiktok', name: '📱┃tiktok', formerNames: ['📱・tiktok'], type: 'text', access: 'members-readonly', topic: 'Mes nouvelles vidéos TikTok, postées automatiquement.' },
@@ -139,6 +140,7 @@ module.exports = {
       formerNames: ['🛡️ MODÉRATION'],
       channels: [
         { key: 'mod_chat', name: '🛡️┃staff', formerNames: ['🛡️・mod-chat'], type: 'text', access: 'staff' },
+        { key: 'guide_staff', name: '📘┃guide-staff', type: 'text', access: 'staff', topic: 'Les commandes et réflexes du staff.' },
         { key: 'security_alerts', name: '🚨┃alertes-sécurité', formerNames: ['🚨・alertes-sécurité'], type: 'text', access: 'staff', topic: 'Anti-raid / anti-nuke : alertes importantes.' },
         { key: 'mod_logs', name: '📋┃logs', formerNames: ['📋・logs'], type: 'text', access: 'staff', topic: 'Kicks, bans, mutes, rôles, pseudos, salons, messages supprimés/modifiés…' },
         { key: 'db_backups', name: '💾┃sauvegardes', type: 'text', access: 'staff', topic: 'Copie quotidienne de la base du bot (à garder !).' },

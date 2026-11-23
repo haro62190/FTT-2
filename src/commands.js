@@ -413,6 +413,7 @@ commands.push(
   ...require('./health').commands,
   ...require('./seasons').commands,
   ...require('./custom').commands,
+  ...require('./guide').commands,
 );
 
 // /help = /aide

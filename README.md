@@ -232,6 +232,15 @@ Laisse cette fenêtre ouverte et va sur <http://localhost:3000>. Si le bot tourn
 
 > Pour l'ouvrir sans tunnel (depuis ton téléphone par exemple), il faut un nom de domaine et HTTPS : mets `DASHBOARD_HOST=127.0.0.1`, `DASHBOARD_URL=https://ton-domaine` et place devant un reverse proxy comme [Caddy](https://caddyserver.com) (certificat HTTPS gratuit). Ne l'expose jamais en HTTP simple.
 
+## 📖 Guide des commandes
+
+- **📖┃guide** (visible par tous) : comment débuter, XP, ryō, saisons, tout ce qu'on peut faire sans commande, et la liste des commandes des membres.
+- **📘┃guide-staff** : réflexes du staff et commandes de modération / administration.
+- **`/guide`** (et `/guide staff:True`) : le guide en message privé.
+- **[docs/GUIDE.md](docs/GUIDE.md)** : version écrite.
+
+Les listes sont **générées à partir des commandes du bot** : `/setup` remet le guide à jour, et `npm run guide` régénère `docs/GUIDE.md`.
+
 ## 🩺 Fiabilité
 
 - **Tests automatiques** : `npm test` (et à chaque envoi sur GitHub, onglet *Actions* : ✅ ou ❌). Ils vérifient que toutes les commandes sont valides et que la logique (niveaux, saisons, dates, sauvegardes, économie…) fonctionne.
@@ -369,6 +378,7 @@ src/health.js      santé : battement de cœur, /statut, alertes d'erreurs
 src/seasons.js     saisons mensuelles
 src/rankcard.js    carte de rang en image
 src/custom.js      commandes personnalisées et menus de rôles
+src/guide.js       guide des commandes (salons 📖 / 📘, /guide, docs/GUIDE.md)
 src/history.js     historique quotidien · src/charts.js graphiques SVG
 tests/             tests automatiques (npm test) · .github/workflows/ci.yml
 docs/carte-du-code/  carte interactive du code générée avec Graphify (graphe.html, architecture.html, RAPPORT.md)

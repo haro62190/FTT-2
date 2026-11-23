@@ -218,6 +218,8 @@ async function postMessages(guild, log = console.log) {
   const roles = byKey('roles');
   if (roles) await upsertBotMessage(roles, rolesPayload(), log);
 
+  await require('./guide').post(guild, log);
+
   const tickets = byKey('tickets');
   if (tickets) await upsertBotMessage(tickets, require('./tickets').panelPayload(), log);
 

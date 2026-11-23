@@ -106,3 +106,20 @@ test('le script de mise à jour est valide', () => {
   const { execFileSync } = require('child_process');
   execFileSync('bash', ['-n', require('path').join(__dirname, '..', 'scripts', 'update.sh')]);
 });
+
+test('guide : embeds dans les limites de Discord', () => {
+  const guide = require('../src/guide');
+  for (const audience of ['member', 'staff']) {
+    const list = guide.embeds(null, audience);
+    assert.ok(list.length >= 2, audience);
+    for (const e of list) {
+      const d = e.toJSON();
+      assert.ok((d.description ?? '').length <= 4096);
+      assert.ok((d.fields ?? []).length <= 25);
+      for (const f of d.fields ?? []) assert.ok(f.value.length <= 1024 && f.name.length <= 256);
+      const total = (d.title ?? '').length + (d.description ?? '').length + (d.fields ?? []).reduce((n, f) => n + f.name.length + f.value.length, 0) + (d.footer?.text ?? '').length;
+      assert.ok(total <= 6000, `${audience} : ${total} caractères`);
+    }
+  }
+  assert.match(guide.markdown(), /\/rang/);
+});
