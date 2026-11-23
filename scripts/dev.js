@@ -95,6 +95,8 @@ function checkGitHub() {
 
   const changed = run('git', ['diff', '--name-only', local, remote]).out.split('\n');
   say(`⬇️  Nouveautés sur GitHub (${local.slice(0, 7)} → ${remote.slice(0, 7)}), ${changed.length} fichier(s)`);
+  // package-lock.json est réécrit par npm install (surtout sous Windows) : on reprend celui de GitHub
+  if (run('git', ['diff', '--quiet', '--', 'package-lock.json']).ok === false) run('git', ['checkout', '--', 'package-lock.json']);
   const merge = run('git', ['merge', '--ff-only', 'FETCH_HEAD']);
   if (!merge.ok) {
     return say(
@@ -104,7 +106,7 @@ function checkGitHub() {
   }
   if (changed.some((f) => /^package(-lock)?\.json$/.test(f))) {
     say('📦 npm install…');
-    const r = run('npm', ['install', '--no-audit', '--no-fund']);
+    const r = run('npm', ['install', '--no-audit', '--no-fund', '--no-package-lock']);
     if (!r.ok) say(`⚠️  npm install a échoué :\n${r.out}`);
   }
   if (changed.some((f) => /^(config\/server\.js|src\/(setup|builder|shared)\.js|assets\/)/.test(f))) {
