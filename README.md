@@ -371,6 +371,7 @@ src/rankcard.js    carte de rang en image
 src/custom.js      commandes personnalisées et menus de rôles
 src/history.js     historique quotidien · src/charts.js graphiques SVG
 tests/             tests automatiques (npm test) · .github/workflows/ci.yml
+docs/carte-du-code/  carte interactive du code générée avec Graphify (graphe.html, architecture.html, RAPPORT.md)
 src/dashboard.js   tableau de bord web (serveur, connexion, pages principales)
 src/dashboard-pages.js  pages : construction, logo, économie, giveaways, événements, anniversaires, suggestions, compteurs, musique, vocaux, AutoMod…
 src/settings.js    réglages modifiables à chaud
