@@ -104,18 +104,26 @@ async function ensureRoles(guild, log = console.log) {
     }
   }
 
-  // Hiérarchie : on range nos rôles dans l'ordre de la config, juste sous le rôle du bot
+  // Hiérarchie : on remet NOS rôles dans l'ordre de la config en échangeant leurs places entre eux.
+  // Les autres rôles (intégrations, autres bots, rôles créés à la main) ne bougent jamais.
   await guild.roles.fetch();
-  const top = guild.members.me?.roles.highest.position ?? 0;
   const ours = config.roles.map((d) => findRole(guild, d.key)).filter((r) => r?.editable);
-  const positions = ours.map((r, i) => ({ role: r.id, position: Math.max(1, top - 1 - i) }));
-  const unordered = ours.some((r, i) => i > 0 && r.position >= ours[i - 1].position);
-  if (unordered) {
-    await guild.roles
-      .setPositions(positions)
-      .then(() => log('  ✔ Hiérarchie des rôles rangée'))
-      .catch((e) => log(`  ⚠ Hiérarchie : ${e.message} (range les rôles à la main si besoin)`));
+  const slots = ours.map((r) => r.position).sort((a, b) => b - a); // places occupées, de la plus haute à la plus basse
+  const moves = ours.map((r, i) => ({ role: r, position: slots[i] })).filter((m) => m.role.position !== m.position);
+  if (moves.length) {
+    try {
+      await guild.roles.setPositions(moves.map((m) => ({ role: m.role.id, position: m.position })));
+      log(`  ✔ Hiérarchie des rôles rangée (${moves.length} rôle(s) déplacé(s))`);
+    } catch {
+      // Plan B : un rôle à la fois, en notant ceux que Discord refuse
+      const refused = [];
+      for (const m of moves) await m.role.setPosition(m.position).catch(() => refused.push(m.role.name));
+      if (refused.length) log(`  ⚠ Hiérarchie : Discord refuse de déplacer ${refused.join(', ')} — vérifie que le rôle du bot est tout en haut et qu'il a la permission Administrateur`);
+      else log('  ✔ Hiérarchie des rôles rangée');
+    }
   }
+  const above = config.roles.map((d) => findRole(guild, d.key)).filter((r) => r && !r.editable);
+  if (above.length) log(`  ⚠ Au-dessus du rôle du bot (non modifiables) : ${above.map((r) => r.name).join(', ')} — glisse le rôle du bot tout en haut`);
 }
 
 async function ensureChannels(guild, log = console.log) {
