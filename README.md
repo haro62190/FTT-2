@@ -1,10 +1,10 @@
-# ⚔️ Ronin Builder
+# 剣聖 Kensei — le bot des Ronins
 
 <p align="center"><img src="assets/icon.png" width="220" alt="Les Ronins de haro62190"></p>
 
 ![Les Ronins de haro62190](assets/banner.png)
 
-Bot Discord qui **construit automatiquement** le serveur **Les Ronins de haro62190** (rôles, catégories, salons, permissions, règlement) avec une seule commande **`/setup`**, puis **l'anime et le protège** : bienvenue / départ, tickets, niveaux et grades, alertes Twitch & TikTok, événements, musique, vocaux temporaires, anti-raid / anti-nuke, logs, sauvegardes et **tableau de bord web**.
+**Kensei** (剣聖, « saint du sabre », le titre des plus grands maîtres samouraïs) est le bot Discord qui **construit automatiquement** le serveur **Les Ronins de haro62190** (rôles, catégories, salons, permissions, règlement) avec une seule commande **`/setup`**, puis **l'anime et le protège** : bienvenue / départ, tickets, niveaux et grades, alertes Twitch & TikTok, événements, musique, vocaux temporaires, anti-raid / anti-nuke, logs, sauvegardes et **tableau de bord web**.
 
 Thème **samouraï cyberpunk** : noir, rouge néon et gris. Tout passe réellement par l'API Discord ; rien n'est jamais supprimé sans confirmation.
 
@@ -49,7 +49,7 @@ Dans Discord : **＋ Ajouter un serveur → Créer le mien → Pour moi et mes a
 > 💡 Recommandé : **Paramètres du serveur → Activer la Communauté**. Ça permet le vrai salon d'annonces (que les autres serveurs peuvent suivre). Sinon, un salon texte classique est créé à la place.
 
 ### 2. Créer le bot
-1. Va sur <https://discord.com/developers/applications> → **New Application**, nomme-la **Ronin Builder**.
+1. Va sur <https://discord.com/developers/applications> → **New Application**, nomme-la **Kensei**.
 2. Onglet **Bot** → **Reset Token** → copie le token (garde-le secret !).
 3. Toujours dans **Bot**, active les 2 *Privileged Gateway Intents* : **Server Members Intent** et **Message Content Intent**.
 4. Onglet **OAuth2 → URL Generator** : coche `bot`, puis la permission **Administrator**. Ouvre l'URL générée et ajoute le bot à ton serveur.
@@ -103,7 +103,7 @@ Le bot doit tourner en permanence : sur ton PC pendant les streams, ou mieux sur
 
 Tape `/` dans Discord pour voir la liste. `/help` (ou `/aide`) affiche les commandes auxquelles tu as accès.
 
-### 🏯 Administration (Ronin Builder)
+### 🏯 Administration (Kensei)
 
 | Commande | Ce qu'elle fait |
 |---|---|
@@ -198,7 +198,16 @@ Les données du bot (XP, avertissements, tickets, réglages, sauvegardes) sont d
 
 ## 🌐 Tableau de bord web
 
-Pages : accueil (stats, top 10), bienvenue / départ, modération, niveaux & récompenses, notifications, publier une annonce, sauvegardes (créer / restaurer avec confirmation), avertissements, tickets ouverts.
+**Toutes les fonctionnalités sont pilotables depuis le site** (21 pages) :
+
+| Serveur | Communauté | Stream | Sécurité |
+|---|---|---|---|
+| 🏯 Accueil (stats, top 10) | 🏮 Bienvenue & départ | 📡 Twitch & TikTok (live, clips, planning, sync) | 🛡️ Modération + verrouillage anti-raid |
+| 🏗️ Construction : `/setup`, rôles, salons, AutoMod avec aperçu et progression en direct | ⚔️ Niveaux & grades | 📊 Compteurs (+ valeur TikTok de secours) | 🤖 AutoMod (mots interdits) |
+| 🖼️ Logo & identité (icône, avatar, nom) | 💰 Économie & boutique (soldes, donner / retirer) | 📢 Annonce & embed | ⚠️ Avertissements |
+| | 🎁 Giveaways (lancer, terminer, relancer) | 🎵 Musique (suivante, pause, boucle, stop) | 🎫 Tickets |
+| | 🎌 Événements (créer, supprimer) | 🔊 Vocaux temporaires | 💾 Sauvegardes |
+| | 🎂 Anniversaires · 💡 Suggestions (statuts) · 🏯 Hall of Fame, vérification, XP vocal | | |
 
 **Sécurité :** connexion **avec Discord** ; seuls le propriétaire et les **Administrateurs** y accèdent (droits revérifiés à chaque page). Par défaut il n'écoute que sur la machine du bot (`127.0.0.1`) : il n'est **pas exposé sur Internet**.
 
@@ -217,7 +226,7 @@ Laisse cette fenêtre ouverte et va sur <http://localhost:3000>. Si le bot tourn
 
 ## 🔒 Bot privé
 
-Ronin Builder ne sert que le serveur `GUILD_ID` : s'il est ajouté ailleurs, il **quitte ce serveur immédiatement** et prévient le staff dans 🚨┃alertes-sécurité. Il ne lit pas les messages privés et ses commandes `/` n'existent que sur ton serveur.
+Kensei ne sert que le serveur `GUILD_ID` : s'il est ajouté ailleurs, il **quitte ce serveur immédiatement** et prévient le staff dans 🚨┃alertes-sécurité. Il ne lit pas les messages privés et ses commandes `/` n'existent que sur ton serveur.
 
 À régler aussi dans le portail développeur (sinon le bouton « Ajouter l'appli » reste visible) :
 1. Onglet **Bot** → décoche **Public Bot** → *Save*. Seul toi peux alors l'inviter.
@@ -231,7 +240,7 @@ npm run dev
 
 Lance le bot et le **redémarre automatiquement** quand tu modifies un fichier de `src/`, `config/` ou `assets/`. Toutes les 2 minutes, il **récupère aussi les nouveautés de GitHub** (puis `npm install` / `npm run setup` si besoin, et redémarre). `Ctrl+C` pour arrêter.
 
-⚠️ Un même bot ne doit pas tourner à deux endroits (il répondrait deux fois). Pour tester sans toucher au vrai serveur, crée un **bot de test** (nouvelle application dans le portail développeur, ex. « Ronin Builder TEST ») et un **serveur Discord de test**, et mets leur token / ID dans le `.env` de ton PC. Sinon, arrête le bot du VPS pendant tes tests (`pm2 stop bot-discord`, puis `pm2 start bot-discord`).
+⚠️ Un même bot ne doit pas tourner à deux endroits (il répondrait deux fois). Pour tester sans toucher au vrai serveur, crée un **bot de test** (nouvelle application dans le portail développeur, ex. « Kensei TEST ») et un **serveur Discord de test**, et mets leur token / ID dans le `.env` de ton PC. Sinon, arrête le bot du VPS pendant tes tests (`pm2 stop bot-discord`, puis `pm2 start bot-discord`).
 
 ## ☁️ Héberger 24h/24 sur un VPS, avec mises à jour automatiques
 
@@ -341,7 +350,8 @@ src/community.js   suggestions, Hall of Fame, vérification anti-bot
 src/automod.js     règles AutoMod natives de Discord
 src/voicexp.js     XP et ryō en vocal
 src/temproles.js   rôles temporaires (VIP 7 jours, anniversaire)
-src/dashboard.js   tableau de bord web
+src/dashboard.js   tableau de bord web (serveur, connexion, pages principales)
+src/dashboard-pages.js  pages : construction, logo, économie, giveaways, événements, anniversaires, suggestions, compteurs, musique, vocaux, AutoMod…
 src/settings.js    réglages modifiables à chaud
 src/store.js       base SQLite (data/ronin.db)
 src/confirm.js     confirmations ✅ / ❌ et progression

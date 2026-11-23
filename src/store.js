@@ -14,7 +14,7 @@ let DatabaseSync;
 try {
   ({ DatabaseSync } = require('node:sqlite'));
 } catch {
-  console.error(`❌ Node.js ${process.version} est trop ancien : Ronin Builder a besoin de Node.js 22.5 ou plus (https://nodejs.org).`);
+  console.error(`❌ Node.js ${process.version} est trop ancien : Kensei a besoin de Node.js 22.5 ou plus (https://nodejs.org).`);
   process.exit(1);
 }
 process.emitWarning = emitWarning;

@@ -19,6 +19,12 @@
 module.exports = {
   serverName: 'Les Ronins de haro62190', // null = ne pas renommer le serveur
 
+  // Identité du bot : nom du compte (lettres latines) et surnom affiché sur le serveur
+  bot: {
+    name: 'Kensei',
+    nickname: '剣聖 ・ Kensei',
+  },
+
   // Rôles, du plus haut au plus bas dans la hiérarchie.
   // `key` sert de référence dans le code, `name` est ce qui s'affiche sur Discord.
   roles: [

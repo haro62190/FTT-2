@@ -137,6 +137,7 @@ async function checkClips(guild) {
 // ───────────────────────── Planning ─────────────────────────
 
 async function checkSchedule(guild) {
+  if (!twitch || !LOGIN) throw new Error('Twitch n\'est pas configuré (TWITCH_CHANNEL / TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET)');
   if (!settings.get('notifications.schedule')) return;
   const u = await getUser();
   const schedule = await twitch.getSchedule(u.id);

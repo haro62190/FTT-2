@@ -197,4 +197,19 @@ function register(client, guildId) {
   client.on(Events.MessageReactionRemove, react);
 }
 
-module.exports = { register, handleInteraction, startVerification, onVerifyButton };
+/** Changer le statut d'une suggestion depuis le tableau de bord. */
+async function setSuggestionStatus(guild, msgId, status, byId) {
+  const s = suggestions()[msgId];
+  if (!s || !STATUS[status]) return false;
+  s.status = status;
+  s.by = byId;
+  save();
+  const channel = findChannel(guild, 'suggestions');
+  const msg = channel && (await channel.messages.fetch(msgId).catch(() => null));
+  const author = await guild.client.users.fetch(s.authorId).catch(() => null);
+  if (msg) await msg.edit(renderSuggestion(s, author)).catch(() => {});
+  await author?.send(`💡 Ta suggestion #${s.number} sur **${guild.name}** est maintenant : **${STATUS[status].label}**`).catch(() => {});
+  return true;
+}
+
+module.exports = { register, handleInteraction, startVerification, onVerifyButton, setSuggestionStatus, STATUS };

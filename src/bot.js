@@ -257,7 +257,7 @@ logs.register(client, GUILD_ID);
 security.register(client, GUILD_ID);
 community.register(client, GUILD_ID);
 
-/** Ronin Builder est réservé aux Ronins : il quitte tout autre serveur et prévient le staff. */
+/** Kensei est réservé aux Ronins : il quitte tout autre serveur et prévient le staff. */
 async function leaveForeignGuild(other) {
   console.warn(`🚫 Ajouté sur un autre serveur « ${other.name} » (${other.id}) : je le quitte.`);
   await other.leave().catch(() => {});

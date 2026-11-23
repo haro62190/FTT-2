@@ -352,4 +352,4 @@ function onVoiceStateUpdate(oldState) {
   }
 }
 
-module.exports = { commands, onVoiceStateUpdate, formatDuration, createStream };
+module.exports = { commands, onVoiceStateUpdate, formatDuration, createStream, queues };

@@ -379,4 +379,4 @@ async function resumeLockdown(guild) {
   }
 }
 
-module.exports = { register, commands, lockdown, resumeLockdown };
+module.exports = { register, commands, lockdown, resumeLockdown, startLockdown, endLockdown };

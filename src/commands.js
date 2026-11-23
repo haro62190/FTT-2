@@ -392,7 +392,7 @@ commands.push(
 const aide = commands.find((c) => c.data.name === 'aide');
 commands.splice(commands.indexOf(aide) + 1, 0, {
   ...aide,
-  data: new SlashCommandBuilder().setName('help').setDescription('Liste des commandes de Ronin Builder'),
+  data: new SlashCommandBuilder().setName('help').setDescription('Liste des commandes de Kensei'),
 });
 
 const byName = new Map(commands.map((c) => [c.data.name, c]));

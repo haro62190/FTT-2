@@ -1,5 +1,5 @@
 /**
- * Commandes d'administration de Ronin Builder :
+ * Commandes d'administration de Kensei :
  * /setup /roles /channels /welcome /moderation /config /embed /evenement
  * Toute modification importante demande une confirmation.
  */
@@ -20,7 +20,9 @@ const levels = require('./levels');
 const { BRAND_COLOR, findChannel, findRole } = require('./shared');
 const { confirm, progress } = require('./confirm');
 
-const BOT_NAME = 'Ronin Builder';
+const { config: CONFIG } = require('./shared');
+const BOT_NAME = CONFIG.bot?.name ?? 'Kensei';
+const BOT_NICK = CONFIG.bot?.nickname ?? null;
 const ephemeral = (content, extra = {}) => ({ content, flags: MessageFlags.Ephemeral, ...extra });
 const nl = (s) => s.replaceAll('\\n', '\n');
 const list = (arr, max = 10) => (arr.length ? arr.slice(0, max).join(', ') + (arr.length > max ? ` … (+${arr.length - max})` : '') : '—');
@@ -42,6 +44,12 @@ function planText(p) {
 async function brandBot(client, log) {
   if (client.user.username !== BOT_NAME) {
     await client.user.setUsername(BOT_NAME).then(() => log(`  ✔ Bot renommé « ${BOT_NAME} »`)).catch(() => log('  ⚠ Nom du bot : change-le dans le portail développeur'));
+  }
+  // Surnom japonais sur le serveur (les noms de compte Discord n'acceptent pas tous les caractères)
+  if (BOT_NICK) {
+    for (const g of client.guilds.cache.values()) {
+      if (g.members.me && g.members.me.nickname !== BOT_NICK) await g.members.me.setNickname(BOT_NICK).then(() => log(`  ✔ Surnom « ${BOT_NICK} »`)).catch(() => {});
+    }
   }
   // Avatar = assets/icon.png ; remis à jour automatiquement quand l'image change
   const icon = require('./shared').iconPath();
@@ -104,7 +112,7 @@ const SECURITY_PARAMS = [
 const commands = [
   // ───────── Construction ─────────
   {
-    category: '🏯 Ronin Builder',
+    category: '🏯 Kensei',
     staff: true,
     data: new SlashCommandBuilder().setName('setup').setDescription('Construire tout le serveur : rôles, salons, permissions, messages, paramètres').setDefaultMemberPermissions(P.Administrator),
     run: (i) =>
@@ -121,14 +129,14 @@ const commands = [
       ),
   },
   {
-    category: '🏯 Ronin Builder',
+    category: '🏯 Kensei',
     staff: true,
     data: new SlashCommandBuilder().setName('roles').setDescription('Créer / mettre à jour les rôles (couleurs, permissions, hiérarchie)').setDefaultMemberPermissions(P.Administrator),
     run: (i) =>
       runBuild(i, 'Rôles', (log) => builder.ensureRoles(i.guild, log), `👥 **/roles**\n\n${planText(builder.plan(i.guild)).split('\n📁')[0]}`),
   },
   {
-    category: '🏯 Ronin Builder',
+    category: '🏯 Kensei',
     staff: true,
     data: new SlashCommandBuilder().setName('channels').setDescription('Créer / mettre à jour les catégories, salons et permissions').setDefaultMemberPermissions(P.Administrator),
     run: (i) =>
@@ -146,7 +154,7 @@ const commands = [
 
   // ───────── Logo ─────────
   {
-    category: '🏯 Ronin Builder',
+    category: '🏯 Kensei',
     staff: true,
     data: new SlashCommandBuilder()
       .setName('logo')
@@ -202,7 +210,7 @@ const commands = [
 
   // ───────── Bienvenue ─────────
   {
-    category: '🏯 Ronin Builder',
+    category: '🏯 Kensei',
     staff: true,
     data: new SlashCommandBuilder()
       .setName('welcome')
@@ -273,7 +281,7 @@ const commands = [
 
   // ───────── Modération ─────────
   {
-    category: '🏯 Ronin Builder',
+    category: '🏯 Kensei',
     staff: true,
     data: new SlashCommandBuilder()
       .setName('moderation')
@@ -354,7 +362,7 @@ const commands = [
 
   // ───────── Configuration ─────────
   {
-    category: '🏯 Ronin Builder',
+    category: '🏯 Kensei',
     staff: true,
     data: new SlashCommandBuilder()
       .setName('config')
@@ -432,7 +440,7 @@ const commands = [
       const rewards = levels.rewardList(i.guild).map((r) => `niv. ${r.level} → ${r.role}`).join('\n') || '—';
       const embed = new EmbedBuilder()
         .setColor(BRAND_COLOR)
-        .setTitle('⚙️ Paramètres de Ronin Builder')
+        .setTitle('⚙️ Paramètres de Kensei')
         .addFields(
           { name: '🏮 Bienvenue / départ', value: `${s.welcome.enabled ? '✅' : '⛔'} bienvenue · ${s.goodbye.enabled ? '✅' : '⛔'} départ — \`/welcome\``, inline: false },
           { name: '⚔️ Niveaux', value: `${s.levels.enabled ? '✅ actifs' : '⛔ désactivés'} · annonces ${s.levels.announce ? '✅' : '⛔'}`, inline: true },

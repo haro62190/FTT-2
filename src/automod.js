@@ -100,7 +100,7 @@ async function disableAutoMod(guild) {
 
 const commands = [
   {
-    category: '🏯 Ronin Builder',
+    category: '🏯 Kensei',
     staff: true,
     data: new SlashCommandBuilder()
       .setName('automod')
@@ -151,4 +151,4 @@ const commands = [
   },
 ];
 
-module.exports = { ensureAutoMod, commands };
+module.exports = { ensureAutoMod, commands, words, disableAutoMod };

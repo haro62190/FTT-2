@@ -1,5 +1,5 @@
 /**
- * Tableau de bord web de Ronin Builder (sans dépendance : module http de Node.js).
+ * Tableau de bord web de Kensei (sans dépendance : module http de Node.js).
  *
  * Sécurité :
  *  - connexion avec Discord (OAuth2) ; accès réservé au propriétaire du serveur et aux Administrateurs
@@ -71,22 +71,39 @@ function readBody(req) {
 
 // ───────────────────────── Mise en page ─────────────────────────
 
+// Menu : ['#', 'Section'] = titre de section
 const NAV = [
+  ['#', 'Serveur'],
   ['/', '🏯 Accueil'],
-  ['/bienvenue', '🏮 Bienvenue'],
-  ['/moderation', '🛡️ Modération'],
-  ['/niveaux', '⚔️ Niveaux'],
-  ['/notifications', '📡 Notifications'],
-  ['/annonce', '📢 Annonce'],
-  ['/sauvegardes', '💾 Sauvegardes'],
+  ['/serveur', '🏗️ Construction'],
+  ['/logo', '🖼️ Logo & identité'],
+  ['#', 'Communauté'],
+  ['/bienvenue', '🏮 Bienvenue & départ'],
+  ['/niveaux', '⚔️ Niveaux & grades'],
+  ['/economie', '💰 Économie & boutique'],
+  ['/giveaways', '🎁 Giveaways'],
+  ['/evenements', '🎌 Événements'],
+  ['/anniversaires', '🎂 Anniversaires'],
+  ['/suggestions', '💡 Suggestions'],
+  ['/communaute', '🏯 Hall of Fame & vocal'],
+  ['#', 'Stream'],
+  ['/notifications', '📡 Twitch & TikTok'],
+  ['/stats', '📊 Compteurs'],
+  ['/annonce', '📢 Annonce & embed'],
+  ['/musique', '🎵 Musique'],
+  ['/vocaux', '🔊 Vocaux temporaires'],
+  ['#', 'Sécurité'],
+  ['/moderation', '🛡️ Modération & raid'],
+  ['/automod', '🤖 AutoMod'],
   ['/avertissements', '⚠️ Avertissements'],
   ['/tickets', '🎫 Tickets'],
+  ['/sauvegardes', '💾 Sauvegardes'],
 ];
 
-function page(sess, path, title, body, flash = '') {
+function page(sess, path, title, body, flash = '', refresh = 0) {
   const avatar = sess?.avatar ? `<img class="av" src="https://cdn.discordapp.com/avatars/${esc(sess.userId)}/${esc(sess.avatar)}.png?size=64" alt="">` : '';
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)} · Ronin Builder</title>
+<title>${esc(title)} · Kensei</title>${refresh ? `<meta http-equiv="refresh" content="${Number(refresh)}">` : ''}
 <style>
 :root{--bg:#0a0a0b;--panel:#141416;--line:#2a2a2e;--text:#e8e8ea;--muted:#9a9aa2;--red:#e10600;--red2:#ff3b30;--ok:#3ecf6e}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
@@ -95,7 +112,7 @@ header h1{font-size:18px;margin:0;letter-spacing:.06em}header h1 span{color:var(
 header .who{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--muted)}.av{width:28px;height:28px;border-radius:50%}
 .wrap{display:flex;min-height:calc(100vh - 58px)}nav{width:220px;flex-shrink:0;border-right:1px solid var(--line);padding:12px}
 nav a{display:block;padding:9px 12px;border-radius:8px;color:var(--muted);text-decoration:none;margin-bottom:2px}
-nav a:hover{background:#1c1c1f;color:var(--text)}nav a.on{background:#2a0000;color:#fff;box-shadow:inset 3px 0 0 var(--red)}
+nav a:hover{background:#1c1c1f;color:var(--text)}nav .sec{color:#e10600;font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin:14px 12px 4px}nav .sec:first-child{margin-top:2px}nav a{padding:7px 12px!important}nav a.on{background:#2a0000;color:#fff;box-shadow:inset 3px 0 0 var(--red)}
 main{flex:1;padding:24px;max-width:1000px}h2{margin:0 0 16px;font-size:22px}h3{margin:0 0 10px;font-size:16px;color:#fff}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
@@ -105,15 +122,15 @@ input[type=text],input[type=number],textarea,select{width:100%;background:#0d0d0
 textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus{outline:2px solid var(--red);border-color:transparent}
 .check{display:flex;align-items:center;gap:8px;margin:8px 0;color:var(--text)}
 button,.btn{display:inline-block;background:var(--red);color:#fff;border:0;border-radius:8px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;margin-top:12px}
-button:hover,.btn:hover{background:var(--red2)}button.ghost,.btn.ghost{background:#26262a}button.ghost:hover{background:#333}
+button:hover,.btn:hover{background:var(--red2)}button[disabled]{opacity:.4;cursor:not-allowed}button.ghost,.btn.ghost{background:#26262a}button.ghost:hover{background:#333}
 table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted);font-weight:500;font-size:13px}
 .flash{background:#0f2a17;border:1px solid #1f5a33;color:#bff3cf;padding:10px 14px;border-radius:8px;margin-bottom:16px}
 .flash.err{background:#2a0f0f;border-color:#5a1f1f;color:#f3bfbf}.muted{color:var(--muted)}.row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1;min-width:140px}
 code{background:#1c1c1f;padding:1px 5px;border-radius:4px}form.inline{display:inline}
-@media(max-width:760px){.wrap{flex-direction:column}nav{width:auto;border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;gap:4px}nav a{white-space:nowrap}main{padding:16px}}
+@media(max-width:760px){nav .sec{display:none}.wrap{flex-direction:column}nav{width:auto;border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;gap:4px}nav a{white-space:nowrap}main{padding:16px}}
 </style></head><body>
-<header><img src="/logo.png" alt="" style="width:36px;height:36px;border-radius:50%"><h1>浪人 <span>RONIN</span> BUILDER</h1><div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
-<div class="wrap">${sess ? `<nav>${NAV.map(([href, label]) => `<a href="${href}" class="${href === path ? 'on' : ''}">${label}</a>`).join('')}</nav>` : ''}
+<header><img src="/logo.png" alt="" style="width:36px;height:36px;border-radius:50%"><h1>剣聖 <span>KENSEI</span></h1><div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
+<div class="wrap">${sess ? `<nav>${NAV.map(([href, label]) => (href === '#' ? `<div class="sec">${label}</div>` : `<a href="${href}" class="${href === path ? 'on' : ''}">${label}</a>`)).join('')}</nav>` : ''}
 <main>${flash ? `<div class="flash${flash.startsWith('❌') ? ' err' : ''}">${esc(flash)}</div>` : ''}<h2>${esc(title)}</h2>${body}</main></div></body></html>`;
 }
 
@@ -131,6 +148,14 @@ async function fetchMembers(guild, ids) {
   for (let n = 0; n < missing.length; n += 100) {
     await guild.members.fetch({ user: missing.slice(n, n + 100), time: 10_000 }).catch(() => {});
   }
+}
+
+function lockdownCard(sess) {
+  const lk = require('./security').lockdown;
+  return `<form method="post" class="card">${csrf(sess)}<h3>🔒 Verrouillage anti-raid</h3>
+    ${lk.active ? `<p>🔴 <b>Serveur verrouillé</b> jusqu'à ${fmtDate(lk.until)} : invitations en pause, nouveaux arrivants expulsés.</p><input type="hidden" name="action" value="lockdown_off"><button>Lever le verrouillage</button>`
+      : `<p class="muted">À utiliser en cas de raid : met les invitations en pause et expulse les nouveaux arrivants.</p><div class="row"><div><label>Durée (minutes)</label><input type="number" name="minutes" value="10" min="1" max="1440"></div></div><input type="hidden" name="action" value="lockdown_on"><button>Verrouiller maintenant</button>`}
+  </form>`;
 }
 
 function memberName(guild, id) {
@@ -196,10 +221,21 @@ const pages = {
       <h3 style="margin-top:18px">Anti-spam</h3><div class="row">${num('spamMessages', 'Messages', 3, 50)}${num('spamWindowSec', 'En (secondes)', 2, 60)}${num('spamMuteMinutes', 'Mute (min)', 1, 10080)}${num('maxMentions', 'Mentions max', 2, 50)}</div>
       <h3 style="margin-top:18px">Protections</h3>${checkbox('blockInvites', s.blockInvites, 'Bloquer les invitations vers d\'autres serveurs')}${checkbox('antiNuke', s.antiNuke, 'Anti-nuke (suppression / bans de masse)')}
       <label>Liste de confiance (IDs ignorés par l'anti-nuke, un par ligne)</label><textarea name="whitelist">${esc((s.whitelist ?? []).join('\n'))}</textarea>
-      <button>Enregistrer</button></form>`,
+      <button>Enregistrer</button></form>
+      ${lockdownCard(sess)}`,
     };
   },
   async 'POST /moderation'(guild, sess, body) {
+    const security = require('./security');
+    if (body.get('action') === 'lockdown_on') {
+      const minutes = Math.min(1440, Math.max(1, Number.parseInt(body.get('minutes'), 10) || 10));
+      await security.startLockdown(guild, `activé depuis le tableau de bord par ${sess.username}`, minutes);
+      return `🔒 Serveur verrouillé pour ${minutes} min.`;
+    }
+    if (body.get('action') === 'lockdown_off') {
+      await security.endLockdown(guild, `désactivé depuis le tableau de bord par ${sess.username}`, true);
+      return '🔓 Verrouillage levé, invitations réactivées.';
+    }
     const limits = { raidJoins: [2, 100], raidWindowSec: [5, 600], lockdownMinutes: [1, 1440], minAccountAgeDays: [0, 365], spamMessages: [3, 50], spamWindowSec: [2, 60], spamMuteMinutes: [1, 10080], maxMentions: [2, 50] };
     for (const [k, [min, max]] of Object.entries(limits)) {
       const v = Number.parseInt(body.get(k), 10);
@@ -263,11 +299,22 @@ const pages = {
       title: '📡 Notifications',
       body: `<form method="post" class="card">${csrf(sess)}
       ${checkbox('twitch', n.twitch, `Lives Twitch — ${process.env.TWITCH_CHANNEL ? `twitch.tv/${process.env.TWITCH_CHANNEL}` : 'TWITCH_CHANNEL non configuré'}`)}
+      ${checkbox('clips', n.clips, 'Nouveaux clips Twitch postés dans 🎬┃clips')}
+      ${checkbox('schedule', n.schedule, 'Planning Twitch affiché dans 🗓️┃planning + événements Discord automatiques')}
       ${checkbox('tiktok', n.tiktok, `TikTok (vidéos + lives) — ${process.env.TIKTOK_USERNAME ? `@${process.env.TIKTOK_USERNAME}` : 'TIKTOK_USERNAME non configuré'}`)}
-      <p class="muted">Les comptes se règlent dans le fichier <code>.env</code> du bot.</p><button>Enregistrer</button></form>`,
+      <p class="muted">Les comptes se règlent dans le fichier <code>.env</code> du bot.</p><button>Enregistrer</button></form>
+      <form method="post" class="card">${csrf(sess)}<input type="hidden" name="action" value="sync"><h3>🗓️ Planning Twitch</h3>
+      <p class="muted">Le planning est synchronisé toutes les 30 minutes. Tu viens de le modifier sur Twitch ?</p><button class="ghost">Synchroniser maintenant</button></form>
+      ${db.twitchLive ? `<div class="card"><h3>🔴 En live</h3><p><b>${esc(db.twitchLive.title)}</b><br>Pic : ${db.twitchLive.peak} viewers · ${esc(db.twitchLive.games.join(', '))}</p></div>` : ''}`,
     };
   },
   async 'POST /notifications'(guild, sess, body) {
+    if (body.get('action') === 'sync') {
+      await require('./twitchlive').checkSchedule(guild);
+      return '🗓️ Planning synchronisé.';
+    }
+    settings.set('notifications.clips', body.has('clips'));
+    settings.set('notifications.schedule', body.has('schedule'));
     settings.set('notifications.twitch', body.has('twitch'));
     settings.set('notifications.tiktok', body.has('tiktok'));
     return '✅ Notifications enregistrées.';
@@ -377,6 +424,8 @@ const pages = {
   },
 };
 
+Object.assign(pages, require('./dashboard-pages')({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }));
+
 // ───────────────────────── Connexion Discord ─────────────────────────
 
 async function exchangeCode(code, clientId) {
@@ -475,10 +524,10 @@ function start(client, guildId) {
 
       const handler = pages[url.pathname];
       if (!handler) return send(res, 404, page(sess, '', 'Page introuvable', '<a class="btn" href="/">Accueil</a>'));
-      const { title, body } = await handler(guild, sess, url.searchParams);
+      const { title, body, refresh } = await handler(guild, sess, url.searchParams);
       const flash = sess.flash;
       sess.flash = null;
-      return send(res, 200, page(sess, url.pathname, title, body, flash));
+      return send(res, 200, page(sess, url.pathname, title, body, flash, refresh));
     } catch (err) {
       console.error('Tableau de bord :', err);
       send(res, 500, page(null, '', 'Erreur', `<p>${esc(err.message)}</p><a class="btn" href="/">Accueil</a>`));

@@ -89,6 +89,15 @@ async function end(client, msgId, reroll = false) {
   return winners;
 }
 
+/** Publie un giveaway (commande ou tableau de bord). */
+async function create(channel, { prize, ms, winners = 1, hostId, role = null }) {
+  const g = { channelId: channel.id, prize, winners, endsAt: Date.now() + ms, hostId, entrants: [], ended: false, winnerIds: [] };
+  const msg = await channel.send({ content: role ? `${role} 🎉 **GIVEAWAY**` : '🎉 **GIVEAWAY**', ...render(g), allowedMentions: { roles: role ? [role.id] : [] } });
+  all()[msg.id] = g;
+  save();
+  return msg;
+}
+
 function start(client) {
   setInterval(() => {
     const now = Date.now();
@@ -142,11 +151,7 @@ const commands = [
         const ms = parseDuration(i.options.getString('duree'));
         if (!ms || ms < 60_000 || ms > 60 * 86_400_000) return i.reply(ephemeral('Durée entre 1 minute et 60 jours, ex : `30m`, `2h`, `1j`.'));
         const channel = i.options.getChannel('salon') ?? i.channel;
-        const role = i.options.getRole('mention');
-        const g = { channelId: channel.id, prize: i.options.getString('prix'), winners: i.options.getInteger('gagnants') ?? 1, endsAt: Date.now() + ms, hostId: i.user.id, entrants: [], ended: false, winnerIds: [] };
-        const msg = await channel.send({ content: role ? `${role} 🎉 **GIVEAWAY**` : '🎉 **GIVEAWAY**', ...render(g), allowedMentions: { roles: role ? [role.id] : [] } });
-        all()[msg.id] = g;
-        save();
+        const msg = await create(channel, { prize: i.options.getString('prix'), ms, winners: i.options.getInteger('gagnants') ?? 1, hostId: i.user.id, role: i.options.getRole('mention') });
         return i.reply(ephemeral(`✅ Giveaway lancé dans ${channel}. ID : \`${msg.id}\``));
       }
       const id = i.options.getString('message').trim();
@@ -161,4 +166,4 @@ const commands = [
   },
 ];
 
-module.exports = { start, handleInteraction, commands, parseDuration };
+module.exports = { start, handleInteraction, commands, parseDuration, create, end };
