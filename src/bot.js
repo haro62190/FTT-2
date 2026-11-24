@@ -189,14 +189,19 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
   if (newState.guild.id !== GUILD_ID) return;
   tempVoice.onVoiceStateUpdate(oldState, newState).catch((err) => console.error('Vocal temporaire :', err.message));
   music.onVoiceStateUpdate(oldState, newState);
+  require('./gaming').onVoiceStateUpdate(oldState).catch(() => {});
 });
 
 // ───────────────────────── Boutons ─────────────────────────
 
+// Modules avec boutons / menus / formulaires (chacun reconnaît ses propres identifiants)
+const INTERACTIVE = ['./gaming', './tournaments', './nights'];
+
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.inGuild() || interaction.guildId !== GUILD_ID) return;
+  if (interaction.isAutocomplete()) return commands.autocomplete(interaction);
   if (interaction.isChatInputCommand()) return commands.handle(interaction, ctx);
-  if (interaction.isButton() || interaction.isUserSelectMenu() || interaction.isModalSubmit()) {
+  if (interaction.isButton() || interaction.isUserSelectMenu() || interaction.isStringSelectMenu() || interaction.isModalSubmit()) {
     const id = interaction.customId ?? '';
     try {
       if (await tempVoice.handleInteraction(interaction)) return;
@@ -204,6 +209,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (await giveaway.handleInteraction(interaction)) return;
       if (await community.handleInteraction(interaction)) return;
       if (await custom.handleInteraction(interaction)) return;
+      for (const mod of INTERACTIVE) if (await require(mod).handleInteraction(interaction)) return;
     } catch (err) {
       const module = id.startsWith('ticket:') ? 'Ticket' : id.startsWith('tv:') ? 'Vocal temporaire' : 'Interaction';
       console.error(`${module} :`, err);
@@ -306,6 +312,7 @@ client.once(Events.ClientReady, async () => {
   require('./birthdays').start(guild);
   require('./seasons').start(guild);
   require('./quests').init(guild);
+  require('./nights').start(client, guild);
   giveaway.start(client);
   startTikTokWatcher(guild);
   require('./stats').start(guild, twitch).catch((e) => console.error('Stats :', e.message));

@@ -92,6 +92,20 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/file` | Voir la file d'attente |
 | `/retirer position:` | Retirer un morceau de la file |
 
+### 🎮 Gaming
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `/joueur profil` | Créer ou modifier ton profil joueur |
+| `/joueur voir [membre:]` | Voir le profil joueur d'un membre |
+| `/recherche jeu: places: [plateforme:] [message:]` | Chercher des coéquipiers (posté dans 🎮┃recherche-joueurs) |
+| `/joueurs jeu: [plateforme:] [dispo:]` | Trouver des membres qui jouent à un jeu |
+| `/equipes taille: [jeu:] [joueurs:]` | Faire des équipes équilibrées avec les joueurs de ton vocal |
+| `/classement-jeu jeu:` | Le classement compétitif (Elo) d'un jeu |
+| `/tournoi voir tournoi:` | Voir un tournoi (tableau et résultats) |
+| `/tournoi equipe tournoi: nom: [joueur2:] [joueur3:] [joueur4:] [joueur5:]` | Inscrire ton équipe (tu es le capitaine) |
+| `/calendrier` | Ce qui arrive sur le serveur : soirées, tournois, lives, événements, anniversaires |
+
 ### 📺 Stream
 
 | Commande | Ce qu'elle fait |
@@ -149,6 +163,17 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/giveaway lancer prix: duree: [gagnants:] [salon:] [mention:]` | Lancer un giveaway |
 | `/giveaway terminer message:` | Terminer maintenant |
 | `/giveaway relancer message:` | Tirer un nouveau gagnant |
+
+### 🎮 Gaming
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `/match jeu: gagnants: perdants:` | Enregistrer le résultat d'un match pour le classement (staff) |
+| `/tournoi-admin creer nom: jeu: [taille:] [places:] [date:] [prix:]` | Créer un tournoi et ouvrir les inscriptions |
+| `/tournoi-admin lancer tournoi:` | Fermer les inscriptions et générer le tableau |
+| `/tournoi-admin resultat tournoi: match: gagnant:` | Valider le gagnant d'un match |
+| `/tournoi-admin annuler tournoi:` | Annuler un tournoi |
+| `/soiree titre: date: places: [jeu:] [vocal:]` | Organiser une soirée gaming avec réservation de places (staff) |
 
 ### 📢 Staff
 
