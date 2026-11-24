@@ -434,6 +434,7 @@ commands.push(
   ...require('./boost').commands,
   ...require('./memberstats').commands,
   ...require('./streams').commands,
+  ...require('./loadouts').commands,
 );
 
 // /help = /aide
@@ -473,4 +474,16 @@ async function handle(interaction, ctx) {
   }
 }
 
-module.exports = { commands, register, handle };
+/** Suggestions pendant la frappe (options avec autocomplétion, ex. /meta arme:). */
+async function autocomplete(interaction) {
+  const cmd = byName.get(interaction.commandName);
+  if (!cmd?.autocomplete) return interaction.respond([]).catch(() => {});
+  try {
+    await cmd.autocomplete(interaction);
+  } catch (err) {
+    console.error(`Autocomplétion /${interaction.commandName} :`, err.message);
+    await interaction.respond([]).catch(() => {});
+  }
+}
+
+module.exports = { commands, register, handle, autocomplete };

@@ -111,6 +111,7 @@ const NAV = [
   ['/saisons', '🏆 Saisons du mois'],
   ['/membres', '👤 Membres & classements'],
   ['/quetes-boost', '📜 Quêtes, boosts & grades'],
+  ['/meta', '🎯 Classes méta'],
   ['/economie', '💰 Économie & boutique'],
   ['/giveaways', '🎁 Giveaways'],
   ['/evenements', '🎌 Événements'],

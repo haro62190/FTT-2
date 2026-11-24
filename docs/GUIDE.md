@@ -92,6 +92,12 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/file` | Voir la file d'attente |
 | `/retirer position:` | Retirer un morceau de la file |
 
+### 🎯 Gaming
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `/meta [arme:] [jeu:]` | Les classes méta : accessoires conseillés par arme (Warzone, MW, BO…) |
+
 ### 📺 Stream
 
 | Commande | Ce qu'elle fait |
@@ -149,6 +155,13 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/giveaway lancer prix: duree: [gagnants:] [salon:] [mention:]` | Lancer un giveaway |
 | `/giveaway terminer message:` | Terminer maintenant |
 | `/giveaway relancer message:` | Tirer un nouveau gagnant |
+
+### 🎯 Gaming
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `/classe ajouter jeu: arme: accessoires: [mode:] [categorie:] [palier:] [code:] [notes:]` | Ajouter ou mettre à jour une classe |
+| `/classe retirer arme:` | Supprimer une classe |
 
 ### 📢 Staff
 

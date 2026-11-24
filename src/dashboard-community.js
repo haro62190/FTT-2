@@ -96,6 +96,78 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
       };
     },
 
+    // ───────────────────────── Classes méta ─────────────────────────
+    '/meta'(guild, sess, query) {
+      const lo = require('./loadouts');
+      const game = query.get('jeu') || null;
+      const edit = query.get('edit') ? lo.list().find((l) => l.id === query.get('edit')) : null;
+      const items = lo.list({ game });
+      const opts = (list, current) => list.map((v) => `<option ${v === current ? 'selected' : ''}>${esc(v)}</option>`).join('');
+      const gameList = [...new Set([...lo.games(), ...(edit ? [edit.game] : [])])];
+      const rows = Array.from({ length: lo.MAX_ATTACHMENTS }, (_, k) => {
+        const a = edit?.attachments[k];
+        const defSlot = a?.slot ?? lo.SLOTS[k] ?? lo.SLOTS[0];
+        return `<div class="row"><div style="flex:0 0 220px"><select name="slot${k}">${opts([...new Set([...lo.SLOTS, defSlot])], defSlot)}</select></div><div><input type="text" name="att${k}" maxlength="60" value="${esc(a?.name ?? '')}" placeholder="${k < 5 ? 'Nom de l\'accessoire' : 'Facultatif'}"></div></div>`;
+      }).join('');
+      const tabs = [null, ...lo.games()].map((g) => `<a class="btn ${g === game ? '' : 'ghost'}" style="margin:0 6px 6px 0" href="/meta${g ? `?jeu=${encodeURIComponent(g)}` : ''}">${esc(g ?? 'Tous')}</a>`).join('');
+      return {
+        title: '🎯 Classes méta',
+        body: `<p class="muted">Les accessoires conseillés par arme. Les membres les voient avec <code>/meta</code> ; chaque classe enregistrée est publiée (ou mise à jour) dans 🎯┃classes-méta.</p>
+        <form method="post" class="card">${csrf(sess)}${hidden('action', 'save')}${edit ? hidden('previousId', edit.id) : ''}<h3>${edit ? `✏️ Modifier ${esc(edit.weapon)}` : '➕ Nouvelle classe'}</h3>
+        <div class="row"><div><label>Jeu</label><select name="game">${opts(gameList, edit?.game)}</select></div>
+        <div><label>Mode</label><select name="mode">${opts(lo.MODES, edit?.mode ?? 'Warzone')}</select></div>
+        <div><label>Arme</label><input type="text" name="weapon" maxlength="50" required value="${esc(edit?.weapon ?? '')}"></div></div>
+        <div class="row"><div><label>Type d'arme</label><select name="category"><option value="">—</option>${opts(lo.CATEGORIES, edit?.category)}</select></div>
+        <div><label>Palier</label><select name="tier">${opts(lo.TIERS, edit?.tier ?? 'A')}</select></div>
+        <div><label>Code de la classe</label><input type="text" name="code" maxlength="40" value="${esc(edit?.code ?? '')}" placeholder="Code de partage du jeu"></div></div>
+        <label>Accessoires (jusqu'à ${lo.MAX_ATTACHMENTS})</label>${rows}
+        <label>Conseil / atouts (facultatif)</label><input type="text" name="notes" maxlength="300" value="${esc(edit?.notes ?? '')}">
+        <button>${edit ? 'Enregistrer les modifications' : 'Ajouter et publier'}</button>${edit ? ' <a class="btn ghost" href="/meta">Annuler</a>' : ''}</form>
+        <div class="card"><h3>📋 Classes enregistrées (${items.length})</h3><div>${tabs}</div>
+        <table><tr><th>Arme</th><th>Jeu · mode</th><th>Palier</th><th>Accessoires</th><th>Mise à jour</th><th></th></tr>
+        ${items.map((l) => `<tr><td><b>${esc(l.weapon)}</b>${l.category ? `<br><span class="muted">${esc(l.category)}</span>` : ''}</td><td>${esc(l.game)}<br><span class="muted">${esc(l.mode)}</span></td><td><span class="badge ${l.tier === 'S' ? 'warn' : ''}">${esc(l.tier)}</span></td><td class="muted">${l.attachments.map((a) => esc(a.name)).join(' · ')}</td><td style="white-space:nowrap">${fmtDate(l.updatedAt)}</td>
+          <td style="white-space:nowrap"><a class="btn ghost" style="margin:0" href="/meta?edit=${encodeURIComponent(l.id)}">Modifier</a> <form method="post" class="inline">${csrf(sess)}${hidden('action', 'delete')}${hidden('id', l.id)}<button class="ghost" style="margin:0">Supprimer</button></form></td></tr>`).join('') || '<tr><td colspan="6" class="muted">Aucune classe pour l\'instant.</td></tr>'}
+        </table></div>
+        <form method="post" class="card">${csrf(sess)}${hidden('action', 'games')}<h3>🎮 Jeux proposés</h3><label>Un jeu par ligne (ex. Warzone, MW4, Black Ops 7)</label><textarea name="games">${esc(lo.games().join('\n'))}</textarea><button class="ghost">Enregistrer la liste</button></form>`,
+      };
+    },
+    async 'POST /meta'(guild, sess, body) {
+      const lo = require('./loadouts');
+      const action = body.get('action');
+      if (action === 'games') {
+        const list = [...new Set(String(body.get('games') ?? '').split('\n').map((g) => g.trim().slice(0, 40)).filter(Boolean))].slice(0, 15);
+        if (!list.length) return '❌ Il faut au moins un jeu.';
+        settings.set('meta.games', list);
+        return `✅ Jeux : ${list.join(', ')}`;
+      }
+      if (action === 'delete') {
+        const l = lo.remove(String(body.get('id')));
+        if (!l) return '❌ Classe introuvable.';
+        await lo.unpublish(guild, l);
+        return `🗑️ Classe ${l.weapon} supprimée.`;
+      }
+      const attachments = Array.from({ length: lo.MAX_ATTACHMENTS }, (_, k) => ({ slot: String(body.get(`slot${k}`) ?? '').slice(0, 30), name: String(body.get(`att${k}`) ?? '').trim().slice(0, 60) })).filter((a) => a.name);
+      const game = String(body.get('game') ?? '');
+      if (!lo.games().includes(game) && !lo.list().some((l) => l.game === game)) return '❌ Jeu inconnu : ajoute-le d\'abord à la liste des jeux.';
+      const l = lo.upsert(
+        {
+          game,
+          mode: lo.MODES.includes(body.get('mode')) ? body.get('mode') : 'Warzone',
+          weapon: body.get('weapon'),
+          category: lo.CATEGORIES.includes(body.get('category')) ? body.get('category') : '',
+          tier: body.get('tier'),
+          attachments,
+          code: body.get('code'),
+          notes: body.get('notes'),
+          previousId: body.get('previousId') || null,
+        },
+        sess.username,
+      );
+      const posted = await lo.publish(guild, l).catch(() => false);
+      require('./feed').push('🎯', `Classe méta mise à jour : ${l.weapon} (${l.game})`);
+      return `✅ Classe ${l.weapon} enregistrée${posted ? ' et publiée dans 🎯┃classes-méta' : ' (salon 🎯┃classes-méta absent : lance /setup)'}.`;
+    },
+
     // ───────────────────────── Quêtes & boosts ─────────────────────────
     '/quetes-boost'(guild, sess) {
       const boost = require('./boost').active();

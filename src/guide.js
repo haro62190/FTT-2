@@ -9,7 +9,7 @@ const { EmbedBuilder, MessageFlags, PermissionFlagsBits: P, SlashCommandBuilder,
 const { BRAND_COLOR, findChannel } = require('./shared');
 
 // Ordre et présentation des catégories
-const MEMBER_CATEGORIES = ['🎉 Général', '⭐ Niveaux', '💰 Ryō & jeux', '🎉 Animation', '🎵 Musique', '📺 Stream', '📊 Statistiques', '🎫 Tickets'];
+const MEMBER_CATEGORIES = ['🎉 Général', '⭐ Niveaux', '💰 Ryō & jeux', '🎉 Animation', '🎵 Musique', '🎯 Gaming', '📺 Stream', '📊 Statistiques', '🎫 Tickets'];
 
 /** « /play musique: [source:] » ou une ligne par sous-commande */
 function usage(cmd) {
