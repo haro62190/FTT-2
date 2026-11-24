@@ -47,7 +47,7 @@ function renderLevelUp({ username, level, grade = null }) {
   <text x="1608" y="94" text-anchor="end" font-family="${FONT}" font-size="20" font-weight="700" letter-spacing="3" fill="${BRAND.colors.gold}">LES RONINS</text>
   <!-- On efface le texte d'exemple du cadre -->
   <rect x="505" y="658" width="680" height="132" rx="14" fill="${BRAND.colors.ink}" filter="url(#soft)"/>
-  <rect x="520" y="662" width="650" height="122" rx="10" fill="#090506"/>
+  <rect x="520" y="662" width="650" height="122" rx="10" fill="${BRAND.colors.ink}"/>
   <text x="845" y="${line2 ? 716 : 722}" text-anchor="middle" font-family="${FONT}" font-weight="900" font-style="italic" font-size="${titleSize}" fill="url(#gold)" filter="url(#glow)">${esc(title)}</text>
   <text x="845" y="${line2 ? 758 : 770}" text-anchor="middle" font-family="${FONT}" font-weight="700" font-size="${line2 ? 30 : 34}" fill="${BRAND.colors.text}" filter="url(#shadow)">Tu viens d’atteindre le niveau <tspan fill="url(#gold)" font-weight="900" font-size="${line2 ? 36 : 42}">${Number(level)}</tspan> !</text>
   ${line2 ? `<text x="845" y="786" text-anchor="middle" font-family="${FONT}" font-weight="700" font-size="22" fill="${BRAND.colors.redLight}" filter="url(#shadow)">${esc(`Nouveau grade : ${gradeName}`)}</text>` : ''}
