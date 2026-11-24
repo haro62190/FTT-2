@@ -17,6 +17,7 @@ const DEFAULTS = {
   levels: {
     enabled: true,
     announce: true,
+    banner: true, // bannière en image « Passage de niveau » (assets/levelup.jpg)
     // niveau -> ID de rôle (en plus des rôles `levelReward` de config/server.js)
     rewards: {},
     minLength: 3, // messages plus courts (« ok », « mdr ») : pas d'XP

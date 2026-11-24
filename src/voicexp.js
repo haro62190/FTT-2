@@ -24,12 +24,7 @@ async function tick(guild) {
         const rewards = await levels.applyRewards(member, lvl);
         if (settings.get('levels.announce') || rewards.length) {
           const where = findChannel(guild, 'bot_commands') ?? findChannel(guild, 'general');
-          await where
-            ?.send({
-              content: `🎙️ GG ${member}, tu passes au **niveau ${lvl}** en vocal !${rewards.length ? `\n🎖️ Nouveau grade : ${rewards.map((r) => `**${r.name}**${r.bonus ? ` (+${r.bonus} 両)` : ''}`).join(', ')}` : ''}`,
-              allowedMentions: { users: [member.id] },
-            })
-            .catch(() => {});
+          await require('./levelcard').announce(where, member, lvl, rewards, { voice: true });
         }
       }
     }

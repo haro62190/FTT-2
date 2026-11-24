@@ -125,3 +125,18 @@ test('/top et statistiques individuelles', () => {
   assert.equal(f.messages, 40);
   assert.ok(f.level > 0);
 });
+
+test('bannière de passage de niveau : image PNG et annonce', async () => {
+  const card = require('../src/levelcard');
+  assert.ok(card.available(), 'assets/levelup.jpg présent');
+  const png = card.renderLevelUp({ username: 'Ronin 🔥 au pseudo vraiment très long', level: 42, grade: '⚔️ Samouraï' });
+  assert.equal(png.subarray(1, 4).toString(), 'PNG');
+  const sent = [];
+  const member = { id: 'b1', displayName: 'haro', toString: () => '<@b1>' };
+  await card.announce({ send: async (p) => sent.push(p) }, member, 7, []);
+  assert.match(sent[0].content, /niveau 7/);
+  assert.equal(sent[0].files.length, 1);
+  require('../src/settings').set('levels.banner', false);
+  await card.announce({ send: async (p) => sent.push(p) }, member, 8, []);
+  assert.equal(sent[1].files.length, 0, 'bannière désactivée : texte seul');
+});

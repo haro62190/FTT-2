@@ -330,7 +330,7 @@ const pages = {
     return {
       title: '⚔️ Niveaux & récompenses',
       body: `<form method="post" class="card">${csrf(sess)}<input type="hidden" name="action" value="toggles">
-      ${checkbox('enabled', l.enabled, 'Gagner de l\'XP en écrivant (15-25 XP par message, 1 fois par minute)')}${checkbox('announce', l.announce, 'Annoncer chaque passage de niveau')}
+      ${checkbox('enabled', l.enabled, 'Gagner de l\'XP en écrivant (15-25 XP par message, 1 fois par minute)')}${checkbox('announce', l.announce, 'Annoncer chaque passage de niveau')}${checkbox('banner', l.banner !== false, 'Avec la bannière en image « Passage de niveau »')}
       <button>Enregistrer</button></form>
       <div class="card"><h3>🎖️ Récompenses</h3><table><tr><th>Niveau</th><th>Rôle</th><th></th></tr>
       ${rewards.map((r) => `<tr><td>${r.level}</td><td>${esc(r.role.name)}</td><td>${custom[r.level] === r.role.id ? `<form method="post" class="inline">${csrf(sess)}<input type="hidden" name="action" value="remove"><input type="hidden" name="level" value="${r.level}"><button class="ghost" style="margin:0">Retirer</button></form>` : '<span class="muted">config/server.js</span>'}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Aucune</td></tr>'}
@@ -348,6 +348,7 @@ const pages = {
     if (action === 'toggles') {
       settings.set('levels.enabled', body.has('enabled'));
       settings.set('levels.announce', body.has('announce'));
+      settings.set('levels.banner', body.has('banner'));
       return '✅ Enregistré.';
     }
     const lvl = Number.parseInt(body.get('level'), 10);
