@@ -46,6 +46,14 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/serveur` | Infos sur le serveur |
 | `/sondage question: choix1: choix2: [choix3:] [choix4:] [duree:]` | Créer un sondage |
 | `/guide [staff:]` | Le guide du serveur et de toutes les commandes |
+| `/merci membre: [raison:]` | Remercier un membre qui t'a aidé (+1 réputation) |
+| `/rep [membre:]` | La réputation d'un membre et le classement |
+| `/parrainage lien` | Ton lien d'invitation personnel |
+| `/parrainage stats` | Tes filleuls |
+| `/candidature poste:` | Postuler pour devenir modérateur ou streamer partenaire |
+| `/demande question:` | Pose une question sur le serveur à l'assistant IA |
+| `/signaler membre: raison: [message:]` | Signaler discrètement un problème au staff |
+| `/mes-signalements` | Le suivi de tes signalements |
 
 ### ⭐ Niveaux
 
@@ -55,6 +63,7 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/classement` | Le top 10 des membres les plus actifs |
 | `/saison` | Le classement du mois (le 1er : podium, ryō et rôle 🏆 Champion) |
 | `/top [categorie:]` | Les membres les plus actifs, par catégorie |
+| `/membre-du-mois` | Le classement provisoire du Membre du mois |
 
 ### 💰 Ryō & jeux
 
@@ -77,6 +86,7 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/anniversaire definir jour: mois:` | Enregistrer ta date d'anniversaire |
 | `/anniversaire retirer` | Effacer ta date |
 | `/anniversaire prochains` | Les prochains anniversaires du serveur |
+| `/defis` | Les défis collectifs en cours |
 
 ### 🎵 Musique
 
@@ -110,6 +120,7 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 
 | Commande | Ce qu'elle fait |
 |---|---|
+| `/clips [jours:]` | Les meilleurs clips de la chaîne |
 | `/streams [jours:]` | Historique et statistiques des lives |
 
 ### 📊 Statistiques
@@ -163,6 +174,7 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/giveaway lancer prix: duree: [gagnants:] [salon:] [mention:]` | Lancer un giveaway |
 | `/giveaway terminer message:` | Terminer maintenant |
 | `/giveaway relancer message:` | Tirer un nouveau gagnant |
+| `/defi titre: type: objectif: [jours:] [recompense:]` | Lancer un défi collectif (staff) |
 
 ### 🎮 Gaming
 
@@ -174,6 +186,17 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/tournoi-admin resultat tournoi: match: gagnant:` | Valider le gagnant d'un match |
 | `/tournoi-admin annuler tournoi:` | Annuler un tournoi |
 | `/soiree titre: date: places: [jeu:] [vocal:]` | Organiser une soirée gaming avec réservation de places (staff) |
+
+### 📺 Stream
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `/quiz lancer question: bonne: mauvaise1: [mauvaise2:] [mauvaise3:] [secondes:] [recompense:] [garder:]` | Poser une question |
+| `/quiz hasard [secondes:] [recompense:]` | Poser une question au hasard de la banque |
+| `/vote question: choix1: choix2: [choix3:] [choix4:] [choix5:] [minutes:]` | Lancer un vote pendant le live (staff) |
+| `/prono creer question: choix1: choix2: [choix3:] [choix4:] [minutes:]` | Ouvrir les paris |
+| `/prono resultat prono: gagnant:` | Donner la bonne issue et payer les gagnants |
+| `/prono annuler prono:` | Annuler et rembourser tout le monde |
 
 ### 📢 Staff
 

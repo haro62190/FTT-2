@@ -144,6 +144,7 @@ async function checkLive(guild) {
       vod: vod?.url ?? null,
       topChatters: topChatters.map(([id]) => id),
       highlights: state.highlights ?? [],
+      discordMessages: state.discordMsgs ?? 0,
     });
     const moments = require('./twitchchat').recapLines(state.highlights, vod?.url);
     const ch = guild.channels.cache.get(state.channelId);

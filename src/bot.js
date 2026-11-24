@@ -93,6 +93,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
   if (member.guild.id === GUILD_ID) {
     require('./history').bump('joins');
     require('./challenges').progress('members', member.id);
+    require('./feed').member(member.id, '🚪', 'Arrivée sur le serveur');
     require('./social').onJoin(member).catch(() => {});
   }
   if (security.lockdown.active) return; // pas de bienvenue pendant un raid

@@ -106,6 +106,7 @@ function onMessage(userId) {
   require('./challenges').progress('live', userId);
   const l = db.twitchLive;
   if (l) {
+    l.discordMsgs = (l.discordMsgs ?? 0) + 1;
     l.chatters ??= {};
     l.chatters[userId] = (l.chatters[userId] ?? 0) + 1;
   }

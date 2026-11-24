@@ -15,4 +15,14 @@ function push(icon, text) {
 
 const recent = (n = 8) => (db.feed ?? []).slice(0, n);
 
-module.exports = { push, recent };
+/** Historique d'un membre (page Membres du site) : les 40 derniers événements. */
+function member(userId, icon, text) {
+  if (!userId) return;
+  const log = ((db.memberLog ??= {})[userId] ??= []);
+  log.unshift({ icon, text: String(text).slice(0, 160), at: Date.now() });
+  db.memberLog[userId] = log.slice(0, 40);
+  save();
+}
+const memberHistory = (userId) => db.memberLog?.[userId] ?? [];
+
+module.exports = { push, recent, member, memberHistory };

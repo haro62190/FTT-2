@@ -39,6 +39,7 @@ async function quarantine(member, { ms = null, reason = 'Aucune raison', by = nu
   };
   save();
   require('./feed').push('⛓️', `${member.displayName} mis en quarantaine`);
+  require('./feed').member(member.id, '⛓️', `Quarantaine : ${String(reason).slice(0, 100)}`);
   await member.roles.set([...kept, role.id], `Quarantaine : ${reason}`);
   await member.voice?.disconnect('Quarantaine').catch(() => {});
   const until = state()[member.id].until;

@@ -152,7 +152,7 @@ function payload(t) {
       const lines = round
         .filter((m) => m.a || m.b)
         .map((m) => {
-          const name = (x) => (x ? (m.winner === x ? `**${entrantName(t, x)}** ✅` : entrantName(t, x)) : '_exempt_');
+          const name = (x) => (x ? (m.winner === x ? `**${entrantName(t, x)}** ✅` : entrantName(t, x)) : r ? '_à déterminer_' : '_exempt_');
           return `\`${m.id}\` ${name(m.a)} vs ${name(m.b)}`;
         });
       if (lines.length) e.addFields({ name: roundName(t, r), value: lines.join('\n').slice(0, 1024) });
@@ -190,6 +190,7 @@ async function finish(guild, t) {
     for (const id of champ.members) require('./economy').add(id, share);
   }
   require('./feed').push('🏆', `${champ?.name ?? '?'} remporte le tournoi ${t.name}`);
+  for (const id of champ?.members ?? []) require('./feed').member(id, '🏆', `Vainqueur du tournoi ${t.name}`);
   const channel = findChannel(guild, 'tournaments');
   await channel
     ?.send({ content: `👑 **${champ?.name}** remporte **${t.name}** ! ${champ?.members.map((id) => `<@${id}>`).join(' ')}${t.prize ? ` (+${t.prize} 両)` : ''}`, allowedMentions: { users: champ?.members ?? [] } })

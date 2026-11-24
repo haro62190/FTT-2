@@ -105,6 +105,7 @@ function thank(fromId, toId) {
   r.points++;
   r.from[fromId] = (r.from[fromId] ?? 0) + 1;
   track(toId, 'rep');
+  require('./feed').member(toId, '🙏', `Remercié par <@${fromId}>`);
   save();
   return r.points;
 }

@@ -273,6 +273,7 @@ const commands = [
       if (denied) return i.reply(ephemeral(denied));
       const reason = i.options.getString('raison');
       (db.warns[user.id] ??= []).push({ reason, by: i.user.id, at: Date.now() });
+      require('./feed').member(user.id, '⚠️', `Avertissement : ${String(reason).slice(0, 100)}`);
       save();
       const count = db.warns[user.id].length;
       await user.send(`⚠️ Tu as reçu un avertissement sur **${i.guild.name}** : ${reason}`).catch(() => {});

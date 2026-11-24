@@ -183,6 +183,40 @@ Activables / désactivables avec `/config notifications` ou le tableau de bord.
 
 Tout se règle sur le site, page *📜 Quêtes, boosts & grades*.
 
+## 🎮 Gaming
+
+- **Profil joueur** : `/joueur profil` (plateformes PC / PlayStation / Xbox / Switch / mobile, disponibilités, jeux, pseudos PSN / Xbox / Steam / Activision), `/joueur voir`, `/joueurs jeu:` pour trouver des partenaires.
+- **Recherche de coéquipiers** : `/recherche jeu: places:` publie une annonce dans 🎮┃recherche-joueurs avec un bouton « Je viens » et propose les membres qui ont ce jeu dans leur profil.
+- **Équipes automatiques** : `/equipes taille:` répartit les joueurs de ton vocal en équipes équilibrées (selon l'Elo du jeu), avec un bouton pour créer un vocal par équipe et y déplacer tout le monde.
+- **Tournois** (🏆┃tournois) : `/tournoi-admin creer` (solo ou équipes, places, date, prix en ryō), inscription par bouton ou `/tournoi equipe`, tableau à élimination directe avec têtes de série, résultats avec `/tournoi-admin resultat` ou sur le site.
+- **Classements compétitifs** : un classement Elo par jeu (`/classement-jeu`), alimenté par les tournois et `/match`.
+- **Soirées gaming** (🌙┃soirées-gaming) : `/soiree` avec réservation de places, liste d'attente automatique, rappel en MP 1 h avant, événement Discord créé tout seul.
+- **Calendrier** : `/calendrier` regroupe soirées, tournois, lives, événements, défis et anniversaires. Les membres « intéressés » par un événement Discord reçoivent un rappel en MP 30 min avant.
+
+## 🔴 Pendant les lives
+
+- **🎲┃jeux-du-live** : `/quiz` (bonnes réponses récompensées en ryō, bonus aux 3 plus rapides, banque de questions avec `/quiz hasard`), `/prono` (les membres misent leurs ryō, le pot est partagé entre les gagnants), `/vote` (résultats en direct).
+- **Moments forts** : pendant le live, le bot lit le chat Twitch (lecture seule, sans compte) et repère les pics d'activité. Le staff est prévenu pour clipper, et le récap de fin de live contient un lien vers chaque moment dans la rediffusion.
+- **Clips** : galerie sur le site, `/clips`, et top 5 de la semaine posté chaque lundi dans 🎬┃clips.
+
+## 👥 Communauté
+
+- **🌟 Membre du mois** : score sur plusieurs critères (XP, vocal, remerciements reçus, quêtes, suggestions, présence en live). Le 1er du mois : rôle 🌟 Membre du mois + 2000 両. `/membre-du-mois` pour le classement provisoire.
+- **🙏 Réputation** : `/merci @membre` (3 par jour), `/rep`.
+- **🤝 Parrainage** : `/parrainage lien` donne un lien d'invitation perso ; quand le filleul atteint le niveau 3, le parrain gagne 500 両 et le filleul 250 両.
+- **🎯 Défis collectifs** : `/defi` (staff) fixe un objectif commun (messages, vocal, quêtes, nouveaux membres…), barre de progression dans 📡┃annonces, ryō pour chaque participant si l'objectif est atteint. `/defis` pour les voir.
+- **📝 Candidatures** : `/candidature` modérateur ou streamer partenaire → formulaire → décision du staff senior par boutons dans 📝┃candidatures (rôle donné automatiquement, réponse en MP).
+
+## 🤖 Automatisation
+
+- **Assistant IA** : `/demande question:` (ou mentionner le bot dans 🤖┃commandes) répond aux questions sur le serveur grâce à Claude (API Anthropic). Ajoute `ANTHROPIC_API_KEY=` dans `.env` (clé sur console.anthropic.com) ; sans clé, l'assistant reste désactivé. Limites : 5 questions / 10 min par membre et un plafond quotidien. Questions fréquentes et coût estimé sur le site (*🤖 Assistant IA*).
+- **Récap hebdomadaire** chaque lundi dans 📡┃annonces, et **rapport staff** : salons inutilisés depuis 30 jours, meilleurs créneaux d'activité, jeux les plus joués, idées d'événements.
+- **Signalements suivis** : `/signaler @membre raison:` → carte dans 🚩┃signalements avec boutons pour le staff, MP de suivi, `/mes-signalements`.
+
+## 🖥️ Nouveautés du tableau de bord
+
+🔔 Centre d'alertes (signalements, candidatures, tickets, quarantaines, permissions, erreurs, avec une cloche dans l'en-tête) · ✉️ Éditeur de messages avec aperçu en direct (et modification d'un message du bot) · 🏆 Tournois (tableau, résultats en un clic, classements Elo) · 🌙 Soirées, défis & calendrier · 👥 Équipes & inscriptions · 📊 Stats Twitch + Discord réunies · 🎬 Galerie de clips · 🤖 Assistant IA · historique de chaque membre sur la page *Membres*.
+
 ## 🎉 Animation
 
 - **🎁 `/giveaway lancer prix: duree: gagnants:`** — bouton « Participer », tirage automatique (même après un redémarrage), `/giveaway relancer` pour un nouveau gagnant.
