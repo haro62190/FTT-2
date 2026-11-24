@@ -174,6 +174,8 @@ client.on(Events.MessageDelete, async (message) => {
 client.on(Events.MessageCreate, async (message) => {
   if (!message.guild || message.guild.id !== GUILD_ID || message.author.bot) return;
   require('./history').bump('messages');
+  require('./assistant').onMessage(message).catch((e) => console.error('Assistant IA :', e.message));
+  require('./insights').track(message.channelId);
   const counted = levels.counts({ content: message.content, attachments: message.attachments.size, channelId: message.channelId, guild: message.guild });
   if (!counted) return; // message trop court ou salon sans XP : ni XP, ni ryō, ni quête
   economy.onMessage(message.author.id, message.member);
@@ -195,12 +197,13 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
   tempVoice.onVoiceStateUpdate(oldState, newState).catch((err) => console.error('Vocal temporaire :', err.message));
   music.onVoiceStateUpdate(oldState, newState);
   require('./gaming').onVoiceStateUpdate(oldState).catch(() => {});
+  if (newState.channelId && newState.channelId !== oldState.channelId) require('./insights').track(newState.channelId, false);
 });
 
 // ───────────────────────── Boutons ─────────────────────────
 
 // Modules avec boutons / menus / formulaires (chacun reconnaît ses propres identifiants)
-const INTERACTIVE = ['./gaming', './tournaments', './nights', './livegames', './applications'];
+const INTERACTIVE = ['./gaming', './tournaments', './nights', './livegames', './applications', './reports'];
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.inGuild() || interaction.guildId !== GUILD_ID) return;
@@ -321,6 +324,7 @@ client.once(Events.ClientReady, async () => {
   require('./livegames').start(client);
   require('./social').start(guild);
   require('./challenges').start(client, guild);
+  require('./insights').start(guild);
   giveaway.start(client);
   startTikTokWatcher(guild);
   require('./stats').start(guild, twitch).catch((e) => console.error('Stats :', e.message));

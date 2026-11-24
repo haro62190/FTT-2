@@ -58,6 +58,7 @@ const DEFAULTS = {
   birthdays: { enabled: true, gift: 500 },
   automod: { enabled: true, extraWords: [] },
   community: { motmReward: 2000, referralReward: 500 },
+  assistant: { dailyLimit: 200, faq: [] },
   notifications: {
     twitch: true,
     tiktok: true,
@@ -145,6 +146,9 @@ const MODULES = [
   ['motm', '🌟 Membre du mois', 'modules.motm', 'Communauté'],
   ['challenges', '🎯 Défis collectifs', 'modules.challenges', 'Communauté'],
   ['applications', '📝 Candidatures staff / streamer', 'modules.applications', 'Communauté'],
+  ['weeklyRecap', '📜 Récap hebdomadaire + rapport staff', 'modules.weeklyRecap', 'Automatisation'],
+  ['reports', '🚩 Signalements suivis (/signaler)', 'modules.reports', 'Automatisation'],
+  ['assistant', '🤖 Assistant IA (/demande, nécessite ANTHROPIC_API_KEY)', 'modules.assistant', 'Automatisation'],
   ['customCommands', '⌨️ Commandes personnalisées', 'modules.customCommands', 'Communauté'],
   ['tickets', '🎫 Tickets', 'modules.tickets', 'Serveur'],
   ['tempvoice', '🔊 Vocaux temporaires', 'modules.tempvoice', 'Serveur'],

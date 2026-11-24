@@ -216,4 +216,4 @@ const commands = [
   },
 ];
 
-module.exports = { post, embeds, markdown, pack, commands };
+module.exports = { post, embeds, markdown, pack, sections, commands };
