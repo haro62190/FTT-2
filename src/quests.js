@@ -82,6 +82,8 @@ function progress(userId, type, amount = 1) {
   economy.add(userId, total);
   const stats = require('./memberstats');
   stats.bump(userId, 'questsDone', finished.length);
+  require('./social').track(userId, 'quests', finished.length);
+  require('./challenges').progress('quests', userId, finished.length);
   stats.bump(userId, 'ryoEarned', total);
   save();
   announce(userId, finished).catch(() => {});

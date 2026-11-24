@@ -438,6 +438,9 @@ commands.push(
   ...require('./tournaments').commands,
   ...require('./nights').commands,
   ...require('./livegames').commands,
+  ...require('./social').commands,
+  ...require('./challenges').commands,
+  ...require('./applications').commands,
 );
 
 // /help = /aide

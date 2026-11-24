@@ -102,6 +102,8 @@ const isLive = () => Boolean(db.twitchLive || db.tiktok?.liveId);
 function onMessage(userId) {
   if (!isLive()) return;
   require('./memberstats').bump(userId, 'liveMessages');
+  require('./social').track(userId, 'live');
+  require('./challenges').progress('live', userId);
   const l = db.twitchLive;
   if (l) {
     l.chatters ??= {};

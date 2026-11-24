@@ -90,7 +90,11 @@ function fillTemplate(text, member, rules) {
 }
 
 client.on(Events.GuildMemberAdd, async (member) => {
-  if (member.guild.id === GUILD_ID) require('./history').bump('joins');
+  if (member.guild.id === GUILD_ID) {
+    require('./history').bump('joins');
+    require('./challenges').progress('members', member.id);
+    require('./social').onJoin(member).catch(() => {});
+  }
   if (security.lockdown.active) return; // pas de bienvenue pendant un raid
   if (member.guild.id !== GUILD_ID) return;
   const welcome = findChannel(member.guild, 'welcome');
@@ -174,6 +178,7 @@ client.on(Events.MessageCreate, async (message) => {
   if (!counted) return; // message trop court ou salon sans XP : ni XP, ni ryō, ni quête
   economy.onMessage(message.author.id, message.member);
   quests.progress(message.author.id, 'messages');
+  require('./challenges').progress('messages', message.author.id);
   require('./streams').onMessage(message.author.id);
   if (!settings.get('levels.enabled')) return;
   const newLevel = levels.onMessage(message.author.id, message.member);
@@ -195,7 +200,7 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
 // ───────────────────────── Boutons ─────────────────────────
 
 // Modules avec boutons / menus / formulaires (chacun reconnaît ses propres identifiants)
-const INTERACTIVE = ['./gaming', './tournaments', './nights', './livegames'];
+const INTERACTIVE = ['./gaming', './tournaments', './nights', './livegames', './applications'];
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.inGuild() || interaction.guildId !== GUILD_ID) return;
@@ -314,6 +319,8 @@ client.once(Events.ClientReady, async () => {
   require('./quests').init(guild);
   require('./nights').start(client, guild);
   require('./livegames').start(client);
+  require('./social').start(guild);
+  require('./challenges').start(client, guild);
   giveaway.start(client);
   startTikTokWatcher(guild);
   require('./stats').start(guild, twitch).catch((e) => console.error('Stats :', e.message));
