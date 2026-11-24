@@ -46,6 +46,41 @@ class TwitchClient {
     return stream ?? null;
   }
 
+  /** Nombre total de followers (accessible avec un jeton d'application). */
+  async getFollowerCount(broadcasterId) {
+    const url = `https://api.twitch.tv/helix/channels/followers?${new URLSearchParams({ broadcaster_id: broadcasterId, first: '1' })}`;
+    const doFetch = async () => fetch(url, { headers: { 'Client-Id': this.clientId, Authorization: `Bearer ${await this.getToken()}` } });
+    let res = await doFetch();
+    if (res.status === 401) {
+      this.token = null;
+      res = await doFetch();
+    }
+    if (!res.ok) throw new Error(`Twitch followers ${res.status}: ${await res.text()}`);
+    const { total } = await res.json();
+    return Number.isFinite(total) ? total : null;
+  }
+
+  /** Clips créés depuis `startedAt` (ISO), les plus vus d'abord. */
+  async getClips(broadcasterId, startedAt) {
+    return this.get('clips', { broadcaster_id: broadcasterId, started_at: startedAt, first: '20' });
+  }
+
+  /** Dernière rediffusion (VOD) de la chaîne. */
+  async getLatestVod(userId) {
+    const [video] = await this.get('videos', { user_id: userId, type: 'archive', first: '1' });
+    return video ?? null;
+  }
+
+  /** Planning Twitch (null s'il n'y en a pas). */
+  async getSchedule(broadcasterId) {
+    try {
+      return await this.get('schedule', { broadcaster_id: broadcasterId, first: '20' });
+    } catch (err) {
+      if (/ 404/.test(err.message)) return null;
+      throw err;
+    }
+  }
+
   async getUser(login) {
     const [user] = await this.get('users', { login });
     return user ?? null;

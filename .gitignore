@@ -1,2 +1,8 @@
 node_modules/
 .env
+data/
+update.log
+cookies.txt
+.update-pending
+.update-prev
+.update-bad

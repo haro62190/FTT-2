@@ -1,10 +1,27 @@
 /**
- * Bot du serveur : accueil, règlement, rôles en libre-service, alertes de live Twitch, logs de modération.
+ * Bot du serveur : accueil, règlement, rôles en libre-service, alertes de live Twitch,
+ * commandes /, niveaux (XP) et logs de modération.
  * Usage : npm start
  */
 require('dotenv').config();
+require('./logger').install();
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, Events, MessageFlags } = require('discord.js');
 const { TwitchClient } = require('./twitch');
+const commands = require('./commands');
+const levels = require('./levels');
+const tempVoice = require('./tempvoice');
+const music = require('./music');
+const { startTikTokWatcher } = require('./tiktok');
+const logs = require('./logs');
+const security = require('./security');
+const settings = require('./settings');
+const tickets = require('./tickets');
+const economy = require('./economy');
+const quests = require('./quests');
+const giveaway = require('./giveaway');
+const community = require('./community');
+const health = require('./health');
+const custom = require('./custom');
 const {
   config,
   BRAND_COLOR,
@@ -16,7 +33,6 @@ const {
 } = require('./shared');
 
 const { DISCORD_TOKEN, GUILD_ID, TWITCH_CHANNEL, TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET } = process.env;
-const POLL_MS = Math.max(30, Number(process.env.TWITCH_POLL_SECONDS) || 60) * 1000;
 
 if (!DISCORD_TOKEN || !GUILD_ID) {
   console.error('❌ DISCORD_TOKEN et GUILD_ID doivent être définis dans .env');
@@ -27,11 +43,34 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers, // intent privilégié : arrivées / départs
+    GatewayIntentBits.GuildVoiceStates, // salons vocaux temporaires
+    GatewayIntentBits.GuildModeration, // journal d'audit (logs, anti-nuke)
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent, // intent privilégié : contenu des messages supprimés dans les logs
+    GatewayIntentBits.GuildMessageReactions, // Hall of Fame
   ],
-  partials: [Partials.Message, Partials.GuildMember],
+  partials: [Partials.Message, Partials.GuildMember, Partials.Reaction, Partials.User],
 });
+
+health.installErrorHandlers(client);
+
+const twitch =
+  TWITCH_CLIENT_ID && TWITCH_CLIENT_SECRET ? new TwitchClient(TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET) : null;
+
+/** Contexte passé aux commandes / */
+const ctx = {
+  twitch,
+  modLog: (interaction, title, description) =>
+    sendLog(
+      interaction.guild,
+      new EmbedBuilder()
+        .setColor(0x5865f2)
+        .setTitle(title)
+        .setDescription(description)
+        .setFooter({ text: `Par ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
+        .setTimestamp(),
+    ),
+};
 
 async function sendLog(guild, embed) {
   const channel = findChannel(guild, 'mod_logs');
@@ -40,14 +79,24 @@ async function sendLog(guild, embed) {
 
 // ───────────────────────── Accueil & logs ─────────────────────────
 
+/** Variables utilisables dans les messages : {user} {username} {server} {count} {rules} */
+function fillTemplate(text, member, rules) {
+  return String(text ?? '')
+    .replaceAll('{user}', `${member}`)
+    .replaceAll('{username}', member.user?.username ?? member.displayName ?? 'Quelqu\'un')
+    .replaceAll('{server}', member.guild.name)
+    .replaceAll('{count}', String(member.guild.memberCount))
+    .replaceAll('{rules}', rules ? `${rules}` : 'règlement');
+}
+
 client.on(Events.GuildMemberAdd, async (member) => {
+  if (member.guild.id === GUILD_ID) require('./history').bump('joins');
+  if (security.lockdown.active) return; // pas de bienvenue pendant un raid
   if (member.guild.id !== GUILD_ID) return;
   const welcome = findChannel(member.guild, 'welcome');
   const rules = findChannel(member.guild, 'rules');
-  if (welcome) {
-    const text = config.welcomeMessage
-      .replace('{user}', `${member}`)
-      .replace('{rules}', rules ? `${rules}` : 'règlement');
+  if (welcome && settings.get('welcome.enabled')) {
+    const text = fillTemplate(settings.get('welcome.message'), member, rules);
     await welcome
       .send({
         embeds: [
@@ -72,7 +121,23 @@ client.on(Events.GuildMemberAdd, async (member) => {
 });
 
 client.on(Events.GuildMemberRemove, async (member) => {
+  if (member.guild.id === GUILD_ID) require('./history').bump('leaves');
   if (member.guild.id !== GUILD_ID) return;
+  const channel = findChannel(member.guild, 'welcome');
+  if (channel && settings.get('goodbye.enabled') && !security.lockdown.active) {
+    await channel
+      .send({
+        embeds: [
+          new EmbedBuilder()
+            .setColor(0x3a3a3a)
+            .setDescription(fillTemplate(settings.get('goodbye.message'), member))
+            .setThumbnail(member.user?.displayAvatarURL() ?? null)
+            .setFooter({ text: `Nous sommes maintenant ${member.guild.memberCount}` }),
+        ],
+        allowedMentions: { parse: [] },
+      })
+      .catch(() => {});
+  }
   await sendLog(
     member.guild,
     new EmbedBuilder()
@@ -100,22 +165,87 @@ client.on(Events.MessageDelete, async (message) => {
   );
 });
 
+// ───────────────────────── Niveaux (XP) ─────────────────────────
+
+client.on(Events.MessageCreate, async (message) => {
+  if (!message.guild || message.guild.id !== GUILD_ID || message.author.bot) return;
+  require('./history').bump('messages');
+  const counted = levels.counts({ content: message.content, attachments: message.attachments.size, channelId: message.channelId, guild: message.guild });
+  if (!counted) return; // message trop court ou salon sans XP : ni XP, ni ryō, ni quête
+  economy.onMessage(message.author.id, message.member);
+  quests.progress(message.author.id, 'messages');
+  require('./streams').onMessage(message.author.id);
+  if (!settings.get('levels.enabled')) return;
+  const newLevel = levels.onMessage(message.author.id, message.member);
+  if (newLevel !== null) {
+    const rewards = message.member ? await levels.applyRewards(message.member, newLevel) : [];
+    if (settings.get('levels.announce') || rewards.length) {
+      await message.channel
+        .send({
+          content:
+            `⚔️ GG ${message.author}, tu passes au **niveau ${newLevel}** !` +
+            (rewards.length ? `\n🎖️ Nouveau grade : ${rewards.map((r) => `**${r.name}**${r.bonus ? ` (+${r.bonus} 両)` : ''}`).join(', ')}` : ''),
+          allowedMentions: { users: [message.author.id] },
+        })
+        .catch(() => {});
+    }
+  }
+});
+
+// ───────────────────────── Vocaux temporaires ─────────────────────────
+
+client.on(Events.VoiceStateUpdate, (oldState, newState) => {
+  if (newState.guild.id !== GUILD_ID) return;
+  tempVoice.onVoiceStateUpdate(oldState, newState).catch((err) => console.error('Vocal temporaire :', err.message));
+  music.onVoiceStateUpdate(oldState, newState);
+});
+
 // ───────────────────────── Boutons ─────────────────────────
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isButton() || !interaction.inGuild()) return;
+  if (!interaction.inGuild() || interaction.guildId !== GUILD_ID) return;
+  if (interaction.isChatInputCommand()) return commands.handle(interaction, ctx);
+  if (interaction.isButton() || interaction.isUserSelectMenu() || interaction.isModalSubmit()) {
+    const id = interaction.customId ?? '';
+    try {
+      if (await tempVoice.handleInteraction(interaction)) return;
+      if (await tickets.handleInteraction(interaction)) return;
+      if (await giveaway.handleInteraction(interaction)) return;
+      if (await community.handleInteraction(interaction)) return;
+      if (await custom.handleInteraction(interaction)) return;
+    } catch (err) {
+      const module = id.startsWith('ticket:') ? 'Ticket' : id.startsWith('tv:') ? 'Vocal temporaire' : 'Interaction';
+      console.error(`${module} :`, err);
+      const msg = { content: '❌ Action impossible.', flags: MessageFlags.Ephemeral };
+      if (interaction.replied || interaction.deferred) await interaction.followUp(msg).catch(() => {});
+      else await interaction.reply(msg).catch(() => {});
+      return;
+    }
+  }
+  if (!interaction.isButton()) return;
   const reply = (content) => interaction.reply({ content, flags: MessageFlags.Ephemeral });
 
   try {
     const member = await interaction.guild.members.fetch(interaction.user.id);
 
-    if (interaction.customId === ACCEPT_RULES_ID) {
-      const role = findRole(interaction.guild, 'member');
-      if (!role) return reply('⚠️ Le rôle Membre est introuvable, préviens un modérateur.');
-      if (member.roles.cache.has(role.id)) return reply('Tu as déjà accepté le règlement, bon séjour ! 💜');
+    // Donne le rôle ⚔️ Ronin (après le test anti-bot s'il est activé)
+    const grantMember = async (i) => {
+      const role = findRole(i.guild, 'member');
+      if (!role) return i.reply({ content: '⚠️ Le rôle Membre est introuvable, préviens un modérateur.', flags: MessageFlags.Ephemeral });
       await member.roles.add(role, 'Règlement accepté');
-      const rolesChannel = findChannel(interaction.guild, 'roles');
-      return reply(`✅ Merci ! Tu as maintenant accès au serveur.${rolesChannel ? ` Choisis tes notifications dans ${rolesChannel}.` : ''}`);
+      const rolesChannel = findChannel(i.guild, 'roles');
+      const text = `✅ Bienvenue parmi les Ronins ! Tu as maintenant accès au serveur.${rolesChannel ? ` Choisis tes notifications dans ${rolesChannel}.` : ''}`;
+      return i.isButton() && i.customId.startsWith('verify:') ? i.update({ content: text, components: [] }) : i.reply({ content: text, flags: MessageFlags.Ephemeral });
+    };
+
+    if (interaction.customId.startsWith('verify:')) return community.onVerifyButton(interaction, grantMember);
+
+    if (interaction.customId === ACCEPT_RULES_ID) {
+      if (require('./quarantine').isQuarantined(interaction.user.id)) return reply('⛓️ Tu es en quarantaine : un membre du staff va te répondre dans 🏚️┃cachot.');
+      const role = findRole(interaction.guild, 'member');
+      if (role && member.roles.cache.has(role.id)) return reply('Tu as déjà accepté le règlement, bon séjour ! ⚔️');
+      if (await community.startVerification(interaction)) return;
+      return grantMember(interaction);
     }
 
     if (interaction.customId.startsWith(ROLE_BUTTON_PREFIX)) {
@@ -136,77 +266,24 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
-// ───────────────────────── Alertes de live Twitch ─────────────────────────
+// Alertes de live, récap, clips et planning Twitch : src/twitchlive.js
 
-const liveState = { streamId: null, message: null };
+logs.register(client, GUILD_ID);
+security.register(client, GUILD_ID);
+community.register(client, GUILD_ID);
+custom.register(client, GUILD_ID);
 
-async function findExistingLiveMessage(channel, streamId) {
-  const messages = await channel.messages.fetch({ limit: 20 });
-  return messages.find((m) => m.author.id === client.user.id && m.embeds[0]?.footer?.text?.includes(streamId)) ?? null;
+/** Kensei est réservé aux Ronins : il quitte tout autre serveur et prévient le staff. */
+async function leaveForeignGuild(other) {
+  console.warn(`🚫 Ajouté sur un autre serveur « ${other.name} » (${other.id}) : je le quitte.`);
+  await other.leave().catch(() => {});
+  const home = client.guilds.cache.get(GUILD_ID);
+  const channel = home && (findChannel(home, 'security_alerts') ?? findChannel(home, 'mod_logs'));
+  await channel
+    ?.send(`🚫 Quelqu'un a ajouté le bot sur un autre serveur (**${other.name}**, ${other.memberCount} membres, propriétaire <@${other.ownerId}>). Je l'ai quitté automatiquement. Pense à décocher « Public Bot » dans le portail développeur.`)
+    .catch(() => {});
 }
-
-async function checkTwitch(twitch, guild) {
-  const channel = findChannel(guild, 'live');
-  if (!channel) return;
-
-  const stream = await twitch.getLiveStream(TWITCH_CHANNEL);
-
-  if (stream && stream.id !== liveState.streamId) {
-    // Nouveau live (ou redémarrage du bot pendant un live déjà annoncé)
-    liveState.streamId = stream.id;
-    liveState.message = await findExistingLiveMessage(channel, stream.id);
-    if (liveState.message) return;
-
-    const user = await twitch.getUser(TWITCH_CHANNEL);
-    const url = `https://twitch.tv/${stream.user_login}`;
-    const thumb = stream.thumbnail_url.replace('{width}', '1280').replace('{height}', '720') + `?t=${Date.now()}`;
-    const notifRole = findRole(guild, 'notif_live');
-
-    liveState.message = await channel.send({
-      content: `${notifRole ?? ''} 🔴 **${stream.user_name}** est en live ! ${url}`.trim(),
-      allowedMentions: { roles: notifRole ? [notifRole.id] : [] },
-      embeds: [
-        new EmbedBuilder()
-          .setColor(BRAND_COLOR)
-          .setAuthor({ name: stream.user_name, iconURL: user?.profile_image_url, url })
-          .setTitle(stream.title || 'Live en cours')
-          .setURL(url)
-          .addFields({ name: '🎮 Jeu', value: stream.game_name || 'Non défini', inline: true })
-          .setImage(thumb)
-          .setFooter({ text: `Stream ID ${stream.id}` })
-          .setTimestamp(new Date(stream.started_at)),
-      ],
-    });
-    console.log(`🔴 Live détecté : ${stream.title}`);
-  } else if (!stream && liveState.streamId) {
-    // Fin du live : on met à jour l'annonce
-    if (liveState.message) {
-      const old = liveState.message.embeds[0];
-      await liveState.message
-        .edit({
-          content: '⚫ Le live est terminé, merci d\'être passé·e ! À la prochaine 💜',
-          embeds: [EmbedBuilder.from(old).setColor(0x2c2f33).setImage(null)],
-          allowedMentions: { parse: [] },
-        })
-        .catch(console.error);
-    }
-    console.log('⚫ Fin du live');
-    liveState.streamId = null;
-    liveState.message = null;
-  }
-}
-
-function startTwitchWatcher(guild) {
-  if (!TWITCH_CHANNEL || !TWITCH_CLIENT_ID || !TWITCH_CLIENT_SECRET) {
-    console.log('ℹ️  Alertes Twitch désactivées (TWITCH_CHANNEL / TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET manquants).');
-    return;
-  }
-  const twitch = new TwitchClient(TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET);
-  const tick = () => checkTwitch(twitch, guild).catch((err) => console.error('Twitch :', err.message));
-  tick();
-  setInterval(tick, POLL_MS);
-  console.log(`📺 Surveillance de twitch.tv/${TWITCH_CHANNEL} toutes les ${POLL_MS / 1000}s`);
-}
+client.on(Events.GuildCreate, (g) => g.id !== GUILD_ID && leaveForeignGuild(g));
 
 // ───────────────────────── Démarrage ─────────────────────────
 
@@ -219,8 +296,38 @@ client.once(Events.ClientReady, async () => {
   await guild.channels.fetch();
   await guild.roles.fetch();
   console.log(`✅ Connecté en tant que ${client.user.tag} sur "${guild.name}"`);
-  client.user.setActivity(TWITCH_CHANNEL ? `twitch.tv/${TWITCH_CHANNEL}` : 'la commu 💜', { type: 3 /* Watching */ });
-  startTwitchWatcher(guild);
+  // Bot privé : il quitte tout autre serveur où il aurait été ajouté
+  for (const other of client.guilds.cache.values()) if (other.id !== GUILD_ID) await leaveForeignGuild(other);
+  client.user.setActivity('Les Ronins de haro62190 ⚔️', { type: 3 /* Watching */ });
+  await tempVoice.cleanup(guild).catch((err) => console.error('Nettoyage des vocaux temporaires :', err.message));
+  await commands.register(guild).catch((err) => console.error('❌ Enregistrement des commandes / :', err.message));
+  require('./twitchlive').start(guild, twitch);
+  require('./temproles').start(guild);
+  require('./quarantine').start(guild);
+  // Permissions du bot : il n'a plus besoin d'être Administrateur, mais il lui faut celles-ci
+  const missingPerms = require('./permissions').missing(guild);
+  if (missingPerms.length) {
+    console.warn(`⚠️ Permissions manquantes au bot : ${missingPerms.join(', ')} (lance « npm run invite » pour le bon lien)`);
+    health.alert('Permissions manquantes', `Le bot n'a pas : ${missingPerms.join(', ')}.\nCertaines fonctions ne marcheront pas. Réinvite-le avec le lien de « npm run invite » ou ajoute ces permissions à son rôle.`).catch(() => {});
+  }
+  await health.start(client, guild);
+  require('./voicexp').start(guild);
+  require('./birthdays').start(guild);
+  require('./seasons').start(guild);
+  require('./quests').init(guild);
+  giveaway.start(client);
+  startTikTokWatcher(guild);
+  require('./stats').start(guild, twitch).catch((e) => console.error('Stats :', e.message));
+
+  require('./dashboard').start(client, GUILD_ID);
+  await require('./admin').brandBot(client, console.log).catch(() => {});
+  await security.resumeLockdown(guild).catch((e) => console.error('Verrouillage :', e.message));
+
+  // Sauvegarde automatique quotidienne du serveur
+  const backup = require('./backup');
+  const auto = () => guild.channels.fetch().then(() => { backup.autoBackup(guild); require('./dbbackup').daily(); return backup.offsiteBackup(guild); }).catch((e) => console.error('Sauvegarde auto :', e.message));
+  auto();
+  setInterval(auto, 6 * 3600_000);
 });
 
 client.login(DISCORD_TOKEN);
