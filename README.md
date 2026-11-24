@@ -494,6 +494,7 @@ src/dbbackup.js    copies de la base · src/logger.js journal d'erreurs · src/r
 src/dashboard-admin.js · dashboard-community.js · dashboard-ops.js   autres pages du tableau de bord
 assets/            icône, bannière, décors Kensei (carte de rang, bannière de niveau, site) et polices libres
 scripts/update.sh  mise à jour automatique depuis GitHub (VPS)
+scripts/banner.js  régénère la bannière du serveur (npm run banner)
 scripts/dev.js     mode test local : redémarrage auto + mises à jour GitHub (npm run dev)
 ```
 
