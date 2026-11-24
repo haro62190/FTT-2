@@ -32,14 +32,3 @@ test('classes méta : image de la classe', () => {
   assert.equal(p.files.length, 1);
   assert.equal(p.embeds[0].data.image.url, 'attachment://exemple-ar.png');
 });
-
-test('classes méta : liens vers la source (aucune copie du site)', () => {
-  const lo = require('../src/loadouts');
-  assert.equal(lo.safeUrl('javascript:alert(1)'), '');
-  assert.equal(lo.safeUrl('http://exemple.com'), '', 'https uniquement');
-  const l = lo.upsert({ game: 'MW4', weapon: 'Exemple', attachments: [{ slot: 'Canon', name: 'Long' }], sourceUrl: 'https://nolagvpn.com/en/best-loadouts/exemple-mw4' });
-  const row = lo.payload(l).components[0].toJSON().components;
-  assert.equal(row.length, 2);
-  assert.equal(row[0].url, 'https://nolagvpn.com/en/best-loadouts/exemple-mw4');
-  assert.equal(row[1].url, 'https://nolagvpn.com/en/mw4/meta');
-});

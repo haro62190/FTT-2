@@ -57,15 +57,7 @@ const DEFAULTS = {
   verification: { captcha: true },
   birthdays: { enabled: true, gift: 500 },
   automod: { enabled: true, extraWords: [] },
-  meta: {
-    games: ['Warzone', 'MW4', 'Black Ops 7'],
-    // Page de méta complète par jeu (lien « Méta complète » sous /meta) — modifiable sur le site
-    sources: {
-      Warzone: 'https://nolagvpn.com/en/warzone/meta',
-      MW4: 'https://nolagvpn.com/en/mw4/meta',
-      'Black Ops 7': 'https://nolagvpn.com/en/bo7/meta',
-    },
-  },
+  meta: { games: ['Warzone', 'MW4', 'Black Ops 7'] },
   notifications: {
     twitch: true,
     tiktok: true,

@@ -122,25 +122,22 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
         <div><label>Code de la classe</label><input type="text" name="code" maxlength="40" value="${esc(edit?.code ?? '')}" placeholder="Code de partage du jeu"></div></div>
         <label>Accessoires (jusqu'à ${lo.MAX_ATTACHMENTS})</label>${rows}
         <label>Conseil / atouts (facultatif)</label><input type="text" name="notes" maxlength="300" value="${esc(edit?.notes ?? '')}">
-        <label>Lien vers la page du build (facultatif, ex. la page de l'arme sur NoLagVPN)</label><input type="url" name="sourceUrl" maxlength="300" value="${esc(edit?.sourceUrl ?? '')}" placeholder="https://…">
         <button>${edit ? 'Enregistrer les modifications' : 'Ajouter et publier'}</button>${edit ? ' <a class="btn ghost" href="/meta">Annuler</a>' : ''}</form>
         <div class="card"><h3>📋 Classes enregistrées (${items.length})</h3><div>${tabs}</div>
         <table><tr><th>Arme</th><th>Jeu · mode</th><th>Palier</th><th>Accessoires</th><th>Mise à jour</th><th></th></tr>
         ${items.map((l) => `<tr><td><b>${esc(l.weapon)}</b>${l.category ? `<br><span class="muted">${esc(l.category)}</span>` : ''}</td><td>${esc(l.game)}<br><span class="muted">${esc(l.mode)}</span></td><td><span class="badge ${l.tier === 'S' ? 'warn' : ''}">${esc(l.tier)}</span></td><td class="muted">${l.attachments.map((a) => esc(a.name)).join(' · ')}</td><td style="white-space:nowrap">${fmtDate(l.updatedAt)}</td>
           <td style="white-space:nowrap"><a class="btn ghost" style="margin:0" href="/meta?edit=${encodeURIComponent(l.id)}">Modifier</a> <form method="post" class="inline">${csrf(sess)}${hidden('action', 'delete')}${hidden('id', l.id)}<button class="ghost" style="margin:0">Supprimer</button></form></td></tr>`).join('') || '<tr><td colspan="6" class="muted">Aucune classe pour l\'instant.</td></tr>'}
         </table></div>
-        <form method="post" class="card">${csrf(sess)}${hidden('action', 'games')}<h3>🎮 Jeux proposés et méta complète</h3><label>Un jeu par ligne, suivi si tu veux du lien de sa page de méta complète (bouton « 📊 Méta complète » sous /meta) — ex. <code>MW4 | https://nolagvpn.com/en/mw4/meta</code></label><textarea name="games" rows="5">${esc(lo.games().map((g) => (lo.sources()[g] ? `${g} | ${lo.sources()[g]}` : g)).join('\n'))}</textarea><button class="ghost">Enregistrer la liste</button></form>`,
+        <form method="post" class="card">${csrf(sess)}${hidden('action', 'games')}<h3>🎮 Jeux proposés</h3><label>Un jeu par ligne (ex. Warzone, MW4, Black Ops 7)</label><textarea name="games">${esc(lo.games().join('\n'))}</textarea><button class="ghost">Enregistrer la liste</button></form>`,
       };
     },
     async 'POST /meta'(guild, sess, body) {
       const lo = require('./loadouts');
       const action = body.get('action');
       if (action === 'games') {
-        const lines = String(body.get('games') ?? '').split('\n').map((l) => l.split('|').map((x) => x.trim())).filter(([g]) => g).slice(0, 15);
-        const list = [...new Set(lines.map(([g]) => g.slice(0, 40)))];
+        const list = [...new Set(String(body.get('games') ?? '').split('\n').map((g) => g.trim().slice(0, 40)).filter(Boolean))].slice(0, 15);
         if (!list.length) return '❌ Il faut au moins un jeu.';
         settings.set('meta.games', list);
-        settings.set('meta.sources', Object.fromEntries(lines.map(([g, u]) => [g.slice(0, 40), lo.safeUrl(u)]).filter(([, u]) => u)));
         return `✅ Jeux : ${list.join(', ')}`;
       }
       if (action === 'delete') {
@@ -162,7 +159,6 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
           attachments,
           code: body.get('code'),
           notes: body.get('notes'),
-          sourceUrl: body.get('sourceUrl'),
           previousId: body.get('previousId') || null,
         },
         sess.username,

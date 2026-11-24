@@ -4,7 +4,7 @@
  * affichées avec /meta (image aux couleurs Kensei + code de partage) et publiées dans 🎯┃classes-méta.
  * Pas de source automatique : il n'existe pas d'API officielle de la méta, ce sont les classes de la chaîne.
  */
-const { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags, PermissionFlagsBits: P, SlashCommandBuilder } = require('discord.js');
+const { AttachmentBuilder, EmbedBuilder, MessageFlags, PermissionFlagsBits: P, SlashCommandBuilder } = require('discord.js');
 const { BRAND_COLOR, findChannel } = require('./shared');
 const { db, save } = require('./store');
 const settings = require('./settings');
@@ -19,16 +19,6 @@ const all = () => (db.loadouts ??= {});
 const games = () => settings.get('meta.games') ?? ['Warzone', 'MW4', 'Black Ops 7'];
 const slug = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const idOf = (game, mode, weapon) => `${slug(game)}:${slug(mode)}:${slug(weapon)}`;
-/** Lien https valide, sinon chaîne vide. */
-const safeUrl = (u) => {
-  try {
-    const url = new URL(String(u ?? '').trim());
-    return url.protocol === 'https:' ? url.href.slice(0, 300) : '';
-  } catch {
-    return '';
-  }
-};
-const sources = () => settings.get('meta.sources') ?? {};
 const clean = (s, max) => String(s ?? '').replace(/[\r\n]+/g, ' ').trim().slice(0, max);
 
 /** Liste triée : jeu, palier (S d'abord), arme. */
@@ -80,7 +70,6 @@ function upsert(input, byName = null) {
     attachments,
     code: clean(input.code, 40),
     notes: clean(input.notes, 300),
-    sourceUrl: safeUrl(input.sourceUrl),
     by: clean(byName, 40) || prev?.by || null,
     createdAt: prev?.createdAt ?? Date.now(),
     updatedAt: Date.now(),
@@ -116,24 +105,14 @@ function embed(l) {
     .setTimestamp(l.updatedAt);
 }
 
-/** Boutons-liens : page de l'arme sur le site source et méta complète du jeu. */
-function links(l = null, game = l?.game) {
-  const buttons = [];
-  if (l?.sourceUrl) buttons.push(new ButtonBuilder().setStyle(ButtonStyle.Link).setURL(l.sourceUrl).setLabel(`Build ${l.weapon}`.slice(0, 80)).setEmoji('🔗'));
-  const full = safeUrl(sources()[game]);
-  if (full) buttons.push(new ButtonBuilder().setStyle(ButtonStyle.Link).setURL(full).setLabel(`Méta complète ${game}`.slice(0, 80)).setEmoji('📊'));
-  return buttons.length ? [new ActionRowBuilder().addComponents(buttons)] : [];
-}
-
-/** Message complet : image + embed (texte seul si l'image ne peut pas être générée) + liens. */
+/** Message complet : image + embed (texte seul si l'image ne peut pas être générée). */
 function payload(l) {
-  const components = links(l);
   try {
     const png = require('./loadoutcard').renderLoadout(l);
-    return { embeds: [embed(l)], files: [new AttachmentBuilder(png, { name: `${slug(l.weapon) || 'classe'}.png` })], components };
+    return { embeds: [embed(l)], files: [new AttachmentBuilder(png, { name: `${slug(l.weapon) || 'classe'}.png` })] };
   } catch (err) {
     console.error('Image de classe :', err.message);
-    return { embeds: [embed(l).setImage(null)], files: [], components };
+    return { embeds: [embed(l).setImage(null)], files: [] };
   }
 }
 
@@ -206,7 +185,7 @@ const commands = [
       const game = i.options.getString('jeu');
       if (!weapon) {
         const g = game ?? list()[0]?.game ?? games()[0];
-        return i.reply({ embeds: [tierList(g)], components: links(null, g) });
+        return i.reply({ embeds: [tierList(g)] });
       }
       const l = find(weapon, game);
       if (!l) return i.reply({ content: `🔎 Aucune classe pour « ${weapon} ». Essaie \`/meta\` sans arme pour voir la liste.`, flags: MessageFlags.Ephemeral });
@@ -234,8 +213,7 @@ const commands = [
           .addStringOption((o) => o.setName('categorie').setDescription('Type d\'arme').addChoices(...CATEGORIES.map((c) => ({ name: c, value: c }))))
           .addStringOption((o) => o.setName('palier').setDescription('Palier méta').addChoices(...TIERS.map((t) => ({ name: `Palier ${t}`, value: t }))))
           .addStringOption((o) => o.setName('code').setDescription('Code de partage de la classe').setMaxLength(40))
-          .addStringOption((o) => o.setName('notes').setDescription('Conseil, atouts…').setMaxLength(300))
-          .addStringOption((o) => o.setName('lien').setDescription('Lien vers la page du build (ex. NoLagVPN)').setMaxLength(300)),
+          .addStringOption((o) => o.setName('notes').setDescription('Conseil, atouts…').setMaxLength(300)),
       )
       .addSubcommand((s) =>
         s
@@ -266,7 +244,6 @@ const commands = [
           attachments,
           code: i.options.getString('code') ?? '',
           notes: i.options.getString('notes') ?? '',
-          sourceUrl: i.options.getString('lien') ?? '',
         },
         i.member?.displayName ?? i.user.username,
       );
@@ -278,4 +255,4 @@ const commands = [
   },
 ];
 
-module.exports = { safeUrl, sources, links, SLOTS, CATEGORIES, MODES, TIERS, MAX_ATTACHMENTS, games, list, find, upsert, remove, publish, unpublish, parseAttachments, payload, tierList, commands };
+module.exports = { SLOTS, CATEGORIES, MODES, TIERS, MAX_ATTACHMENTS, games, list, find, upsert, remove, publish, unpublish, parseAttachments, payload, tierList, commands };
