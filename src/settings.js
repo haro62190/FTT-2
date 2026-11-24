@@ -19,6 +19,14 @@ const DEFAULTS = {
     announce: true,
     // niveau -> ID de rôle (en plus des rôles `levelReward` de config/server.js)
     rewards: {},
+    minLength: 3, // messages plus courts (« ok », « mdr ») : pas d'XP
+    ignoreBotChannel: true, // pas d'XP dans 🤖┃commandes
+    noXpChannels: [],
+    // Bonus d'XP par rôle (le meilleur s'applique) ; « booster » = boost Nitro du serveur
+    roleMultipliers: { vip: 1.25, sub: 1.25, booster: 1.25 },
+    // Prime en ryō la première fois qu'un grade est atteint, et bonus de /daily par grade
+    gradeBonus: { rank_ashigaru: 500, rank_samurai: 1500, rank_daimyo: 5000 },
+    gradeDaily: { rank_ashigaru: 10, rank_samurai: 30, rank_daimyo: 75 },
   },
   security: {
     raidJoins: 8,
@@ -42,7 +50,7 @@ const DEFAULTS = {
     ...config.security,
   },
   economy: { enabled: true, daily: 100, voicePerMinute: 2 },
-  seasons: { enabled: true, rewards: [3000, 2000, 1000] },
+  seasons: { enabled: true, rewards: [3000, 2000, 1000], weekly: true, weeklyReward: 750 },
   voiceXp: { enabled: true, xpPerMinute: 10 },
   hallOfFame: { emoji: '⚔️', threshold: 5 },
   verification: { captcha: true },
@@ -119,6 +127,7 @@ const MODULES = [
   ['levels', '⚔️ Niveaux et XP des messages', 'levels.enabled', 'Communauté'],
   ['voiceXp', '🎙️ XP et ryō en vocal', 'voiceXp.enabled', 'Communauté'],
   ['seasons', '🏆 Saisons du mois', 'seasons.enabled', 'Communauté'],
+  ['weekly', '🔥 Pilier de la semaine', 'seasons.weekly', 'Communauté'],
   ['economy', '💰 Économie ryō', 'economy.enabled', 'Communauté'],
   ['quests', '📜 Quêtes quotidiennes et hebdomadaires', 'modules.quests', 'Communauté'],
   ['birthdays', '🎂 Anniversaires', 'birthdays.enabled', 'Communauté'],

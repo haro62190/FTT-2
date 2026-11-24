@@ -54,6 +54,7 @@ async function onSuggestionMessage(message) {
   const card = await channel.send(renderSuggestion(s, message.author));
   suggestions()[card.id] = s;
   save();
+  require('./quests').progress(message.author.id, 'suggestion');
   await message.delete().catch(() => {});
   await card.startThread({ name: `💬 Suggestion #${s.number}`, autoArchiveDuration: 10080 }).catch(() => {});
 }
@@ -193,6 +194,17 @@ function register(client, guildId) {
   client.on(Events.MessageCreate, (m) => m.guild?.id === guildId && onSuggestionMessage(m).catch((e) => console.error('Suggestions :', e.message)));
   const react = (r) => (r.message.guildId === guildId ? onReaction(r).catch((e) => console.error('Hall of Fame :', e.message)) : null);
   client.on(Events.MessageReactionAdd, react);
+  // Quêtes « réagir à N messages » : une seule fois par message (pas de farm en retirant / remettant)
+  const seen = new Map();
+  client.on(Events.MessageReactionAdd, (r, user) => {
+    if (user.bot || r.message.guildId !== guildId || r.message.author?.id === user.id) return;
+    const key = `${user.id}:${r.message.id}`;
+    if (seen.has(key)) return;
+    seen.set(key, Date.now());
+    if (seen.size > 20_000) for (const k of [...seen.keys()].slice(0, 5_000)) seen.delete(k);
+    require('./memberstats').bump(user.id, 'reactions');
+    require('./quests').progress(user.id, 'reactions');
+  });
   client.on(Events.MessageReactionRemove, react);
 }
 

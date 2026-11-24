@@ -34,17 +34,24 @@ function add(id, amount) {
 
 const lastMsg = new Map();
 /** Message écrit : 5 à 10 ryō, une fois par minute maximum. */
-function onMessage(userId) {
+function onMessage(userId, member = null) {
   if (!enabled()) return;
   const now = Date.now();
   if (now - (lastMsg.get(userId) ?? 0) < 60_000) return;
   lastMsg.set(userId, now);
-  add(userId, 5 + Math.floor(Math.random() * 6));
+  earn(userId, (5 + Math.floor(Math.random() * 6)) * require('./boost').multiplier(member, 'ryo'));
 }
 
 /** Minute passée en vocal (appelé par src/voicexp.js). */
-function onVoiceMinute(userId) {
-  if (enabled()) add(userId, settings.get('economy.voicePerMinute') ?? 2);
+function onVoiceMinute(userId, member = null) {
+  if (enabled()) earn(userId, (settings.get('economy.voicePerMinute') ?? 2) * require('./boost').multiplier(member, 'ryo'));
+}
+
+/** Gain « mérité » (compté dans les statistiques du membre), contrairement aux transferts. */
+function earn(userId, amount) {
+  amount = Math.round(amount);
+  add(userId, amount);
+  require('./memberstats').bump(userId, 'ryoEarned', amount);
 }
 
 // ───────────────────────── Commandes ─────────────────────────
@@ -126,11 +133,16 @@ const commands = [
       if (wait > 0) return i.reply(ephemeral(`⏳ Reviens <t:${Math.floor((now + wait) / 1000)}:R> pour ta prochaine récompense.`));
       w.streak = now - w.lastDaily < 48 * 3600_000 ? Math.min(w.streak + 1, 7) : 1;
       const base = settings.get('economy.daily') ?? 100;
-      const gain = base + (w.streak - 1) * Math.round(base * 0.25);
+      const grade = require('./levels').gradeDailyBonus(i.member);
+      const gain = Math.round((base + (w.streak - 1) * Math.round(base * 0.25) + grade) * require('./boost').multiplier(i.member, 'ryo'));
       w.lastDaily = now;
       w.bal += gain;
       save();
-      return i.reply(`🎁 ${i.user} reçoit ${fmt(gain)} ! 🔥 Série : ${w.streak}/7 · Solde : ${fmt(w.bal)}`);
+      const stats = require('./memberstats');
+      stats.bump(i.user.id, 'ryoEarned', gain);
+      stats.max(i.user.id, 'bestStreak', w.streak);
+      require('./quests').progress(i.user.id, 'daily');
+      return i.reply(`🎁 ${i.user} reçoit ${fmt(gain)}${grade ? ` (dont +${grade} de bonus de grade)` : ''} ! 🔥 Série : ${w.streak}/7 · Solde : ${fmt(w.bal)}`);
     },
   },
   {
@@ -226,6 +238,14 @@ const commands = [
         return click.update({ content: '💸 L\'un des deux duellistes n\'a plus assez de ryō.', components: [] });
       }
       const [winner, loser] = Math.random() < 0.5 ? [i.user, foe] : [foe, i.user];
+      const stats = require('./memberstats');
+      const quests = require('./quests');
+      for (const u of [i.user, foe]) {
+        stats.bump(u.id, 'duels');
+        quests.progress(u.id, 'duel');
+      }
+      stats.bump(winner.id, 'duelsWon');
+      quests.progress(winner.id, 'duelWin');
       if (bet) {
         add(loser.id, -bet);
         add(winner.id, bet);
@@ -257,6 +277,7 @@ const commands = [
       const beats = { pierre: 'ciseaux', feuille: 'pierre', ciseaux: 'feuille' };
       const result = me === bot ? 0 : beats[me] === bot ? 1 : -1;
       if (bet && result) add(i.user.id, result * bet);
+      require('./quests').progress(i.user.id, 'chifoumi');
       const text = result === 0 ? '🤝 Égalité !' : result > 0 ? `🏆 Tu gagnes${bet ? ` ${fmt(bet)}` : ''} !` : `💀 Perdu${bet ? `, tu perds ${fmt(bet)}` : ''}…`;
       return i.reply(`${icons[me]} contre ${icons[bot]} — ${text}`);
     },
@@ -279,4 +300,4 @@ const commands = [
   },
 ];
 
-module.exports = { onMessage, onVoiceMinute, add, wallet, commands };
+module.exports = { onMessage, onVoiceMinute, add, earn, wallet, commands };

@@ -117,7 +117,10 @@ async function handleInteraction(i) {
     return true;
   }
   const idx = g.entrants.indexOf(i.user.id);
-  if (idx === -1) g.entrants.push(i.user.id);
+  if (idx === -1) {
+    g.entrants.push(i.user.id);
+    require('./quests').progress(i.user.id, 'giveaway');
+  }
   else g.entrants.splice(idx, 1);
   save();
   await i.update(render(g));

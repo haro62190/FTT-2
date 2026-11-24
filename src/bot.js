@@ -17,6 +17,7 @@ const security = require('./security');
 const settings = require('./settings');
 const tickets = require('./tickets');
 const economy = require('./economy');
+const quests = require('./quests');
 const giveaway = require('./giveaway');
 const community = require('./community');
 const health = require('./health');
@@ -168,10 +169,13 @@ client.on(Events.MessageDelete, async (message) => {
 
 client.on(Events.MessageCreate, async (message) => {
   if (!message.guild || message.guild.id !== GUILD_ID || message.author.bot) return;
-  economy.onMessage(message.author.id);
   require('./history').bump('messages');
+  const counted = levels.counts({ content: message.content, attachments: message.attachments.size, channelId: message.channelId, guild: message.guild });
+  if (!counted) return; // message trop court ou salon sans XP : ni XP, ni ryō, ni quête
+  economy.onMessage(message.author.id, message.member);
+  quests.progress(message.author.id, 'messages');
   if (!settings.get('levels.enabled')) return;
-  const newLevel = levels.onMessage(message.author.id);
+  const newLevel = levels.onMessage(message.author.id, message.member);
   if (newLevel !== null) {
     const rewards = message.member ? await levels.applyRewards(message.member, newLevel) : [];
     if (settings.get('levels.announce') || rewards.length) {
@@ -179,7 +183,7 @@ client.on(Events.MessageCreate, async (message) => {
         .send({
           content:
             `⚔️ GG ${message.author}, tu passes au **niveau ${newLevel}** !` +
-            (rewards.length ? `\n🎖️ Nouveau grade : ${rewards.map((r) => `**${r.name}**`).join(', ')}` : ''),
+            (rewards.length ? `\n🎖️ Nouveau grade : ${rewards.map((r) => `**${r.name}**${r.bonus ? ` (+${r.bonus} 両)` : ''}`).join(', ')}` : ''),
           allowedMentions: { users: [message.author.id] },
         })
         .catch(() => {});
@@ -309,6 +313,7 @@ client.once(Events.ClientReady, async () => {
   require('./voicexp').start(guild);
   require('./birthdays').start(guild);
   require('./seasons').start(guild);
+  require('./quests').init(guild);
   giveaway.start(client);
   startTikTokWatcher(guild);
   require('./stats').start(guild, twitch).catch((e) => console.error('Stats :', e.message));

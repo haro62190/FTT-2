@@ -89,9 +89,19 @@ const commands = [
         .addFields(
           { name: 'Compte créé', value: `<t:${Math.floor(member.user.createdTimestamp / 1000)}:D>`, inline: true },
           { name: 'Arrivé sur le serveur', value: `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>`, inline: true },
-          { name: 'Niveau', value: `${levels.rankOf(member.id).level}`, inline: true },
           { name: `Rôles (${roles.size})`, value: roles.map((r) => `${r}`).join(' ').slice(0, 1024) || 'Aucun' },
         );
+      const st = require('./memberstats').full(member.id);
+      const h = Math.floor(st.voiceMinutes / 60);
+      embed.addFields(
+        { name: '⚔️ Niveau', value: `**${st.level}** · ${st.totalXp.toLocaleString('fr-FR')} XP${st.rank ? ` · #${st.rank}` : ''}`, inline: true },
+        { name: '🏆 Classements', value: `Mois : ${st.seasonRank ? `#${st.seasonRank}` : '—'} · Semaine : ${st.weekRank ? `#${st.weekRank}` : '—'}`, inline: true },
+        { name: '💬 Activité', value: `${st.messages.toLocaleString('fr-FR')} messages · ${h} h ${st.voiceMinutes % 60} min de vocal · ${st.reactions} réactions`, inline: false },
+        { name: '💰 Ryō', value: `${st.ryo.toLocaleString('fr-FR')} 両 (gagnés : ${st.ryoEarned.toLocaleString('fr-FR')}) · série /daily ${st.streak} (record ${st.bestStreak})`, inline: false },
+        { name: '📜 Quêtes', value: `${st.questsDone} terminées`, inline: true },
+        { name: '⚔️ Duels', value: `${st.duelsWon} / ${st.duels} gagnés`, inline: true },
+        ...(st.pillarWins ? [{ name: '🔥 Pilier de la semaine', value: `${st.pillarWins} fois`, inline: true }] : []),
+      );
       return i.reply({ embeds: [embed] });
     },
   },
@@ -419,6 +429,9 @@ commands.push(
   ...require('./custom').commands,
   ...require('./guide').commands,
   ...require('./quarantine').commands,
+  ...require('./quests').commands,
+  ...require('./boost').commands,
+  ...require('./memberstats').commands,
 );
 
 // /help = /aide

@@ -109,6 +109,8 @@ const NAV = [
   ['/bienvenue', '🏮 Bienvenue & départ'],
   ['/niveaux', '⚔️ Niveaux & grades'],
   ['/saisons', '🏆 Saisons du mois'],
+  ['/membres', '👤 Membres & classements'],
+  ['/quetes-boost', '📜 Quêtes, boosts & grades'],
   ['/economie', '💰 Économie & boutique'],
   ['/giveaways', '🎁 Giveaways'],
   ['/evenements', '🎌 Événements'],
@@ -494,6 +496,7 @@ const pages = {
 Object.assign(pages, require('./dashboard-pages')({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }));
 // Pages d'administration (remplacent aussi les anciennes versions de Twitch & TikTok et Tickets)
 Object.assign(pages, require('./dashboard-admin')({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }));
+Object.assign(pages, require('./dashboard-community')({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }));
 
 // ───────────────────────── Connexion Discord ─────────────────────────
 

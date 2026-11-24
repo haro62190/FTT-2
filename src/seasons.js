@@ -13,9 +13,22 @@ const currentMonth = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'E
 const monthName = (ym) => `${MONTHS[Number(ym.slice(5, 7)) - 1]} ${ym.slice(0, 4)}`;
 const season = () => (db.season ??= { month: currentMonth(), xp: {} });
 
-/** XP gagnée (message ou vocal) : comptée aussi pour la saison en cours. */
+// Semaine en cours (lundi, heure de Paris) pour le 🔥 Pilier de la semaine
+function currentWeek() {
+  const [y, m, d] = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' }).split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d));
+  t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7));
+  return t.toISOString().slice(0, 10);
+}
+const week = () => (db.week ??= { week: currentWeek(), xp: {} });
+
+/** XP gagnée (message ou vocal) : comptée aussi pour la saison et la semaine en cours. */
 function add(userId, amount) {
-  if (settings.get('seasons.enabled') === false) return;
+  if (settings.get('seasons.weekly') !== false) {
+    const w = week();
+    if (w.week === currentWeek()) w.xp[userId] = (w.xp[userId] ?? 0) + amount;
+  }
+  if (settings.get('seasons.enabled') === false) return save();
   const s = season();
   if (s.month !== currentMonth()) return; // la clôture se fait dans check()
   s.xp[userId] = (s.xp[userId] ?? 0) + amount;
@@ -31,6 +44,55 @@ const top = (n = 10, s = season()) =>
 function rankOf(userId) {
   const i = top(Infinity).findIndex((e) => e.userId === userId);
   return i === -1 ? null : i + 1;
+}
+
+const weekTop = (n = 10, w = week()) =>
+  Object.entries(w.xp)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([userId, xp]) => ({ userId, xp }));
+
+function weekRankOf(userId) {
+  const i = weekTop(Infinity).findIndex((e) => e.userId === userId);
+  return i === -1 ? null : i + 1;
+}
+
+/** Lundi : le plus actif de la semaine passée reçoit 🔥 Pilier de la semaine + des ryō. */
+async function closeWeek(guild) {
+  const w = week();
+  const best = weekTop(3, w);
+  const reward = settings.get('seasons.weeklyReward') ?? 750;
+  const role = findRole(guild, 'pillar');
+  if (role?.editable) for (const m of role.members.values()) await m.roles.remove(role, 'Nouvelle semaine').catch(() => {});
+  if (best[0]) {
+    require('./economy').add(best[0].userId, reward);
+    require('./memberstats').bump(best[0].userId, 'ryoEarned', reward);
+    require('./memberstats').bump(best[0].userId, 'pillarWins');
+    const winner = await guild.members.fetch(best[0].userId).catch(() => null);
+    if (winner && role?.editable) await winner.roles.add(role, 'Pilier de la semaine').catch(() => {});
+    const medals = ['🥇', '🥈', '🥉'];
+    const channel = findChannel(guild, 'announcements') ?? findChannel(guild, 'general');
+    await channel
+      ?.send({
+        content: `<@${best[0].userId}>`,
+        allowedMentions: { users: [best[0].userId] },
+        embeds: [
+          new EmbedBuilder()
+            .setColor(0xff7a1a)
+            .setTitle('🔥 柱 ・ Pilier de la semaine')
+            .setDescription(
+              best.map((p, i) => `${medals[i]} <@${p.userId}> — **${p.xp.toLocaleString('fr-FR')} XP**`).join('\n') +
+                `\n\n<@${best[0].userId}> reçoit ${role ? `${role} et ` : ''}**${reward} 両** ! Nouvelle semaine, tout le monde repart de zéro.`,
+            ),
+        ],
+      })
+      .catch(() => {});
+  }
+  (db.weeksHistory ??= []).unshift({ week: w.week, top: weekTop(10, w) });
+  db.weeksHistory = db.weeksHistory.slice(0, 26);
+  db.week = { week: currentWeek(), xp: {} };
+  save();
+  console.log(`🔥 Semaine ${w.week} clôturée`);
 }
 
 async function close(guild) {
@@ -75,6 +137,7 @@ async function close(guild) {
 }
 
 async function check(guild) {
+  if (settings.get('seasons.weekly') !== false && week().week !== currentWeek()) await closeWeek(guild);
   if (settings.get('seasons.enabled') === false) return;
   if (season().month !== currentMonth()) await close(guild);
 }
@@ -115,4 +178,4 @@ const commands = [
   },
 ];
 
-module.exports = { add, top, rankOf, start, check, close, commands, monthName };
+module.exports = { add, top, rankOf, weekTop, weekRankOf, closeWeek, currentWeek, start, check, close, commands, monthName };

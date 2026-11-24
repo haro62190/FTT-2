@@ -54,6 +54,8 @@ module.exports = {
     { key: 'sub', name: '⭐ Abonné Twitch', color: 0xd92b2b, hoist: true },
     // Donné chaque mois au premier de la saison (/saison)
     { key: 'champion', name: '🏆 Champion du mois', color: 0xffc400, hoist: true },
+    // Donné chaque lundi au membre qui a gagné le plus d'XP pendant la semaine
+    { key: 'pillar', name: '🔥 Pilier de la semaine', color: 0xff7a1a, hoist: true },
     // Couleurs de pseudo achetables dans la boutique (au-dessus des grades pour que la couleur s'affiche)
     { key: 'color_sakura', name: '🌸 Sakura', color: 0xff8fb3 },
     { key: 'color_blood', name: '🩸 Sang', color: 0xb00000 },

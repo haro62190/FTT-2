@@ -16,16 +16,17 @@ async function tick(guild) {
     if (humans.size < 2) continue;
     for (const member of humans.values()) {
       if (member.voice.selfDeaf || member.voice.serverDeaf) continue;
-      economy.onVoiceMinute(member.id);
+      economy.onVoiceMinute(member.id, member);
       require('./history').bump('voice');
-      const lvl = levels.addXp(member.id, xp);
+      require('./quests').progress(member.id, 'voice');
+      const lvl = levels.addXp(member.id, xp, member);
       if (lvl !== null) {
         const rewards = await levels.applyRewards(member, lvl);
         if (settings.get('levels.announce') || rewards.length) {
           const where = findChannel(guild, 'bot_commands') ?? findChannel(guild, 'general');
           await where
             ?.send({
-              content: `🎙️ GG ${member}, tu passes au **niveau ${lvl}** en vocal !${rewards.length ? `\n🎖️ Nouveau grade : ${rewards.map((r) => `**${r.name}**`).join(', ')}` : ''}`,
+              content: `🎙️ GG ${member}, tu passes au **niveau ${lvl}** en vocal !${rewards.length ? `\n🎖️ Nouveau grade : ${rewards.map((r) => `**${r.name}**${r.bonus ? ` (+${r.bonus} 両)` : ''}`).join(', ')}` : ''}`,
               allowedMentions: { users: [member.id] },
             })
             .catch(() => {});
