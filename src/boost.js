@@ -33,6 +33,7 @@ function multiplier(member, kind = 'xp') {
 async function startBoost(guild, { xp = 1, ryo = 1, hours = 2, reason = '', by = null }) {
   db.boost = { xp, ryo, until: Date.now() + hours * 3600_000, reason, by, started: Date.now() };
   save();
+  require('./feed').push('🔥', `Boost lancé : XP ×${xp} · ryō ×${ryo} pendant ${hours} h`);
   const channel = findChannel(guild, 'announcements') ?? findChannel(guild, 'general');
   await channel
     ?.send({

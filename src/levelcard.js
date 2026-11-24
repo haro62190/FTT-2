@@ -1,55 +1,89 @@
 /**
- * Bannière « Passage de niveau » (image fournie par haro62190 : assets/levelup.jpg).
- * Le texte d'exemple « {level} » de l'image est masqué puis réécrit avec le pseudo et le vrai niveau.
+ * Bannière « Passage de niveau » d'après la maquette officielle Kensei :
+ * décor samouraï / lune rouge / pagodes (assets/levelup-bg.jpg), cadre rouge et or,
+ * « 剣聖 KENSEI » et « LES RONINS » en tête, félicitations au pinceau doré, plaque « Nouveau grade ».
  */
 const fs = require('fs');
 const path = require('path');
 const { Resvg } = require('@resvg/resvg-js');
-const { BRAND } = require('./brand');
+const { BRAND, resvgFont } = require('./brand');
 
-const BG = path.join(__dirname, '..', 'assets', 'levelup.jpg');
-const FONT = BRAND.fonts.display;
+const BG = path.join(__dirname, '..', 'assets', 'levelup-bg.jpg');
+const C = BRAND.colors;
+const F = BRAND.fonts;
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]);
 const cut = (s, max) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
-// Les emojis ne sont pas dans les polices du serveur : on les retire du texte dessiné
+// Les emojis ne sont pas dans les polices : on les retire du texte dessiné
 const noEmoji = (s) => String(s ?? '').replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '').replace(/\s+/g, ' ').trim();
-// Taille de police pour qu'une ligne tienne dans le cadre (≈ 620 px de large)
-const fit = (text, max, width = 620) => Math.max(26, Math.min(max, Math.floor(width / (text.length * 0.6))));
+// Taille de police pour qu'une ligne tienne dans `width` (Kaushan Script ≈ 0,5 × taille par caractère)
+const fit = (text, max, width) => Math.max(30, Math.min(max, Math.floor(width / (Math.max(1, text.length) * 0.5))));
 
 let bgUri = null;
 const background = () => (bgUri ??= `data:image/jpeg;base64,${fs.readFileSync(BG).toString('base64')}`);
 const available = () => fs.existsSync(BG);
 
+// Coin de cadre doré (motif de clé japonaise), dessiné en haut à gauche puis retourné pour les 3 autres coins
+const CORNER = '<path d="M0 0H70M0 0V70M10 10H54V24H24V54H10Z" fill="none" stroke="url(#gold)" stroke-width="3"/><path d="M18 18H40V32H32V40H18Z" fill="url(#gold)" opacity=".85"/>';
+
 /**
  * @param {{ username: string, level: number, grade?: string }} d
- * @returns {Buffer} PNG 1280×720
+ * @returns {Buffer} PNG 1300×400
  */
 function renderLevelUp({ username, level, grade = null }) {
-  const W = 1672;
-  const H = 941;
-  const name = cut(noEmoji(username) || 'Ronin', 24);
+  const W = 1634;
+  const H = 502;
+  const name = cut(noEmoji(username) || 'Ronin', 22);
   const gradeName = grade ? cut(noEmoji(grade), 24) : null;
-  const line2 = Boolean(gradeName);
   const title = `Félicitations ${name} !`;
-  const titleSize = fit(title, line2 ? 44 : 50);
+  const titleSize = fit(title, 92, 1250);
+  const plate = gradeName ? `Nouveau grade : ${gradeName}` : null;
+  const plateW = plate ? Math.min(760, Math.max(380, plate.length * 17 + 120)) : 0;
+  const y1 = plate ? 322 : 350;
+  const y2 = plate ? 386 : 425;
+  const corners = [
+    `translate(26,26)`,
+    `translate(${W - 26},26) scale(-1,1)`,
+    `translate(26,${H - 26}) scale(1,-1)`,
+    `translate(${W - 26},${H - 26}) scale(-1,-1)`,
+  ];
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <defs>
-    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${BRAND.colors.goldLight}"/><stop offset=".55" stop-color="${BRAND.colors.gold}"/><stop offset="1" stop-color="#b87916"/></linearGradient>
-    <linearGradient id="roninRed" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${BRAND.colors.redDeep}"/><stop offset=".5" stop-color="${BRAND.colors.red}"/><stop offset="1" stop-color="${BRAND.colors.redLight}"/></linearGradient>
-    <filter id="soft" x="-5%" y="-20%" width="110%" height="140%"><feGaussianBlur stdDeviation="6"/></filter>
-    <filter id="glow" x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="5" result="b"/><feFlood flood-color="${BRAND.colors.gold}" flood-opacity=".55"/><feComposite in2="b" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    <filter id="shadow" x="-5%" y="-30%" width="110%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity=".9"/></filter>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.goldLight}"/><stop offset=".5" stop-color="${C.gold}"/><stop offset="1" stop-color="#b8780f"/></linearGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset=".45" stop-color="#000" stop-opacity=".1"/><stop offset=".72" stop-color="#000" stop-opacity=".6"/><stop offset="1" stop-color="#000" stop-opacity=".88"/></linearGradient>
+    <linearGradient id="top" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a0b0b"/><stop offset="1" stop-color="#0b0405"/></linearGradient>
+    <filter id="shadow" x="-5%" y="-30%" width="110%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity=".95"/></filter>
+    <filter id="glow" x="-5%" y="-40%" width="110%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="7" result="b"/><feFlood flood-color="${C.red}" flood-opacity=".6"/><feComposite in2="b" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
   </defs>
-  <image width="${W}" height="${H}" xlink:href="${background()}"/>
-  <rect x="8" y="8" width="${W-16}" height="${H-16}" rx="22" fill="none" stroke="url(#roninRed)" stroke-width="8" opacity=".9"/>
-  <!-- On efface le texte d'exemple du cadre (noir légèrement rouge, comme le cadre de l'image) -->
-  <rect x="505" y="658" width="680" height="132" rx="14" fill="#090506" filter="url(#soft)"/>
-  <rect x="520" y="662" width="650" height="122" rx="10" fill="#090506"/>
-  <text x="845" y="${line2 ? 716 : 722}" text-anchor="middle" font-family="${FONT}" font-weight="900" font-style="italic" font-size="${titleSize}" fill="url(#gold)" filter="url(#glow)">${esc(title)}</text>
-  <text x="845" y="${line2 ? 758 : 770}" text-anchor="middle" font-family="${FONT}" font-weight="700" font-size="${line2 ? 30 : 34}" fill="${BRAND.colors.text}" filter="url(#shadow)">Tu viens d’atteindre le niveau <tspan fill="url(#gold)" font-weight="900" font-size="${line2 ? 36 : 42}">${Number(level)}</tspan> !</text>
-  ${line2 ? `<text x="845" y="786" text-anchor="middle" font-family="${FONT}" font-weight="700" font-size="22" fill="${BRAND.colors.redLight}" filter="url(#shadow)">${esc(`Nouveau grade : ${gradeName}`)}</text>` : ''}
+  <rect width="${W}" height="${H}" fill="${C.ink}"/>
+  <image width="${W}" height="${H}" preserveAspectRatio="xMidYMin slice" xlink:href="${background()}"/>
+  <rect width="${W}" height="130" fill="url(#top)"/>
+  <rect y="${H * 0.35}" width="${W}" height="${H * 0.65}" fill="url(#fade)"/>
+
+  <!-- Cadre rouge et or -->
+  <rect x="6" y="6" width="${W - 12}" height="${H - 12}" fill="none" stroke="${C.red}" stroke-width="6"/>
+  <rect x="18" y="18" width="${W - 36}" height="${H - 36}" fill="none" stroke="url(#gold)" stroke-width="2" opacity=".8"/>
+  ${corners.map((t) => `<g transform="${t}">${CORNER}</g>`).join('')}
+
+  <!-- En-tête -->
+  <text x="70" y="104" font-family="${F.kanji}" font-size="64" fill="#f4f1f1" filter="url(#shadow)">剣聖</text>
+  <text x="212" y="102" font-family="${F.brush}" font-size="58" fill="url(#gold)" filter="url(#shadow)">KENSEI</text>
+  <text x="${W - 70}" y="96" text-anchor="end" font-family="${F.brush}" font-size="46" fill="#e9e4e4" filter="url(#shadow)">LES RONINS</text>
+
+  <!-- Félicitations -->
+  <text x="${W / 2}" y="${y1}" text-anchor="middle" font-family="${F.brush}" font-size="${titleSize}" fill="url(#gold)" filter="url(#shadow)">${esc(title)}</text>
+  <text x="${W / 2}" y="${y2}" text-anchor="middle" font-family="${F.brush}" font-size="50" fill="#f7f3f3" filter="url(#shadow)">Tu viens d’atteindre le <tspan fill="${C.redLight}" filter="url(#glow)">niveau ${Number(level)}</tspan> !</text>
+  ${
+    plate
+      ? `<g transform="translate(${W / 2},438)">
+    <path d="M${-plateW / 2} 0 L${-plateW / 2 + 26} -30 H${plateW / 2 - 26} L${plateW / 2} 0 L${plateW / 2 - 26} 30 H${-plateW / 2 + 26} Z" fill="url(#plate)" stroke="url(#gold)" stroke-width="2.5"/>
+    <path d="M${-plateW / 2 - 14} 0 l10 -10 l10 10 l-10 10z M${plateW / 2 + 14} 0 l-10 -10 l-10 10 l10 10z" fill="url(#gold)"/>
+    <text y="11" text-anchor="middle" font-family="${F.brush}" font-size="32" fill="url(#gold)">${esc(plate)}</text>
+  </g>`
+      : ''
+  }
 </svg>`;
-  return new Resvg(svg, { fitTo: { mode: 'width', value: 1280 }, font: { loadSystemFonts: true, defaultFontFamily: 'DejaVu Sans' } }).render().asPng();
+  return new Resvg(svg, { fitTo: { mode: 'width', value: 1300 }, font: resvgFont() }).render().asPng();
 }
 
 /**
@@ -58,6 +92,7 @@ function renderLevelUp({ username, level, grade = null }) {
  */
 async function announce(channel, member, level, rewards = [], { voice = false } = {}) {
   if (!channel) return;
+  require('./feed').push('🏆', `${member.displayName ?? member.user?.username} a atteint le niveau ${level}${rewards.length ? ` (${rewards.map((r) => r.name).join(', ')})` : ''}`);
   const { AttachmentBuilder } = require('discord.js');
   const settings = require('./settings');
   const text =

@@ -85,6 +85,8 @@ function progress(userId, type, amount = 1) {
   stats.bump(userId, 'ryoEarned', total);
   save();
   announce(userId, finished).catch(() => {});
+  const who = guildRef?.members.cache.get(userId)?.displayName ?? 'Un ronin';
+  require('./feed').push('📜', `${who} a terminé ${finished.length > 1 ? `${finished.length} quêtes` : `la quête « ${finished[0].label} »`} (+${total} 両)`);
 }
 
 async function announce(userId, finished) {

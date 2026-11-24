@@ -128,7 +128,7 @@ test('/top et statistiques individuelles', () => {
 
 test('bannière de passage de niveau : image PNG et annonce', async () => {
   const card = require('../src/levelcard');
-  assert.ok(card.available(), 'assets/levelup.jpg présent');
+  assert.ok(card.available(), 'assets/levelup-bg.jpg présent');
   const png = card.renderLevelUp({ username: 'Ronin 🔥 au pseudo vraiment très long', level: 42, grade: '⚔️ Samouraï' });
   assert.equal(png.subarray(1, 4).toString(), 'PNG');
   const sent = [];
@@ -139,4 +139,15 @@ test('bannière de passage de niveau : image PNG et annonce', async () => {
   require('../src/settings').set('levels.banner', false);
   await card.announce({ send: async (p) => sent.push(p) }, member, 8, []);
   assert.equal(sent[1].files.length, 0, 'bannière désactivée : texte seul');
+});
+
+test('carte de rang aux couleurs Kensei et fil d\'événements', async () => {
+  const { renderRankCard } = require('../src/rankcard');
+  const png = await renderRankCard({ username: 'Haro62190 🔥', avatarUrl: null, level: 42, xp: 7850, needed: 12000, rank: 1, totalXp: 125430, messages: 12450, voiceMinutes: 900, ryo: 842750, grade: '⚔️ Ronin' });
+  assert.equal(png.subarray(1, 4).toString(), 'PNG');
+  assert.equal(png.readUInt32BE(16), 1104, 'largeur 1104 px');
+  const feed = require('../src/feed');
+  for (let i = 0; i < 70; i++) feed.push('🏆', `événement ${i}`);
+  assert.equal(feed.recent(3)[0].text, 'événement 69');
+  assert.equal(db.feed.length, 60, 'les 60 derniers seulement');
 });

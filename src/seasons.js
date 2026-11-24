@@ -70,6 +70,7 @@ async function closeWeek(guild) {
     require('./memberstats').bump(best[0].userId, 'pillarWins');
     const winner = await guild.members.fetch(best[0].userId).catch(() => null);
     if (winner && role?.editable) await winner.roles.add(role, 'Pilier de la semaine').catch(() => {});
+    require('./feed').push('🔥', `${winner?.displayName ?? 'Un ronin'} est le Pilier de la semaine`);
     const medals = ['🥇', '🥈', '🥉'];
     const channel = findChannel(guild, 'announcements') ?? findChannel(guild, 'general');
     await channel

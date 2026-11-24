@@ -52,6 +52,7 @@ async function checkVideos(guild) {
       })
       .catch((err) => console.error('TikTok envoi :', err.message));
     require('./history').bump('tiktoks');
+    require('./feed').push('📱', `Nouveau TikTok : ${(v.title || 'vidéo').slice(0, 80)}`);
     console.log(`📱 Nouveau TikTok : ${url}`);
   }
 }
@@ -100,6 +101,7 @@ async function checkLive(guild) {
     s.liveTitle = (live.title || live.description || 'Live TikTok').slice(0, 256);
     s.livePeak = Number(live.concurrent_view_count) || 0;
     save();
+    require('./feed').push('📱', 'Live TikTok lancé');
     console.log('🔴 Live TikTok détecté');
   } else if (live && String(live.id) === s.liveId) {
     const viewers = Number(live.concurrent_view_count);

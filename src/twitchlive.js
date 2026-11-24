@@ -115,6 +115,7 @@ async function checkLive(guild) {
       followersStart: await followerCount(u),
     };
     save();
+    require('./feed').push('🔴', `Live Twitch lancé : ${stream.title || stream.game_name || 'en direct'}`);
     console.log(`🔴 Live détecté : ${stream.title}`);
     return;
   }
@@ -170,6 +171,7 @@ async function checkLive(guild) {
     }
     db.twitchLive = null;
     save();
+    require('./feed').push('⚫', `Fin du live Twitch : ${fmtDuration(entry.durationMin * 60_000)}, pic ${state.peak ?? 0} viewers`);
     console.log('⚫ Fin du live (récap publié)');
   }
 }

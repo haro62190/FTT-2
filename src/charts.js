@@ -25,7 +25,7 @@ function niceMax(max) {
  * Courbe(s) sur une période.
  * @param {object} o { points: [{date, ...}], series: [{ key, label }], unit, zeroBased }
  */
-function lineChart({ points, series, unit = '', zeroBased = true }) {
+function lineChart({ points, series, unit = '', zeroBased = true, colors = SERIES, dots = false }) {
   const W = 640;
   const H = 210;
   const L = 48;
@@ -55,7 +55,7 @@ function lineChart({ points, series, unit = '', zeroBased = true }) {
 
   const lines = series
     .map((s, si) => {
-      const color = SERIES[si];
+      const color = colors[si] ?? SERIES[si];
       const pts = points.map((p, i) => [i, p[s.key]]).filter(([, v]) => typeof v === 'number');
       if (!pts.length) return '';
       const d = pts.map(([i, v], k) => `${k ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
@@ -65,7 +65,8 @@ function lineChart({ points, series, unit = '', zeroBased = true }) {
           : '';
       const [li, lv] = pts.at(-1);
       // Étiquette directe sur le dernier point (avec le nom de la série s'il y en a plusieurs)
-      return `${area}<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      const marks = dots ? pts.slice(0, -1).map(([i, v]) => `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3.5" fill="${color}"/>`).join('') : '';
+      return `${area}<path d="${d}" fill="none" stroke="${color}" stroke-width="${dots ? 2.5 : 2}" stroke-linejoin="round" stroke-linecap="round"${dots ? ` style="filter:drop-shadow(0 0 5px ${color})"` : ''}/>${marks}
         <circle cx="${x(li).toFixed(1)}" cy="${y(lv).toFixed(1)}" r="4.5" fill="${color}" stroke="${INK.surface}" stroke-width="2"/>
         <text x="${(x(li) + 9).toFixed(1)}" y="${(y(lv) + 4 + (series.length > 1 ? si * 13 - 6 : 0)).toFixed(1)}" font-size="12" font-weight="600" fill="${INK.primary}">${fmt(lv)}${series.length > 1 ? `<tspan fill="${INK.muted}" font-weight="400"> ${esc(s.label)}</tspan>` : ''}</text>`;
     })

@@ -142,6 +142,7 @@ const commands = [
       stats.bump(i.user.id, 'ryoEarned', gain);
       stats.max(i.user.id, 'bestStreak', w.streak);
       require('./quests').progress(i.user.id, 'daily');
+      require('./feed').push('🎁', `Récompense quotidienne : ${i.member?.displayName ?? i.user.username} (+${gain} 両)`);
       return i.reply(`🎁 ${i.user} reçoit ${fmt(gain)}${grade ? ` (dont +${grade} de bonus de grade)` : ''} ! 🔥 Série : ${w.streak}/7 · Solde : ${fmt(w.bal)}`);
     },
   },

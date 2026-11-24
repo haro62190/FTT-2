@@ -198,7 +198,8 @@ Tout se règle sur le site, page *📜 Quêtes, boosts & grades*.
 
 ## 🏆 Saisons, carte de rang, commandes perso, menus de rôles, graphiques
 
-- **Passage de niveau** : le bot poste une **bannière en image** « Passage de niveau ! » avec le pseudo, le nouveau niveau et le grade obtenu (image : `assets/levelup.jpg`, remplaçable ; désactivable sur le site → *Niveaux & grades*).
+- **Passage de niveau** : le bot poste une **bannière en image** (samouraï, lune rouge, cadre rouge et or) avec « Félicitations *pseudo* ! », le nouveau niveau et une plaque « Nouveau grade » (désactivable sur le site → *Niveaux & grades*).
+- **Identité visuelle** : carte de rang, bannière et tableau de bord suivent la maquette officielle Kensei. Les décors sont dans `assets/` (`levelup-bg.jpg`, `rankcard-bg.jpg`, `logo-kensei.jpg`, `dashboard-*.jpg`) et les polices dans `assets/fonts/` (libres, licence OFL) : remplace un fichier par une image de même format pour changer le décor.
 - **`/rang`** affiche une **carte en image** (avatar, niveau, barre d'XP, grade, ryō, rang de la saison). Sur un VPS, installe les polices : `apt install -y fonts-dejavu fonts-noto-cjk`.
 - **`/saison`** : classement de l'XP du mois. Le 1er : podium annoncé, 3000 / 2000 / 1000 両 pour le top 3 et rôle **🏆 Champion du mois** au premier.
 - **Commandes personnalisées** (`!discord`, `!planning`…) : sur le site (*Commandes perso*) ou avec `/commande`.

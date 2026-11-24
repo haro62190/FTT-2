@@ -25,6 +25,10 @@ const BRAND = Object.freeze({
     latin: "'DejaVu Sans', 'Segoe UI', Arial, sans-serif",
     display: "'DejaVu Sans', 'Segoe UI Black', 'Segoe UI', Arial, sans-serif",
     japanese: "'Noto Sans CJK JP', 'Yu Gothic', sans-serif",
+    // Polices livrées avec le bot (assets/fonts, licence OFL) : pinceau, serif gravé, kanji pinceau
+    brush: "'Kaushan Script', 'Segoe Script', cursive",
+    serif: "'Cinzel', 'Trajan Pro', Georgia, serif",
+    kanji: "'Yuji Syuku', 'Noto Serif CJK JP', 'Yu Mincho', serif",
   }),
   effects: Object.freeze({
     redGlow: 'rgba(225, 6, 0, .32)',
@@ -33,4 +37,11 @@ const BRAND = Object.freeze({
   }),
 });
 
-module.exports = { BRAND };
+const path = require('path');
+const fs = require('fs');
+const FONT_DIR = path.join(__dirname, '..', 'assets', 'fonts');
+/** Fichiers de police pour resvg (images générées par le bot). */
+const fontFiles = () => (fs.existsSync(FONT_DIR) ? fs.readdirSync(FONT_DIR).filter((f) => /\.(ttf|otf)$/i.test(f)).map((f) => path.join(FONT_DIR, f)) : []);
+const resvgFont = () => ({ fontFiles: fontFiles(), loadSystemFonts: true, defaultFontFamily: 'DejaVu Sans' });
+
+module.exports = { BRAND, fontFiles, resvgFont, FONT_DIR };

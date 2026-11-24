@@ -73,7 +73,7 @@ function send(res, status, body, headers = {}, nonce = null) {
     'Cross-Origin-Opener-Policy': 'same-origin',
     ...(SECURE ? { 'Strict-Transport-Security': 'max-age=31536000' } : {}),
     // Aucun script, sauf celui de la page avec son jeton unique (nonce) pour le temps réel
-    'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; img-src 'self' https://cdn.discordapp.com data:; form-action 'self' https://discord.com; base-uri 'none'; frame-ancestors 'none'${nonce ? `; script-src 'nonce-${nonce}'; connect-src 'self'` : ''}`,
+    'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; img-src 'self' https://cdn.discordapp.com data:; font-src 'self'; form-action 'self' https://discord.com; base-uri 'none'; frame-ancestors 'none'${nonce ? `; script-src 'nonce-${nonce}'; connect-src 'self'` : ''}`,
     ...headers,
   });
   res.end(body);
@@ -138,11 +138,18 @@ const NAV = [
   ['/diagnostic', '🩺 Diagnostic'],
 ];
 
+// Serveur affiché dans l'en-tête (renseigné au démarrage du tableau de bord)
+let BADGE = null;
+const SUBTITLES = { '/': 'Vue d\'ensemble de votre serveur' };
+
 function page(sess, path, title, body, flash = '', refresh = 0, nonce = null, script = '') {
   const avatar = sess?.avatar ? `<img class="av" src="https://cdn.discordapp.com/avatars/${esc(sess.userId)}/${esc(sess.avatar)}.png?size=64" alt="">` : '';
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)} · Kensei</title>${refresh ? `<meta http-equiv="refresh" content="${Number(refresh)}">` : ''}<link rel="icon" href="/logo.png">
 <style>
+@font-face{font-family:Brush;src:url(/assets/brush.ttf) format('truetype');font-display:swap}
+@font-face{font-family:Cinzel;src:url(/assets/cinzel.ttf) format('truetype');font-display:swap}
+@font-face{font-family:Kanji;src:url(/assets/kanji.ttf) format('truetype');font-display:swap}
 :root{color-scheme:dark;--bg:#08080b;--bg2:#101015;--panel:#14141a;--panel2:#1c1c24;--line:#303039;--text:#f4f1f1;--muted:#aaa4aa;--red:#e10600;--red2:#ff4038;--red-deep:#65070b;--gold:#f5b942;--gold-light:#ffe39a;--glow:rgba(225,6,0,.32);--gold-glow:rgba(245,185,66,.22);--ok:#54c987;--warn:#e8b84c;--radius:16px}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
 body{margin:0;background:radial-gradient(900px 520px at 92% -8%,rgba(225,6,0,.18),transparent 62%),radial-gradient(700px 500px at 0% 100%,rgba(101,7,11,.12),transparent 60%),var(--bg);color:var(--text);font:15px/1.55 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh}
@@ -183,10 +190,24 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:10px 8px;
 code{background:#1c1c22;padding:1px 6px;border-radius:5px;font-size:.92em}pre{background:#0b0b0e;border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font-size:12.5px}
 .legend{display:flex;gap:16px;margin:0 0 6px;font-size:13px;color:#c3c2b7}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}details{margin-top:8px}details table{font-size:13px}form.inline{display:inline}
 @media(max-width:820px){nav .sec{display:none}.wrap{flex-direction:column}nav{position:static;height:auto;width:auto;border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;gap:4px;padding:8px}nav a{white-space:nowrap}main{padding:18px 16px}header .live{display:none}}
+body:before{content:"";position:fixed;right:0;bottom:0;width:min(46vw,620px);height:min(62vh,640px);background:url(/assets/pagoda.jpg) right bottom/cover no-repeat;opacity:.22;pointer-events:none;z-index:0;-webkit-mask-image:radial-gradient(circle at 100% 100%,#000 25%,transparent 72%);mask-image:radial-gradient(circle at 100% 100%,#000 25%,transparent 72%)}
+body:after{content:"剣聖";position:fixed;right:26px;top:96px;writing-mode:vertical-rl;font:72px/1 Kanji,serif;color:var(--gold);opacity:.16;pointer-events:none;z-index:0}
+.wrap,header{position:relative;z-index:1}
+nav a.brand:hover{background:none}@media(max-width:820px){nav a.brand,body:before,body:after{display:none}}
+nav .brand{display:block;text-align:center;margin:2px 0 12px;padding:0 0 12px;border-bottom:1px solid var(--line)}nav .brand img{width:150px;max-width:100%;border-radius:12px;filter:drop-shadow(0 0 14px rgba(225,6,0,.35))}
+header .server{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(225,6,0,.35);background:linear-gradient(90deg,rgba(225,6,0,.14),rgba(20,20,26,.8));border-radius:10px;padding:5px 12px 5px 6px;font-size:13px;font-weight:600}header .server img{width:24px;height:24px;border-radius:6px}
+header .live .pulse{width:26px;height:12px;stroke:var(--ok);fill:none;stroke-width:1.6}
+h2.brush{font:400 40px/1.15 Brush,'Segoe Script',cursive;letter-spacing:.01em;padding-bottom:6px;margin-bottom:4px}h2.brush:after{display:none}.subtitle{color:var(--muted);margin:0 0 22px;font-size:15px}
+.kpi{position:relative;overflow:hidden;min-height:118px;border-radius:var(--radius);padding:16px 18px;border:1px solid rgba(225,6,0,.35);background:linear-gradient(100deg,rgba(12,8,10,.96) 35%,rgba(12,8,10,.55)),url(/assets/hero.jpg) var(--pos,50%) 40%/auto 180% no-repeat;box-shadow:0 10px 30px rgba(0,0,0,.35);transition:transform .2s,border-color .2s}
+.kpi:hover{transform:translateY(-2px);border-color:var(--red)}.kpi .h{display:flex;align-items:center;gap:8px;color:#eee;font-size:14px;font-weight:600}.kpi b{display:block;font:700 34px/1.2 Cinzel,Georgia,serif;color:#fff;margin-top:6px;font-variant-numeric:tabular-nums}
+.kpi .t{font-size:13px;font-weight:700}.kpi .t.up{color:var(--ok)}.kpi .t.down{color:#ff6a5f}.kpi .t.flat{color:var(--muted)}.kpi.ok{border-color:rgba(84,201,135,.45)}.kpi.ok b{color:var(--ok);font-family:Brush,cursive;font-weight:400}
+.grid.mini{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}.grid.mini .stat{padding:12px 14px}.grid.mini .stat b{font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.split{display:grid;grid-template-columns:1.6fr 1fr;gap:18px}@media(max-width:900px){.split{grid-template-columns:1fr}}
+.feed{list-style:none;margin:0;padding:0}.feed li{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}.feed li .i{width:26px;text-align:center}.feed li .w{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap}
 </style></head><body>
-<header><img class="logo" src="/logo.png" alt=""><h1>剣聖 <span>KENSEI</span></h1>${sess ? '<span class="live" title="Mis à jour en direct"><i></i>en ligne</span>' : ''}<div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
-<div class="wrap">${sess ? `<nav>${NAV.map(([href, label]) => (href === '#' ? `<div class="sec">${label}</div>` : `<a href="${href}" class="${href === path ? 'on' : ''}">${label}</a>`)).join('')}</nav>` : ''}
-<main>${flash ? `<div class="flash${flash.startsWith('❌') ? ' err' : ''}">${esc(flash)}</div>` : ''}<h2>${esc(title)}</h2>${body}</main></div>${nonce && script ? `<script nonce="${nonce}">${script}</script>` : ''}</body></html>`;
+<header><img class="logo" src="/logo.png" alt=""><h1>剣聖 <span>KENSEI</span></h1>${sess ? '<span class="live" title="Mis à jour en direct"><i></i>Bot en ligne <svg class="pulse" viewBox="0 0 26 12"><path d="M0 6h7l2-5 3 10 3-8 2 3h9"/></svg></span>' : ''}${sess && BADGE ? `<span class="server">${BADGE.icon ? `<img src="${esc(BADGE.icon)}" alt="">` : ''}${esc(BADGE.name)}</span>` : ''}<div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
+<div class="wrap">${sess ? `<nav><a class="brand" href="/" title="Accueil"><img src="/assets/logo-kensei.jpg" alt="Kensei · Les Ronins"></a>${NAV.map(([href, label]) => (href === '#' ? `<div class="sec">${label}</div>` : `<a href="${href}" class="${href === path ? 'on' : ''}">${label}</a>`)).join('')}</nav>` : ''}
+<main>${flash ? `<div class="flash${flash.startsWith('❌') ? ' err' : ''}">${esc(flash)}</div>` : ''}${SUBTITLES[path] ? `<h2 class="brush">${esc(title)}</h2><p class="subtitle">${esc(SUBTITLES[path])}</p>` : `<h2>${esc(title)}</h2>`}${body}</main></div>${nonce && script ? `<script nonce="${nonce}">${script}</script>` : ''}</body></html>`;
 }
 
 const csrf = (sess) => `<input type="hidden" name="csrf" value="${esc(sess.csrf)}">`;
@@ -240,18 +261,49 @@ const pages = {
     const top = levels.leaderboard().slice(0, 10);
     await fetchMembers(guild, top.map((t) => t.userId));
     const v = liveStats(guild);
+    const { lineChart } = require('./charts');
+    const pts = require('./history').series(14);
+    const week = pts.slice(7);
+    const prev = pts.slice(0, 7);
+    const sum = (list, k) => list.reduce((n, p) => n + (p[k] ?? 0), 0);
+    // Tendance en % entre deux valeurs (null si pas assez de données)
+    const trend = (now, before) => {
+      if (!before) return '<span class="t flat">— sur 7 j</span>';
+      const pct = Math.round(((now - before) / before) * 100);
+      return `<span class="t ${pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat'}">${pct > 0 ? '↑ +' : pct < 0 ? '↓ ' : ''}${pct} % sur 7 j</span>`;
+    };
+    const membersBefore = prev.find((p) => typeof p.discord === 'number')?.discord;
+    const msgs = sum(week, 'messages');
+    const voiceH = Math.round(sum(week, 'voice') / 60);
+    const up = process.uptime();
+    const since = up >= 86400 ? `${Math.floor(up / 86400)} j ${Math.floor((up % 86400) / 3600)} h` : `${Math.floor(up / 3600)} h ${Math.floor((up % 3600) / 60)} min`;
+    const kpi = (icon, label, value, extra, pos, live = '') =>
+      `<div class="kpi" style="--pos:${pos}"><div class="h">${icon} ${esc(label)}</div><b${live ? ` data-live="${live}"` : ''}>${esc(value)}</b>${extra}</div>`;
     const tile = (key, value, label) => `<div class="stat"><b data-live="${key}">${esc(value)}</b><span>${esc(label)}</span></div>`;
+    const ago = (t) => {
+      const m = Math.round((Date.now() - t) / 60000);
+      return m < 1 ? 'à l\'instant' : m < 60 ? `il y a ${m} min` : m < 1440 ? `il y a ${Math.floor(m / 60)} h` : `il y a ${Math.floor(m / 1440)} j`;
+    };
+    const feed = require('./feed').recent(8);
     return {
-      title: guild.name,
+      title: 'Tableau de bord',
       body: `<div class="grid">
-        ${tile('members', v.members, 'membres')}${tile('inVoice', v.inVoice, 'en vocal')}${tile('messagesToday', v.messagesToday, 'messages aujourd\'hui')}${tile('live', v.live, 'stream')}
-        ${tile('tickets', v.tickets, 'tickets ouverts')}${tile('quarantined', v.quarantined, 'en quarantaine')}${tile('security', v.security, 'sécurité')}${tile('ping', `${v.ping} ms`, 'latence du bot')}</div>
+        ${kpi('👥', 'Membres', v.members.toLocaleString('fr-FR'), trend(v.members, membersBefore), '38%', 'members')}
+        ${kpi('💬', 'Messages (7 j)', msgs.toLocaleString('fr-FR'), trend(msgs, sum(prev, 'messages')), '20%')}
+        ${kpi('🎙️', 'En vocal', v.inVoice, `<span class="t flat">${voiceH} h de vocal sur 7 j</span>`, '62%', 'inVoice')}
+        <div class="kpi ok" style="--pos:90%"><div class="h">✅ État du bot</div><b>En ligne</b><span class="t flat">Depuis ${esc(since)} · <span data-live="ping">${v.ping} ms</span></span></div></div>
+      <div class="grid mini">${tile('messagesToday', v.messagesToday, 'messages aujourd\'hui')}${tile('live', v.live, 'stream')}${tile('tickets', v.tickets, 'tickets ouverts')}${tile('quarantined', v.quarantined, 'en quarantaine')}${tile('security', v.security, 'sécurité')}</div>
       <p class="muted" style="margin-top:-6px">Mis à jour en direct toutes les 5 secondes · <span data-live="updated">${esc(v.updated)}</span></p>
+      <div class="split">
+        <div class="card"><h3>Activité des 7 derniers jours</h3>${lineChart({ points: week, series: [{ key: 'messages', label: 'Messages' }], colors: ['#ff4038'], dots: true })}</div>
+        <div class="card"><h3 style="display:flex;justify-content:space-between;align-items:center">Derniers événements <a class="badge" href="/journal" style="text-decoration:none">Journal →</a></h3>
+        <ul class="feed">${feed.map((e) => `<li><span class="i">${esc(e.icon)}</span><span>${esc(e.text)}</span><span class="w">${ago(e.at)}</span></li>`).join('') || '<li class="muted">Les événements du serveur apparaîtront ici.</li>'}</ul></div>
+      </div>
       <div class="card"><h3>🏆 Top 10 des ronins</h3><table><tr><th>#</th><th>Membre</th><th>Niveau</th><th>XP</th><th>Messages</th></tr>
       ${top.map((t, n) => `<tr><td>${n + 1}</td><td>${memberName(guild, t.userId)}</td><td>${t.level}</td><td>${t.totalXp}</td><td>${t.messages}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Personne n\'a encore d\'XP.</td></tr>'}
       </table></div>`,
       // Petit script autorisé (CSP avec nonce) : rafraîchit les compteurs sans recharger la page
-      script: `setInterval(async()=>{try{const r=await fetch('/api/live',{credentials:'same-origin'});if(!r.ok)return;const d=await r.json();for(const el of document.querySelectorAll('[data-live]')){const k=el.dataset.live;if(k in d)el.textContent=k==='ping'?d[k]+' ms':d[k];}}catch(e){}},5000);`,
+      script: `setInterval(async()=>{try{const r=await fetch('/api/live',{credentials:'same-origin'});if(!r.ok)return;const d=await r.json();for(const el of document.querySelectorAll('[data-live]')){const k=el.dataset.live;if(k in d)el.textContent=k==='ping'?d[k]+' ms':k==='members'?Number(d[k]).toLocaleString('fr-FR'):d[k];}}catch(e){}},5000);`,
     };
   },
 
@@ -546,12 +598,28 @@ function start(client, guildId) {
       }
       if (sess) sess.lastSeen = Date.now();
       const guild = client.guilds.cache.get(guildId);
+      if (guild) BADGE = { name: guild.name, icon: guild.iconURL?.({ size: 64 }) ?? null };
 
       if (url.pathname === '/health') {
         // Pour un service de surveillance (UptimeRobot…) : aucune donnée sensible
         const s = require('./health').status(client);
         res.writeHead(s.ok ? 200 : 503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         return res.end(JSON.stringify({ ok: s.ok, uptime: Math.round(s.uptime / 1000), ping: s.ping, version: s.version.sha }));
+      }
+      // Images et polices de l'identité Kensei (liste fermée : aucun autre fichier n'est servi)
+      const ASSETS = {
+        '/assets/logo-kensei.jpg': ['logo-kensei.jpg', 'image/jpeg'],
+        '/assets/pagoda.jpg': ['dashboard-pagoda.jpg', 'image/jpeg'],
+        '/assets/hero.jpg': ['dashboard-hero.jpg', 'image/jpeg'],
+        '/assets/brush.ttf': ['fonts/KaushanScript-Regular.ttf', 'font/ttf'],
+        '/assets/cinzel.ttf': ['fonts/Cinzel-SemiBold.ttf', 'font/ttf'],
+        '/assets/kanji.ttf': ['fonts/YujiSyuku-Kensei.ttf', 'font/ttf'],
+      };
+      if (ASSETS[url.pathname]) {
+        const [name, type] = ASSETS[url.pathname];
+        return require('fs').readFile(require('path').join(__dirname, '..', 'assets', name), (err, data) =>
+          err ? send(res, 404, '') : res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=604800', 'X-Content-Type-Options': 'nosniff' }).end(data),
+        );
       }
       if (url.pathname === '/logo.png') {
         const file = require('./shared').iconPath();
