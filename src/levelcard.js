@@ -42,12 +42,9 @@ function renderLevelUp({ username, level, grade = null }) {
   </defs>
   <image width="${W}" height="${H}" xlink:href="${background()}"/>
   <rect x="8" y="8" width="${W-16}" height="${H-16}" rx="22" fill="none" stroke="url(#roninRed)" stroke-width="8" opacity=".9"/>
-  <path d="M48 48 H360 M1312 893 H1624" stroke="${BRAND.colors.gold}" stroke-width="3" opacity=".85"/>
-  <text x="64" y="94" font-family="${FONT}" font-size="28" font-weight="900" letter-spacing="5" fill="${BRAND.colors.text}" opacity=".92">剣聖 KENSEI</text>
-  <text x="1608" y="94" text-anchor="end" font-family="${FONT}" font-size="20" font-weight="700" letter-spacing="3" fill="${BRAND.colors.gold}">LES RONINS</text>
-  <!-- On efface le texte d'exemple du cadre -->
-  <rect x="505" y="658" width="680" height="132" rx="14" fill="${BRAND.colors.ink}" filter="url(#soft)"/>
-  <rect x="520" y="662" width="650" height="122" rx="10" fill="${BRAND.colors.ink}"/>
+  <!-- On efface le texte d'exemple du cadre (noir légèrement rouge, comme le cadre de l'image) -->
+  <rect x="505" y="658" width="680" height="132" rx="14" fill="#090506" filter="url(#soft)"/>
+  <rect x="520" y="662" width="650" height="122" rx="10" fill="#090506"/>
   <text x="845" y="${line2 ? 716 : 722}" text-anchor="middle" font-family="${FONT}" font-weight="900" font-style="italic" font-size="${titleSize}" fill="url(#gold)" filter="url(#glow)">${esc(title)}</text>
   <text x="845" y="${line2 ? 758 : 770}" text-anchor="middle" font-family="${FONT}" font-weight="700" font-size="${line2 ? 30 : 34}" fill="${BRAND.colors.text}" filter="url(#shadow)">Tu viens d’atteindre le niveau <tspan fill="url(#gold)" font-weight="900" font-size="${line2 ? 36 : 42}">${Number(level)}</tspan> !</text>
   ${line2 ? `<text x="845" y="786" text-anchor="middle" font-family="${FONT}" font-weight="700" font-size="22" fill="${BRAND.colors.redLight}" filter="url(#shadow)">${esc(`Nouveau grade : ${gradeName}`)}</text>` : ''}
