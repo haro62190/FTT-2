@@ -206,6 +206,8 @@ Les données du bot (XP, avertissements, tickets, réglages, sauvegardes) sont d
 
 ## 🌐 Tableau de bord web
 
+**Nouveautés** : interface modernisée (interrupteurs, cartes, menu fixe), **accueil en temps réel** (membres, vocal, messages du jour, live, tickets, quarantaine, latence — mis à jour toutes les 5 s), **🧩 Modules** (activer / couper chaque fonctionnalité), **🎭 Rôles & permissions** (permissions de chaque rôle + donner / retirer un rôle à un membre), **📜 Journal d'admin** (toutes les commandes du staff et actions du site), **🎫 Tickets** (fermeture depuis le site avec transcription), **📡 Twitch & TikTok** (comptes réglables sans toucher au `.env`, bouton de test), **🗄️ Copies de la base** (créer, tester, restaurer), **🩺 Diagnostic** (permissions, hiérarchie, salons manquants, configuration, outils, intégrité, dernières erreurs).
+
 **Toutes les fonctionnalités sont pilotables depuis le site** (21 pages) :
 
 | Serveur | Communauté | Stream | Sécurité |

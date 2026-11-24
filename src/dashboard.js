@@ -63,7 +63,7 @@ function sessionCookie(req) {
   return null;
 }
 
-function send(res, status, body, headers = {}) {
+function send(res, status, body, headers = {}, nonce = null) {
   res.writeHead(status, {
     'Content-Type': 'text/html; charset=utf-8',
     'X-Frame-Options': 'DENY',
@@ -72,7 +72,8 @@ function send(res, status, body, headers = {}) {
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
     'Cross-Origin-Opener-Policy': 'same-origin',
     ...(SECURE ? { 'Strict-Transport-Security': 'max-age=31536000' } : {}),
-    'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' https://cdn.discordapp.com data:; form-action 'self' https://discord.com; base-uri 'none'",
+    // Aucun script, sauf celui de la page avec son jeton unique (nonce) pour le temps réel
+    'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; img-src 'self' https://cdn.discordapp.com data:; form-action 'self' https://discord.com; base-uri 'none'; frame-ancestors 'none'${nonce ? `; script-src 'nonce-${nonce}'; connect-src 'self'` : ''}`,
     ...headers,
   });
   res.end(body);
@@ -102,6 +103,8 @@ const NAV = [
   ['/graphiques', '📈 Graphiques'],
   ['/serveur', '🏗️ Construction'],
   ['/logo', '🖼️ Logo & identité'],
+  ['/modules', '🧩 Modules'],
+  ['/roles-permissions', '🎭 Rôles & permissions'],
   ['#', 'Communauté'],
   ['/bienvenue', '🏮 Bienvenue & départ'],
   ['/niveaux', '⚔️ Niveaux & grades'],
@@ -122,45 +125,65 @@ const NAV = [
   ['/vocaux', '🔊 Vocaux temporaires'],
   ['#', 'Sécurité'],
   ['/moderation', '🛡️ Modération & raid'],
-  ['/statut', '🩺 État du bot'],
+  ['/statut', '💓 État du bot'],
   ['/automod', '🤖 AutoMod'],
   ['/avertissements', '⚠️ Avertissements'],
   ['/tickets', '🎫 Tickets'],
-  ['/sauvegardes', '💾 Sauvegardes'],
+  ['/sauvegardes', '💾 Sauvegardes du serveur'],
+  ['/copies-base', '🗄️ Copies de la base'],
+  ['/journal', '📜 Journal d\'admin'],
+  ['/diagnostic', '🩺 Diagnostic'],
 ];
 
-function page(sess, path, title, body, flash = '', refresh = 0) {
+function page(sess, path, title, body, flash = '', refresh = 0, nonce = null, script = '') {
   const avatar = sess?.avatar ? `<img class="av" src="https://cdn.discordapp.com/avatars/${esc(sess.userId)}/${esc(sess.avatar)}.png?size=64" alt="">` : '';
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)} · Kensei</title>${refresh ? `<meta http-equiv="refresh" content="${Number(refresh)}">` : ''}
+<title>${esc(title)} · Kensei</title>${refresh ? `<meta http-equiv="refresh" content="${Number(refresh)}">` : ''}<link rel="icon" href="/logo.png">
 <style>
-:root{--bg:#0a0a0b;--panel:#141416;--line:#2a2a2e;--text:#e8e8ea;--muted:#9a9aa2;--red:#e10600;--red2:#ff3b30;--ok:#3ecf6e}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-header{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,#1a0000,#0a0a0b 60%)}
-header h1{font-size:18px;margin:0;letter-spacing:.06em}header h1 span{color:var(--red);text-shadow:0 0 12px rgba(225,6,0,.7)}
-header .who{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--muted)}.av{width:28px;height:28px;border-radius:50%}
-.wrap{display:flex;min-height:calc(100vh - 58px)}nav{width:220px;flex-shrink:0;border-right:1px solid var(--line);padding:12px}
-nav a{display:block;padding:9px 12px;border-radius:8px;color:var(--muted);text-decoration:none;margin-bottom:2px}
-nav a:hover{background:#1c1c1f;color:var(--text)}nav .sec{color:#e10600;font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin:14px 12px 4px}nav .sec:first-child{margin-top:2px}nav a{padding:7px 12px!important}nav a.on{background:#2a0000;color:#fff;box-shadow:inset 3px 0 0 var(--red)}
-main{flex:1;padding:24px;max-width:1000px}h2{margin:0 0 16px;font-size:22px}h3{margin:0 0 10px;font-size:16px;color:#fff}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}.stat b{display:block;font-size:26px;color:#fff}.stat span{color:var(--muted);font-size:13px}
-label{display:block;margin:10px 0 4px;color:var(--muted);font-size:13px}
-input[type=text],input[type=number],textarea,select{width:100%;background:#0d0d0f;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:9px 10px;font:inherit}
-textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus{outline:2px solid var(--red);border-color:transparent}
-.check{display:flex;align-items:center;gap:8px;margin:8px 0;color:var(--text)}
-button,.btn{display:inline-block;background:var(--red);color:#fff;border:0;border-radius:8px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;margin-top:12px}
-button:hover,.btn:hover{background:var(--red2)}button[disabled]{opacity:.4;cursor:not-allowed}button.ghost,.btn.ghost{background:#26262a}button.ghost:hover{background:#333}
-table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted);font-weight:500;font-size:13px}
-.flash{background:#0f2a17;border:1px solid #1f5a33;color:#bff3cf;padding:10px 14px;border-radius:8px;margin-bottom:16px}
-.flash.err{background:#2a0f0f;border-color:#5a1f1f;color:#f3bfbf}.muted{color:var(--muted)}.row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1;min-width:140px}
-code{background:#1c1c1f;padding:1px 5px;border-radius:4px}.legend{display:flex;gap:16px;margin:0 0 6px;font-size:13px;color:#c3c2b7}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}details{margin-top:8px}details table{font-size:13px}form.inline{display:inline}
-@media(max-width:760px){nav .sec{display:none}.wrap{flex-direction:column}nav{width:auto;border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;gap:4px}nav a{white-space:nowrap}main{padding:16px}}
+:root{--bg:#09090b;--bg2:#0f0f12;--panel:#141418;--panel2:#1a1a20;--line:#26262d;--text:#ececef;--muted:#9a9aa6;--red:#e10600;--red2:#ff3b30;--glow:rgba(225,6,0,.35);--ok:#3ecf6e;--warn:#f1c40f;--radius:14px}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(1200px 600px at 85% -10%,rgba(225,6,0,.12),transparent 60%),var(--bg);color:var(--text);font:15px/1.55 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh}
+a{color:#ff6a5f}
+header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;padding:12px 22px;border-bottom:1px solid var(--line);background:rgba(9,9,11,.82);backdrop-filter:blur(10px)}
+header .logo{width:38px;height:38px;border-radius:50%;box-shadow:0 0 0 2px var(--red),0 0 18px var(--glow)}
+header h1{font-size:18px;margin:0;letter-spacing:.08em;font-weight:800}header h1 span{color:var(--red);text-shadow:0 0 14px var(--glow)}
+header .who{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px}.av{width:30px;height:30px;border-radius:50%}
+header .live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+header .live i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.wrap{display:flex;min-height:calc(100vh - 63px)}
+nav{width:236px;flex-shrink:0;border-right:1px solid var(--line);padding:14px 10px;position:sticky;top:63px;height:calc(100vh - 63px);overflow-y:auto;background:linear-gradient(180deg,var(--bg2),transparent)}
+nav a{display:block;padding:7px 12px;border-radius:9px;color:var(--muted);text-decoration:none;margin-bottom:1px;font-size:14px;transition:background .15s,color .15s}
+nav a:hover{background:var(--panel2);color:var(--text)}nav a.on{background:linear-gradient(90deg,rgba(225,6,0,.22),rgba(225,6,0,.04));color:#fff;box-shadow:inset 3px 0 0 var(--red)}
+nav .sec{color:var(--red);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin:16px 12px 6px}nav .sec:first-child{margin-top:4px}
+main{flex:1;padding:28px 32px;max-width:1120px}
+h2{margin:0 0 20px;font-size:24px;font-weight:800;letter-spacing:.01em}h3{margin:0 0 12px;font-size:16px;color:#fff}
+.card{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:18px;box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 10px 30px rgba(0,0,0,.25)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px}
+.stat{position:relative;overflow:hidden;background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;transition:border-color .2s,transform .2s}
+.stat:hover{border-color:rgba(225,6,0,.5);transform:translateY(-1px)}.stat:before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,var(--red),transparent)}
+.stat b{display:block;font-size:28px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums}.stat span{color:var(--muted);font-size:13px}
+label{display:block;margin:12px 0 5px;color:var(--muted);font-size:13px}
+input[type=text],input[type=number],input[type=url],textarea,select{width:100%;background:#0b0b0e;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 12px;font:inherit;transition:border-color .15s,box-shadow .15s}
+textarea{min-height:96px;resize:vertical}input:focus,textarea:focus,select:focus{outline:0;border-color:var(--red);box-shadow:0 0 0 3px var(--glow)}
+.check{display:flex;align-items:center;gap:10px;margin:10px 0;color:var(--text);cursor:pointer}
+.check input{appearance:none;-webkit-appearance:none;flex-shrink:0;width:40px;height:22px;border-radius:999px;background:#2a2a31;position:relative;cursor:pointer;transition:background .2s;margin:0}
+.check input:before{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#c9c9d1;transition:transform .2s,background .2s}
+.check input:checked{background:var(--red);box-shadow:0 0 10px var(--glow)}.check input:checked:before{transform:translateX(18px);background:#fff}
+td .check{margin:0}
+button,.btn{display:inline-block;background:linear-gradient(180deg,var(--red2),var(--red));color:#fff;border:0;border-radius:10px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer;text-decoration:none;margin-top:14px;box-shadow:0 6px 18px rgba(225,6,0,.25);transition:filter .15s,transform .1s}
+button:hover,.btn:hover{filter:brightness(1.1)}button:active{transform:translateY(1px)}button[disabled]{opacity:.4;cursor:not-allowed}
+button.ghost,.btn.ghost{background:var(--panel2);box-shadow:none;border:1px solid var(--line);font-weight:600}button.ghost:hover{border-color:#444}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase}tr:hover td{background:rgba(255,255,255,.015)}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;background:var(--panel2);border:1px solid var(--line)}.badge.ok{color:var(--ok);border-color:rgba(62,207,110,.35)}.badge.bad{color:#ff6a5f;border-color:rgba(255,59,48,.4)}.badge.warn{color:var(--warn);border-color:rgba(241,196,15,.35)}
+.flash{background:#0f2a17;border:1px solid #1f5a33;color:#bff3cf;padding:11px 15px;border-radius:10px;margin-bottom:18px}
+.flash.err{background:#2a0f0f;border-color:#5a1f1f;color:#f3bfbf}.muted{color:var(--muted)}.row{display:flex;gap:14px;flex-wrap:wrap}.row>*{flex:1;min-width:150px}
+code{background:#1c1c22;padding:1px 6px;border-radius:5px;font-size:.92em}pre{background:#0b0b0e;border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font-size:12.5px}
+.legend{display:flex;gap:16px;margin:0 0 6px;font-size:13px;color:#c3c2b7}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}details{margin-top:8px}details table{font-size:13px}form.inline{display:inline}
+@media(max-width:820px){nav .sec{display:none}.wrap{flex-direction:column}nav{position:static;height:auto;width:auto;border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;gap:4px;padding:8px}nav a{white-space:nowrap}main{padding:18px 16px}header .live{display:none}}
 </style></head><body>
-<header><img src="/logo.png" alt="" style="width:36px;height:36px;border-radius:50%"><h1>剣聖 <span>KENSEI</span></h1><div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
+<header><img class="logo" src="/logo.png" alt=""><h1>剣聖 <span>KENSEI</span></h1>${sess ? '<span class="live" title="Mis à jour en direct"><i></i>en ligne</span>' : ''}<div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
 <div class="wrap">${sess ? `<nav>${NAV.map(([href, label]) => (href === '#' ? `<div class="sec">${label}</div>` : `<a href="${href}" class="${href === path ? 'on' : ''}">${label}</a>`)).join('')}</nav>` : ''}
-<main>${flash ? `<div class="flash${flash.startsWith('❌') ? ' err' : ''}">${esc(flash)}</div>` : ''}<h2>${esc(title)}</h2>${body}</main></div></body></html>`;
+<main>${flash ? `<div class="flash${flash.startsWith('❌') ? ' err' : ''}">${esc(flash)}</div>` : ''}<h2>${esc(title)}</h2>${body}</main></div>${nonce && script ? `<script nonce="${nonce}">${script}</script>` : ''}</body></html>`;
 }
 
 const csrf = (sess) => `<input type="hidden" name="csrf" value="${esc(sess.csrf)}">`;
@@ -177,6 +200,23 @@ async function fetchMembers(guild, ids) {
   for (let n = 0; n < missing.length; n += 100) {
     await guild.members.fetch({ user: missing.slice(n, n + 100), time: 10_000 }).catch(() => {});
   }
+}
+
+/** Chiffres de l'accueil (aussi servis en JSON par /api/live). */
+function liveStats(guild) {
+  const security = require('./security');
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+  return {
+    members: guild.memberCount,
+    inVoice: guild.channels.cache.filter((c) => c.isVoiceBased?.()).reduce((n, c) => n + c.members.filter((m) => !m.user.bot).size, 0),
+    messagesToday: db.history?.[today]?.messages ?? 0,
+    live: db.twitchLive ? `🔴 ${db.twitchLive.peak ?? 0} viewers` : '⚫ hors ligne',
+    tickets: Object.keys(db.tickets?.open ?? {}).length,
+    quarantined: Object.keys(db.quarantine ?? {}).length,
+    security: security.lockdown.active ? '🔒 verrouillé' : '✅ normal',
+    ping: guild.client.ws.ping,
+    updated: new Date().toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris' }),
+  };
 }
 
 function lockdownCard(sess) {
@@ -196,21 +236,19 @@ const pages = {
   async '/'(guild) {
     const top = levels.leaderboard().slice(0, 10);
     await fetchMembers(guild, top.map((t) => t.userId));
-    const security = require('./security');
-    const stats = [
-      [guild.memberCount, 'membres'],
-      [guild.channels.cache.filter((c) => c.type !== ChannelType.GuildCategory).size, 'salons'],
-      [guild.roles.cache.size - 1, 'rôles'],
-      [Object.keys(db.tickets?.open ?? {}).length, 'tickets ouverts'],
-      [Object.values(db.warns ?? {}).reduce((n, l) => n + l.length, 0), 'avertissements'],
-      [security.lockdown.active ? '🔒' : '✅', security.lockdown.active ? 'serveur verrouillé' : 'serveur ouvert'],
-    ];
+    const v = liveStats(guild);
+    const tile = (key, value, label) => `<div class="stat"><b data-live="${key}">${esc(value)}</b><span>${esc(label)}</span></div>`;
     return {
       title: guild.name,
-      body: `<div class="grid">${stats.map(([v, l]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('')}</div>
-      <div class="card" style="margin-top:16px"><h3>🏆 Top 10 des ronins</h3><table><tr><th>#</th><th>Membre</th><th>Niveau</th><th>XP</th><th>Messages</th></tr>
+      body: `<div class="grid">
+        ${tile('members', v.members, 'membres')}${tile('inVoice', v.inVoice, 'en vocal')}${tile('messagesToday', v.messagesToday, 'messages aujourd\'hui')}${tile('live', v.live, 'stream')}
+        ${tile('tickets', v.tickets, 'tickets ouverts')}${tile('quarantined', v.quarantined, 'en quarantaine')}${tile('security', v.security, 'sécurité')}${tile('ping', `${v.ping} ms`, 'latence du bot')}</div>
+      <p class="muted" style="margin-top:-6px">Mis à jour en direct toutes les 5 secondes · <span data-live="updated">${esc(v.updated)}</span></p>
+      <div class="card"><h3>🏆 Top 10 des ronins</h3><table><tr><th>#</th><th>Membre</th><th>Niveau</th><th>XP</th><th>Messages</th></tr>
       ${top.map((t, n) => `<tr><td>${n + 1}</td><td>${memberName(guild, t.userId)}</td><td>${t.level}</td><td>${t.totalXp}</td><td>${t.messages}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Personne n\'a encore d\'XP.</td></tr>'}
       </table></div>`,
+      // Petit script autorisé (CSP avec nonce) : rafraîchit les compteurs sans recharger la page
+      script: `setInterval(async()=>{try{const r=await fetch('/api/live',{credentials:'same-origin'});if(!r.ok)return;const d=await r.json();for(const el of document.querySelectorAll('[data-live]')){const k=el.dataset.live;if(k in d)el.textContent=k==='ping'?d[k]+' ms':d[k];}}catch(e){}},5000);`,
     };
   },
 
@@ -454,6 +492,8 @@ const pages = {
 };
 
 Object.assign(pages, require('./dashboard-pages')({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }));
+// Pages d'administration (remplacent aussi les anciennes versions de Twitch & TikTok et Tickets)
+Object.assign(pages, require('./dashboard-admin')({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }));
 
 // ───────────────────────── Connexion Discord ─────────────────────────
 
@@ -552,6 +592,10 @@ function start(client, guildId) {
         return send(res, 403, page(null, '', 'Accès refusé', '<p>Tu n\'as plus les droits d\'administration.</p>'));
       }
 
+      if (url.pathname === '/api/live') {
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+        return res.end(JSON.stringify(liveStats(guild)));
+      }
       if (req.method === 'POST') {
         const body = await readBody(req);
         if (body.get('csrf') !== sess.csrf) return send(res, 403, page(sess, '', 'Requête refusée', '<p>Jeton de sécurité invalide, recharge la page.</p>'));
@@ -566,10 +610,11 @@ function start(client, guildId) {
 
       const handler = pages[url.pathname];
       if (!handler) return send(res, 404, page(sess, '', 'Page introuvable', '<a class="btn" href="/">Accueil</a>'));
-      const { title, body, refresh } = await handler(guild, sess, url.searchParams);
+      const { title, body, refresh, script } = await handler(guild, sess, url.searchParams);
       const flash = sess.flash;
       sess.flash = null;
-      return send(res, 200, page(sess, url.pathname, title, body, flash, refresh));
+      const nonce = script ? crypto.randomBytes(16).toString('base64') : null;
+      return send(res, 200, page(sess, url.pathname, title, body, flash, refresh, nonce, script), {}, nonce);
     } catch (err) {
       console.error('Tableau de bord :', err);
       send(res, 500, page(null, '', 'Erreur', `<p>${esc(err.message)}</p><a class="btn" href="/">Accueil</a>`));

@@ -54,7 +54,7 @@ const client = new Client({
 health.installErrorHandlers(client);
 
 const twitch =
-  TWITCH_CHANNEL && TWITCH_CLIENT_ID && TWITCH_CLIENT_SECRET ? new TwitchClient(TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET) : null;
+  TWITCH_CLIENT_ID && TWITCH_CLIENT_SECRET ? new TwitchClient(TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET) : null;
 
 /** Contexte passé aux commandes / */
 const ctx = {

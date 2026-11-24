@@ -104,7 +104,7 @@ function onMessageUpdate(oldMsg, newMsg) {
 }
 
 function register(client, guildId) {
-  const mine = (g) => g?.id === guildId;
+  const mine = (g) => g?.id === guildId && require('./settings').on('logs');
   client.on(Events.GuildAuditLogEntryCreate, (entry, guild) => mine(guild) && onAuditEntry(entry, guild));
   client.on(Events.VoiceStateUpdate, (o, n) => mine(n.guild) && onVoiceState(o, n));
   client.on(Events.MessageUpdate, (o, n) => mine(n.guild) && onMessageUpdate(o, n));

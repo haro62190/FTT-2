@@ -9,7 +9,7 @@ const { db, save } = require('./store');
 const { ytdlpJson } = require('./ytdlp');
 
 const INTERVAL_MS = 10 * 60_000;
-const TIKTOK_USERNAME = (process.env.TIKTOK_USERNAME || '').replace(/^@/, '').trim();
+const TIKTOK_USERNAME_ = () => require('./shared').tiktokUser();
 const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
 
 const state = () => (db.stats ??= {});
@@ -39,7 +39,7 @@ function discordCount(guild) {
 }
 
 async function twitchCount() {
-  const login = process.env.TWITCH_CHANNEL;
+  const login = require('./shared').twitchLogin();
   if (!twitchClient || !login) return null;
   twitchId ??= (await twitchClient.getUser(login))?.id;
   if (!twitchId) throw new Error(`chaîne Twitch « ${login} » introuvable`);
@@ -47,10 +47,10 @@ async function twitchCount() {
 }
 
 async function tiktokCount() {
-  if (!TIKTOK_USERNAME) return null;
+  if (!TIKTOK_USERNAME_()) return null;
   // 1) Page publique du profil
   try {
-    const res = await fetch(`https://www.tiktok.com/@${encodeURIComponent(TIKTOK_USERNAME)}`, {
+    const res = await fetch(`https://www.tiktok.com/@${encodeURIComponent(TIKTOK_USERNAME_())}`, {
       headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'fr-FR,fr;q=0.9' },
       signal: AbortSignal.timeout(20_000),
     });
@@ -60,7 +60,7 @@ async function tiktokCount() {
   } catch {}
   // 2) yt-dlp (lit le profil via la première vidéo)
   try {
-    const info = await ytdlpJson(['-J', '--playlist-items', '1', '--no-warnings', `https://www.tiktok.com/@${TIKTOK_USERNAME}`], { cookies: false });
+    const info = await ytdlpJson(['-J', '--playlist-items', '1', '--no-warnings', `https://www.tiktok.com/@${TIKTOK_USERNAME_()}`], { cookies: false });
     const first = info.entries?.[0] ?? info;
     const n = first?.channel_follower_count;
     if (Number.isFinite(n)) return n;
@@ -72,7 +72,7 @@ async function tiktokCount() {
 // ───────────────────────── Mise à jour ─────────────────────────
 
 async function refresh(guild) {
-  if (busy) return state();
+  if (busy || !require('./settings').on('stats')) return state();
   busy = true;
   try {
     const s = state();
@@ -122,8 +122,8 @@ function statsEmbed(s) {
     .setDescription(
       [
         line('discord', '👥 Membres Discord'),
-        line('twitch', `🟣 Followers Twitch${process.env.TWITCH_CHANNEL ? '' : ' (TWITCH_CHANNEL non configuré)'}`),
-        line('tiktok', `📱 Abonnés TikTok${TIKTOK_USERNAME ? '' : ' (TIKTOK_USERNAME non configuré)'}${s.tiktokManual ? ' — valeur manuelle en secours' : ''}`),
+        line('twitch', `🟣 Followers Twitch${require('./shared').twitchLogin() ? '' : ' (chaîne Twitch non configurée)'}`),
+        line('tiktok', `📱 Abonnés TikTok${TIKTOK_USERNAME_() ? '' : ' (TIKTOK_USERNAME_() non configuré)'}${s.tiktokManual ? ' — valeur manuelle en secours' : ''}`),
       ].join('\n'),
     )
     .setFooter({ text: s.updatedAt ? `Mis à jour ${new Date(s.updatedAt).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' })} · toutes les 10 min` : 'Pas encore mis à jour' });

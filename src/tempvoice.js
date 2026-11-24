@@ -150,7 +150,7 @@ async function onVoiceStateUpdate(oldState, newState) {
   const guild = newState.guild;
   const trigger = findChannel(guild, settings.triggerChannel);
 
-  if (trigger && newState.channelId === trigger.id && newState.member && !newState.member.user.bot) {
+  if (trigger && newState.channelId === trigger.id && newState.member && !newState.member.user.bot && require('./settings').on('tempvoice')) {
     await createFor(newState.member, trigger).catch((err) => console.error('Vocal temporaire :', err.message));
   }
 

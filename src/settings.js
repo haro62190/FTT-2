@@ -111,4 +111,41 @@ function replaceAll(settings) {
   save();
 }
 
-module.exports = { DEFAULTS, all, get, set, reset, replaceAll };
+/** Interrupteurs de chaque module (page « Modules » du tableau de bord) : [clé, libellé, réglage, groupe] */
+const MODULES = [
+  ['welcome', '🏮 Message de bienvenue', 'welcome.enabled', 'Communauté'],
+  ['goodbye', '🌑 Message de départ', 'goodbye.enabled', 'Communauté'],
+  ['verification', '✅ Vérification anti-bot (règlement)', 'verification.captcha', 'Communauté'],
+  ['levels', '⚔️ Niveaux et XP des messages', 'levels.enabled', 'Communauté'],
+  ['voiceXp', '🎙️ XP et ryō en vocal', 'voiceXp.enabled', 'Communauté'],
+  ['seasons', '🏆 Saisons du mois', 'seasons.enabled', 'Communauté'],
+  ['economy', '💰 Économie ryō', 'economy.enabled', 'Communauté'],
+  ['quests', '📜 Quêtes quotidiennes et hebdomadaires', 'modules.quests', 'Communauté'],
+  ['birthdays', '🎂 Anniversaires', 'birthdays.enabled', 'Communauté'],
+  ['giveaways', '🎁 Giveaways', 'modules.giveaways', 'Communauté'],
+  ['suggestions', '💡 Suggestions avec votes', 'modules.suggestions', 'Communauté'],
+  ['hallOfFame', '🏯 Hall of Fame', 'modules.hallOfFame', 'Communauté'],
+  ['customCommands', '⌨️ Commandes personnalisées', 'modules.customCommands', 'Communauté'],
+  ['tickets', '🎫 Tickets', 'modules.tickets', 'Serveur'],
+  ['tempvoice', '🔊 Vocaux temporaires', 'modules.tempvoice', 'Serveur'],
+  ['music', '🎵 Musique', 'modules.music', 'Serveur'],
+  ['stats', '📊 Salons compteurs', 'modules.stats', 'Serveur'],
+  ['logs', '📋 Logs (journal d\'audit, vocal, messages)', 'modules.logs', 'Serveur'],
+  ['twitch', '🔴 Alertes de live Twitch', 'notifications.twitch', 'Stream'],
+  ['clips', '🎬 Clips Twitch', 'notifications.clips', 'Stream'],
+  ['schedule', '🗓️ Planning Twitch → événements', 'notifications.schedule', 'Stream'],
+  ['tiktok', '📱 Alertes TikTok', 'notifications.tiktok', 'Stream'],
+  ['milestones', '🎉 Paliers d\'abonnés', 'modules.milestones', 'Stream'],
+  ['antiRaid', '🛡️ Anti-raid', 'security.antiRaid', 'Sécurité'],
+  ['antiSpam', '🤖 Anti-spam', 'security.antiSpam', 'Sécurité'],
+  ['antiNuke', '💣 Anti-nuke', 'security.antiNuke', 'Sécurité'],
+  ['automod', '🤖 AutoMod Discord', 'automod.enabled', 'Sécurité'],
+];
+
+/** Un module est actif sauf s'il a été coupé (valeur false). */
+const on = (key) => {
+  const m = MODULES.find((x) => x[0] === key);
+  return get(m ? m[2] : `modules.${key}`) !== false;
+};
+
+module.exports = { DEFAULTS, all, get, set, reset, replaceAll, MODULES, on };

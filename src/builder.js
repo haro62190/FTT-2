@@ -94,7 +94,7 @@ async function ensureRoles(guild, log = console.log) {
       mentionable: false, // seuls le staff et le bot peuvent mentionner les rôles
       permissions: def.admin
         ? [P.Administrator]
-        : (def.permissions ?? []).map((n) => {
+        : (require('./settings').get(`rolePermissions.${def.key}`) ?? def.permissions ?? []).map((n) => {
             if (!(n in P)) throw new Error(`Permission inconnue « ${n} » pour le rôle ${def.name}`);
             return P[n];
           }),
@@ -259,7 +259,7 @@ async function postMessages(guild, log = console.log) {
             `🎴 **二** ・ Choisis tes rôles et notifications dans ${roles ?? '#rôles'}`,
             `🍜 **三** ・ Viens dire こんにちは dans ${byKey('general') ?? '#discussion'} !`,
             '',
-            process.env.TWITCH_CHANNEL ? `📡 Le stream : https://twitch.tv/${process.env.TWITCH_CHANNEL}` : '',
+            require('./shared').twitchLogin() ? `📡 Le stream : https://twitch.tv/${require('./shared').twitchLogin()}` : '',
           ].join('\n'),
         },
       ],

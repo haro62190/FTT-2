@@ -60,7 +60,7 @@ const commands = [
     category: '🎉 Général',
     data: new SlashCommandBuilder().setName('live').setDescription('Le stream est-il en ligne ?'),
     async run(i, ctx) {
-      const login = process.env.TWITCH_CHANNEL;
+      const login = require('./shared').twitchLogin();
       if (!login) return i.reply(ephemeral('La chaîne Twitch n\'est pas configurée.'));
       if (!ctx.twitch) return i.reply(`📺 La chaîne : https://twitch.tv/${login}`);
       const stream = await ctx.twitch.getLiveStream(login);

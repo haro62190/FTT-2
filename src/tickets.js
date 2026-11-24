@@ -133,33 +133,49 @@ async function transcript(channel) {
 
 async function closeTicket(i, ticket) {
   await i.update({ content: '🔒 Fermeture du ticket dans 5 secondes…', components: [] });
-  const channel = i.channel;
+  await finalizeClose(i.guild, i.channel, ticket, i.user.tag, `${i.user}`);
+}
+
+/** Fermeture commune (Discord ou tableau de bord) : transcription dans les logs + MP, puis suppression du salon. */
+async function finalizeClose(guild, channel, ticket, closerTag, closerMention = closerTag) {
   const text = await transcript(channel).catch(() => '(transcription impossible)');
   const name = `ticket-${String(ticket.number).padStart(4, '0')}.txt`;
-  const header = `Ticket #${ticket.number} — ${ticket.subject}\nOuvert par ${ticket.ownerId} le ${new Date(ticket.createdAt).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' })}\nFermé par ${i.user.tag}\n\n`;
+  const header = `Ticket #${ticket.number} — ${ticket.subject}\nOuvert par ${ticket.ownerId} le ${new Date(ticket.createdAt).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' })}\nFermé par ${closerTag}\n\n`;
   const file = () => new AttachmentBuilder(Buffer.from(header + text, 'utf8'), { name });
-
-  const logs = findChannel(i.guild, 'mod_logs');
-  await logs
+  await findChannel(guild, 'mod_logs')
     ?.send({
       embeds: [
         new EmbedBuilder()
           .setColor(0x808080)
           .setTitle(`🎫 Ticket #${String(ticket.number).padStart(4, '0')} fermé`)
-          .setDescription(`**Sujet :** ${ticket.subject}\n**Membre :** <@${ticket.ownerId}>\n**Pris en charge par :** ${ticket.claimedBy ? `<@${ticket.claimedBy}>` : '—'}\n**Fermé par :** ${i.user}`)
+          .setDescription(`**Sujet :** ${ticket.subject}\n**Membre :** <@${ticket.ownerId}>\n**Pris en charge par :** ${ticket.claimedBy ? `<@${ticket.claimedBy}>` : '—'}\n**Fermé par :** ${closerMention}`)
           .setTimestamp(),
       ],
       files: [file()],
     })
     .catch(() => {});
-  const owner = await i.client.users.fetch(ticket.ownerId).catch(() => null);
-  await owner?.send({ content: `🎫 Ton ticket **${ticket.subject}** sur **${i.guild.name}** a été fermé. Voici la transcription :`, files: [file()] }).catch(() => {});
-
+  const owner = await guild.client.users.fetch(ticket.ownerId).catch(() => null);
+  await owner?.send({ content: `🎫 Ton ticket **${ticket.subject}** sur **${guild.name}** a été fermé. Voici la transcription :`, files: [file()] }).catch(() => {});
   delete state().open[channel.id];
   module.exports.closedRecently.add(channel.id);
   setTimeout(() => module.exports.closedRecently.delete(channel.id), 10 * 60_000);
   save();
-  setTimeout(() => channel.delete(`Ticket fermé par ${i.user.tag}`).catch(() => {}), 5000);
+  setTimeout(() => channel.delete(`Ticket fermé par ${closerTag}`).catch(() => {}), 5000);
+}
+
+/** Fermer un ticket depuis le tableau de bord. */
+async function closeById(guild, channelId, closerTag) {
+  const ticket = state().open[channelId];
+  const channel = guild.channels.cache.get(channelId);
+  if (!ticket) return false;
+  if (!channel) {
+    delete state().open[channelId];
+    save();
+    return true;
+  }
+  await channel.send(`🔒 Ticket fermé depuis le tableau de bord par **${closerTag}**. Suppression dans 5 secondes…`).catch(() => {});
+  await finalizeClose(guild, channel, ticket, `${closerTag} (tableau de bord)`);
+  return true;
 }
 
 /** Boutons / formulaires des tickets. Renvoie true si l'interaction a été traitée. */
@@ -170,6 +186,10 @@ async function handleInteraction(i) {
 
   switch (action) {
     case 'open':
+      if (!require('./settings').on('tickets')) {
+        await i.reply(ephemeral('🎫 Les tickets sont désactivés pour le moment. Contacte un membre du staff.'));
+        return true;
+      }
       await i.showModal(
         new ModalBuilder()
           .setCustomId(PREFIX + 'modal')
@@ -265,4 +285,4 @@ const commands = [
 const closedRecently = new Set();
 const isTicketChannel = (id) => !!state().open[id] || closedRecently.has(id);
 
-module.exports = { panelPayload, handleInteraction, commands, isTicketChannel, closedRecently };
+module.exports = { panelPayload, handleInteraction, commands, isTicketChannel, closedRecently, closeById };

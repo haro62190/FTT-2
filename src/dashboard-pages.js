@@ -262,7 +262,7 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
       if (!start || start.getTime() < Date.now() + 60_000) return '❌ Date invalide ou passée (format JJ/MM/AAAA HH:MM).';
       const name = String(body.get('name') ?? '').trim().slice(0, 100);
       if (!name) return '❌ Titre manquant.';
-      const location = String(body.get('location') ?? '').trim() || (process.env.TWITCH_CHANNEL ? `https://twitch.tv/${process.env.TWITCH_CHANNEL}` : 'Discord');
+      const location = String(body.get('location') ?? '').trim() || (require('./shared').twitchLogin() ? `https://twitch.tv/${require('./shared').twitchLogin()}` : 'Discord');
       const description = String(body.get('description') ?? '').slice(0, 1000);
       const event = await guild.scheduledEvents.create({
         name,

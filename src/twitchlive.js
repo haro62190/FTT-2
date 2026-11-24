@@ -10,7 +10,7 @@ const { BRAND_COLOR, findChannel, findRole } = require('./shared');
 const { db, save } = require('./store');
 const settings = require('./settings');
 
-const LOGIN = process.env.TWITCH_CHANNEL;
+const LOGIN_ = () => require('./shared').twitchLogin();
 const POLL_MS = Math.max(30, Number(process.env.TWITCH_POLL_SECONDS) || 60) * 1000;
 const CLIPS_MS = 5 * 60_000;
 const SCHEDULE_MS = 30 * 60_000;
@@ -25,8 +25,9 @@ const fmtDuration = (ms) => {
 };
 
 async function getUser() {
-  user ??= await twitch.getUser(LOGIN);
-  if (!user) throw new Error(`chaîne Twitch « ${LOGIN} » introuvable`);
+  if (user && user.login !== LOGIN_()) user = null; // chaîne changée depuis le tableau de bord
+  user ??= await twitch.getUser(LOGIN_());
+  if (!user) throw new Error(`chaîne Twitch « ${LOGIN_()} » introuvable`);
   return user;
 }
 
@@ -35,7 +36,7 @@ async function getUser() {
 async function checkLive(guild) {
   const channel = findChannel(guild, 'live');
   if (!channel || !settings.get('notifications.twitch')) return;
-  const stream = await twitch.getLiveStream(LOGIN);
+  const stream = await twitch.getLiveStream(LOGIN_());
   const state = live();
 
   if (stream && stream.id === state?.streamId) {
@@ -92,7 +93,7 @@ async function checkLive(guild) {
     if (msg) {
       const recap = new EmbedBuilder()
         .setColor(0x3a3a3a)
-        .setAuthor({ name: `${u?.display_name ?? LOGIN} — live terminé`, iconURL: u?.profile_image_url })
+        .setAuthor({ name: `${u?.display_name ?? LOGIN_()} — live terminé`, iconURL: u?.profile_image_url })
         .setTitle(state.title || 'Live terminé')
         .addFields(
           { name: '⏱️ Durée', value: fmtDuration(duration), inline: true },
@@ -137,7 +138,7 @@ async function checkClips(guild) {
 // ───────────────────────── Planning ─────────────────────────
 
 async function checkSchedule(guild) {
-  if (!twitch || !LOGIN) throw new Error('Twitch n\'est pas configuré (TWITCH_CHANNEL / TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET)');
+  if (!twitch || !LOGIN_()) throw new Error('Twitch n\'est pas configuré (TWITCH_CHANNEL / TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET)');
   if (!settings.get('notifications.schedule')) return;
   const u = await getUser();
   const schedule = await twitch.getSchedule(u.id);
@@ -197,19 +198,20 @@ async function checkSchedule(guild) {
 
 function start(guild, client) {
   twitch = client;
-  if (!twitch || !LOGIN) {
-    console.log('ℹ️  Twitch désactivé (TWITCH_CHANNEL / TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET manquants).');
+  if (!twitch) {
+    console.log('ℹ️  Twitch désactivé (TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET manquants dans .env).');
     return;
   }
+  // La chaîne peut être réglée (ou changée) plus tard depuis le tableau de bord : on vérifie à chaque passage
   const every = (fn, ms, label) => {
-    const run = () => fn(guild).catch((e) => console.error(`Twitch ${label} :`, e.message));
+    const run = () => (LOGIN_() ? fn(guild).catch((e) => console.error(`Twitch ${label} :`, e.message)) : null);
     run();
     setInterval(run, ms);
   };
   every(checkLive, POLL_MS, 'live');
   every(checkClips, CLIPS_MS, 'clips');
   every(checkSchedule, SCHEDULE_MS, 'planning');
-  console.log(`📺 Twitch ${LOGIN} : live toutes les ${POLL_MS / 1000}s, clips toutes les 5 min, planning toutes les 30 min`);
+  console.log(`📺 Twitch ${LOGIN_() || '(chaîne à régler sur le tableau de bord)'} : live toutes les ${POLL_MS / 1000}s, clips toutes les 5 min, planning toutes les 30 min`);
 }
 
 module.exports = { start, checkSchedule };

@@ -67,6 +67,10 @@ function isStaffMember(member, min = 'helper') {
   return staffRoles(member.guild, min).some((r) => member.roles.cache.has(r.id));
 }
 
+// ───────── Comptes Twitch / TikTok (réglables depuis le tableau de bord, sinon .env) ─────────
+const twitchLogin = () => (require('./settings').get('stream.twitchChannel') || process.env.TWITCH_CHANNEL || '').trim().toLowerCase();
+const tiktokUser = () => (require('./settings').get('stream.tiktokUsername') || process.env.TIKTOK_USERNAME || '').replace(/^@/, '').trim();
+
 function rulesPayload(guild) {
   const embed = new EmbedBuilder()
     .setColor(BRAND_COLOR)
@@ -118,6 +122,8 @@ function rolesPayload() {
 
 module.exports = {
   config,
+  twitchLogin,
+  tiktokUser,
   staffRoles,
   isStaffMember,
   STAFF_LEVELS,

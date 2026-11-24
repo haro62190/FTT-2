@@ -47,6 +47,7 @@ function renderSuggestion(s, author) {
 async function onSuggestionMessage(message) {
   const channel = findChannel(message.guild, 'suggestions');
   if (!channel || message.channelId !== channel.id || message.author.bot || !message.content?.trim()) return;
+  if (!settings.on('suggestions')) return;
   if (isStaff(message.member)) return; // le staff peut discuter normalement
   const meta = (db.suggestionsMeta ??= { counter: 0 });
   const s = { number: ++meta.counter, authorId: message.author.id, text: message.content.trim(), up: [], down: [], status: 'pending', at: Date.now() };
@@ -83,6 +84,7 @@ async function onSuggestionButton(i) {
 // ───────────────────────── Hall of Fame ─────────────────────────
 
 async function onReaction(reaction) {
+  if (!settings.on('hallOfFame')) return;
   if (reaction.partial) reaction = await reaction.fetch().catch(() => null);
   if (!reaction) return;
   const message = reaction.message.partial ? await reaction.message.fetch().catch(() => null) : reaction.message;

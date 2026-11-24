@@ -35,6 +35,7 @@ const cooldown = new Map();
 
 async function onMessage(message) {
   if (!message.guild || message.author.bot || !message.content.startsWith(PREFIX())) return;
+  if (!require('./settings').on('customCommands')) return;
   const name = cleanName(message.content.slice(PREFIX().length).split(/\s+/)[0]);
   const cmd = commandsDb()[name];
   if (!cmd) return;

@@ -148,6 +148,7 @@ const commands = [
     async run(i) {
       const sub = i.options.getSubcommand();
       if (sub === 'lancer') {
+        if (!require('./settings').on('giveaways')) return i.reply(ephemeral('🎁 Les giveaways sont désactivés (tableau de bord → Modules).'));
         const ms = parseDuration(i.options.getString('duree'));
         if (!ms || ms < 60_000 || ms > 60 * 86_400_000) return i.reply(ephemeral('Durée entre 1 minute et 60 jours, ex : `30m`, `2h`, `1j`.'));
         const channel = i.options.getChannel('salon') ?? i.channel;

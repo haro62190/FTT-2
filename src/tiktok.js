@@ -7,12 +7,12 @@ const { ytdlpJson } = require('./ytdlp');
 const { findChannel, findRole } = require('./shared');
 const { db, save } = require('./store');
 
-const USERNAME = (process.env.TIKTOK_USERNAME || '').replace(/^@/, '').trim();
+const USERNAME_ = () => require('./shared').tiktokUser();
 const POLL_MS = Math.max(60, Number(process.env.TIKTOK_POLL_SECONDS) || 120) * 1000;
 const TIKTOK_COLOR = 0xfe2c55;
 
 const state = () => (db.tiktok ??= { seen: [], liveId: null, liveMessageId: null });
-const profileUrl = () => `https://www.tiktok.com/@${USERNAME}`;
+const profileUrl = () => `https://www.tiktok.com/@${USERNAME_()}`;
 
 let lastError = '';
 function logError(scope, err) {
@@ -77,12 +77,12 @@ async function checkLive(guild) {
     const role = findRole(guild, 'notif_live');
     const url = `${profileUrl()}/live`;
     const msg = await channel.send({
-      content: `${role ?? ''} 🔴 **${USERNAME}** est en live sur **TikTok** ! ${url}`.trim(),
+      content: `${role ?? ''} 🔴 **${USERNAME_()}** est en live sur **TikTok** ! ${url}`.trim(),
       allowedMentions: { roles: role ? [role.id] : [] },
       embeds: [
         new EmbedBuilder()
           .setColor(TIKTOK_COLOR)
-          .setAuthor({ name: `@${USERNAME} sur TikTok`, url: profileUrl() })
+          .setAuthor({ name: `@${USERNAME_()} sur TikTok`, url: profileUrl() })
           .setTitle((live.title || live.description || 'Live TikTok').slice(0, 256))
           .setURL(url)
           .setThumbnail(live.thumbnail ?? null)
@@ -114,20 +114,17 @@ async function checkLive(guild) {
 }
 
 function startTikTokWatcher(guild) {
-  if (!USERNAME) {
-    console.log('ℹ️  Alertes TikTok désactivées (TIKTOK_USERNAME manquant).');
-    return;
-  }
+  // Le compte peut être réglé (ou changé) plus tard depuis le tableau de bord : on vérifie à chaque passage
   let tick = 0;
   const run = async () => {
-    if (!require('./settings').get('notifications.tiktok')) return;
+    if (!USERNAME_() || !require('./settings').get('notifications.tiktok')) return;
     await checkLive(guild).catch((err) => logError('live', err));
     // Les vidéos : une vérification sur deux suffit
     if (tick++ % 2 === 0) await checkVideos(guild).catch((err) => logError('vidéos', err));
   };
   run();
   setInterval(run, POLL_MS);
-  console.log(`📱 Surveillance de tiktok.com/@${USERNAME} toutes les ${POLL_MS / 1000}s`);
+  console.log(`📱 TikTok ${USERNAME_() ? `@${USERNAME_()}` : '(compte à régler sur le tableau de bord)'} : vérification toutes les ${POLL_MS / 1000}s`);
 }
 
 module.exports = { startTikTokWatcher };

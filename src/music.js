@@ -238,6 +238,7 @@ const commands = [
           .addChoices({ name: 'YouTube', value: 'youtube' }, { name: 'SoundCloud', value: 'soundcloud' }),
       ),
     async run(i) {
+      if (!require('./settings').on('music')) return i.reply(ephemeral('🎵 La musique est désactivée pour le moment.'));
       const voice = i.member.voice.channel;
       if (!voice) return i.reply(ephemeral('🔊 Rejoins d\'abord un salon vocal.'));
       const existing = queues.get(i.guildId);

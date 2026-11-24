@@ -506,7 +506,7 @@ const commands = [
       if (!start) return i.reply(ephemeral('Format de date : `JJ/MM/AAAA HH:MM`, ex : `25/12/2026 20:30`.'));
       if (start.getTime() < Date.now() + 60_000) return i.reply(ephemeral('La date doit être dans le futur.'));
       const end = new Date(start.getTime() + (i.options.getInteger('duree') ?? 2) * 3600_000);
-      const twitch = process.env.TWITCH_CHANNEL ? `https://twitch.tv/${process.env.TWITCH_CHANNEL}` : 'Discord';
+      const twitch = require('./shared').twitchLogin() ? `https://twitch.tv/${require('./shared').twitchLogin()}` : 'Discord';
       const location = i.options.getString('lieu') || twitch;
       const description = i.options.getString('description') ?? '';
       await i.deferReply({ flags: MessageFlags.Ephemeral });
