@@ -175,7 +175,6 @@ client.on(Events.MessageDelete, async (message) => {
 client.on(Events.MessageCreate, async (message) => {
   if (!message.guild || message.guild.id !== GUILD_ID || message.author.bot) return;
   require('./history').bump('messages');
-  require('./assistant').onMessage(message).catch((e) => console.error('Assistant IA :', e.message));
   require('./insights').track(message.channelId);
   const counted = levels.counts({ content: message.content, attachments: message.attachments.size, channelId: message.channelId, guild: message.guild });
   if (!counted) return; // message trop court ou salon sans XP : ni XP, ni ryō, ni quête

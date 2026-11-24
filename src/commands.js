@@ -442,7 +442,6 @@ commands.push(
   ...require('./social').commands,
   ...require('./challenges').commands,
   ...require('./applications').commands,
-  ...require('./assistant').commands,
   ...require('./reports').commands,
 );
 

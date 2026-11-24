@@ -120,7 +120,6 @@ const NAV = [
   ['/commandes', '⌨️ Commandes perso'],
   ['/menus-roles', '🎭 Menus de rôles'],
   ['/editeur', '✉️ Éditeur de messages'],
-  ['/assistant', '🤖 Assistant IA'],
   ['/communaute', '🏯 Hall of Fame & vocal'],
   ['#', 'Gaming'],
   ['/tournois', '🏆 Tournois'],

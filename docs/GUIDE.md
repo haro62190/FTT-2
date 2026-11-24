@@ -51,7 +51,6 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/parrainage lien` | Ton lien d'invitation personnel |
 | `/parrainage stats` | Tes filleuls |
 | `/candidature poste:` | Postuler pour devenir modérateur ou streamer partenaire |
-| `/demande question:` | Pose une question sur le serveur à l'assistant IA |
 | `/signaler membre: raison: [message:]` | Signaler discrètement un problème au staff |
 | `/mes-signalements` | Le suivi de tes signalements |
 

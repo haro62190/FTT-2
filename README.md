@@ -209,13 +209,12 @@ Tout se règle sur le site, page *📜 Quêtes, boosts & grades*.
 
 ## 🤖 Automatisation
 
-- **Assistant IA** : `/demande question:` (ou mentionner le bot dans 🤖┃commandes) répond aux questions sur le serveur grâce à Claude (API Anthropic). Ajoute `ANTHROPIC_API_KEY=` dans `.env` (clé sur console.anthropic.com) ; sans clé, l'assistant reste désactivé. Limites : 5 questions / 10 min par membre et un plafond quotidien. Questions fréquentes et coût estimé sur le site (*🤖 Assistant IA*).
 - **Récap hebdomadaire** chaque lundi dans 📡┃annonces, et **rapport staff** : salons inutilisés depuis 30 jours, meilleurs créneaux d'activité, jeux les plus joués, idées d'événements.
 - **Signalements suivis** : `/signaler @membre raison:` → carte dans 🚩┃signalements avec boutons pour le staff, MP de suivi, `/mes-signalements`.
 
 ## 🖥️ Nouveautés du tableau de bord
 
-🔔 Centre d'alertes (signalements, candidatures, tickets, quarantaines, permissions, erreurs, avec une cloche dans l'en-tête) · ✉️ Éditeur de messages avec aperçu en direct (et modification d'un message du bot) · 🏆 Tournois (tableau, résultats en un clic, classements Elo) · 🌙 Soirées, défis & calendrier · 👥 Équipes & inscriptions · 📊 Stats Twitch + Discord réunies · 🎬 Galerie de clips · 🤖 Assistant IA · historique de chaque membre sur la page *Membres*.
+🔔 Centre d'alertes (signalements, candidatures, tickets, quarantaines, permissions, erreurs, avec une cloche dans l'en-tête) · ✉️ Éditeur de messages avec aperçu en direct (et modification d'un message du bot) · 🏆 Tournois (tableau, résultats en un clic, classements Elo) · 🌙 Soirées, défis & calendrier · 👥 Équipes & inscriptions · 📊 Stats Twitch + Discord réunies · 🎬 Galerie de clips · historique de chaque membre sur la page *Membres*.
 
 ## 🎉 Animation
 

@@ -1,7 +1,7 @@
 /**
  * Pages « gestion » du tableau de bord :
  * 🏆 Tournois · 🌙 Soirées & défis · 👥 Équipes & inscriptions · 📊 Stats Twitch + Discord · 🔔 Centre d'alertes
- * ✉️ Éditeur de messages (aperçu en direct) · 🎬 Galerie de clips · 🤖 Assistant IA
+ * ✉️ Éditeur de messages (aperçu en direct) · 🎬 Galerie de clips
  */
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder } = require('discord.js');
 const settings = require('./settings');
@@ -312,38 +312,6 @@ f.addEventListener('input',up);up();`,
           .map((c) => `<a href="${esc(c.url)}" target="_blank" rel="noopener" class="card" style="padding:0;overflow:hidden;text-decoration:none;color:inherit;margin:0">${c.thumb && /^https:\/\//.test(c.thumb) ? `<img src="${esc(c.thumb)}" alt="" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block">` : ''}<div style="padding:10px 12px"><b>${esc(c.title)}</b><div class="muted" style="font-size:13px">par ${esc(c.creator)} · ${n(c.views)} vues · ${fmtDate(c.createdAt)}</div></div></a>`)
           .join('') || '<p class="muted">Aucun clip sur cette période (les clips de la chaîne sont récupérés toutes les 5 minutes).</p>'}</div>`,
       };
-    },
-
-    // ───────────────────────── Assistant IA ─────────────────────────
-    '/assistant'(guild, sess) {
-      const a = require('./assistant');
-      const usage = Object.entries(db.assistantUsage ?? {}).sort((x, y) => y[0].localeCompare(x[0])).slice(0, 14);
-      const faq = settings.get('assistant.faq') ?? [];
-      // Coût estimé (Claude Opus 5.5 : 4 $ / 20 $ par million de jetons, lecture du cache 0,20 $)
-      const cost = (d) => ((d.input * 4 + d.output * 20 + d.cacheRead * 0.2 + d.cacheWrite * 5) / 1e6).toFixed(3);
-      return {
-        title: '🤖 Assistant IA',
-        body: `<div class="card"><p>${process.env.ANTHROPIC_API_KEY ? '✅ Clé API présente.' : '⚠️ Ajoute <code>ANTHROPIC_API_KEY=…</code> dans le fichier <code>.env</code> (clé sur console.anthropic.com) puis redémarre le bot.'} Modèle : <code>${esc(a.MODEL)}</code>. Les membres utilisent <code>/demande</code> ou mentionnent le bot dans 🤖┃commandes.</p></div>
-        <form method="post" class="card">${csrf(sess)}${hidden('action', 'settings')}<h3>Réglages</h3>
-        ${checkbox('enabled', settings.on('assistant'), 'Assistant activé')}
-        <div class="row"><div><label>Questions maximum par jour (tout le serveur)</label><input type="number" name="dailyLimit" min="1" max="5000" value="${settings.get('assistant.dailyLimit') ?? 200}"></div></div>
-        <label>Questions fréquentes ajoutées au contexte — format « Question ? | Réponse », une par ligne</label>
-        <textarea name="faq" rows="8" maxlength="8000">${esc(faq.map((f) => `${f.q} | ${f.a}`).join('\n'))}</textarea>
-        <button>Enregistrer</button></form>
-        <div class="card"><h3>Utilisation</h3><table><tr><th>Jour</th><th>Questions</th><th>Jetons (entrée / sortie / cache lu)</th><th>Coût estimé</th></tr>${usage.map(([day, d]) => `<tr><td>${esc(day)}</td><td>${d.questions}</td><td>${n(d.input)} / ${n(d.output)} / ${n(d.cacheRead)}</td><td>${cost(d)} $</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Aucune question pour l\'instant.</td></tr>'}</table></div>`,
-      };
-    },
-    'POST /assistant'(guild, sess, body) {
-      settings.set('modules.assistant', body.has('enabled'));
-      settings.set('assistant.dailyLimit', Math.min(5000, Math.max(1, Number(body.get('dailyLimit')) || 200)));
-      const faq = String(body.get('faq') ?? '')
-        .split('\n')
-        .map((l) => l.split('|'))
-        .filter((p) => p.length >= 2 && p[0].trim() && p.slice(1).join('|').trim())
-        .slice(0, 40)
-        .map((p) => ({ q: p[0].trim().slice(0, 200), a: p.slice(1).join('|').trim().slice(0, 600) }));
-      settings.set('assistant.faq', faq);
-      return `✅ Réglages enregistrés (${faq.length} question(s) fréquente(s)).`;
     },
   };
 };
