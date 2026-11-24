@@ -183,15 +183,6 @@ Activables / désactivables avec `/config notifications` ou le tableau de bord.
 
 Tout se règle sur le site, page *📜 Quêtes, boosts & grades*.
 
-## 🎯 Classes méta (Warzone, MW, Black Ops…)
-
-- **`/meta arme:`** : la classe conseillée pour une arme (accessoires, palier S/A/B/C, code de partage), en **image aux couleurs Kensei**. L'arme se cherche en tapant son nom (autocomplétion). **`/meta`** sans arme : le classement des armes par palier pour un jeu.
-- **Ajouter / modifier** : sur le site, page *🎯 Classes méta* (formulaire avec un menu par emplacement : bouche, canon, optique…), ou avec `/classe ajouter jeu: arme: accessoires: Bouche: Compensateur; Canon: Long; Optique: Viseur 2x` (staff).
-- Chaque classe est **publiée et tenue à jour** dans 🎯┃classes-méta (créé par `/setup`).
-- La liste des jeux (Warzone, MW4, Black Ops 7 par défaut) se modifie sur la même page.
-
-Les classes sont celles que **toi et ton staff** saisissez : il n'existe pas de source officielle de la méta, et les sites qui la publient changent sans arrêt ou interdisent la récupération automatique.
-
 ## 🎉 Animation
 
 - **🎁 `/giveaway lancer prix: duree: gagnants:`** — bouton « Participer », tirage automatique (même après un redémarrage), `/giveaway relancer` pour un nouveau gagnant.

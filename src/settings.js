@@ -57,7 +57,6 @@ const DEFAULTS = {
   verification: { captcha: true },
   birthdays: { enabled: true, gift: 500 },
   automod: { enabled: true, extraWords: [] },
-  meta: { games: ['Warzone', 'MW4', 'Black Ops 7'] },
   notifications: {
     twitch: true,
     tiktok: true,
@@ -136,7 +135,6 @@ const MODULES = [
   ['giveaways', '🎁 Giveaways', 'modules.giveaways', 'Communauté'],
   ['suggestions', '💡 Suggestions avec votes', 'modules.suggestions', 'Communauté'],
   ['hallOfFame', '🏯 Hall of Fame', 'modules.hallOfFame', 'Communauté'],
-  ['meta', '🎯 Classes méta (Warzone, MW, BO…)', 'modules.meta', 'Communauté'],
   ['customCommands', '⌨️ Commandes personnalisées', 'modules.customCommands', 'Communauté'],
   ['tickets', '🎫 Tickets', 'modules.tickets', 'Serveur'],
   ['tempvoice', '🔊 Vocaux temporaires', 'modules.tempvoice', 'Serveur'],

@@ -195,7 +195,6 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.inGuild() || interaction.guildId !== GUILD_ID) return;
-  if (interaction.isAutocomplete()) return commands.autocomplete(interaction);
   if (interaction.isChatInputCommand()) return commands.handle(interaction, ctx);
   if (interaction.isButton() || interaction.isUserSelectMenu() || interaction.isModalSubmit()) {
     const id = interaction.customId ?? '';

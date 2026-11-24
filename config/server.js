@@ -112,7 +112,6 @@ module.exports = {
         { key: 'media', name: '📸┃médias', formerNames: ['🖼️・médias'], type: 'text', access: 'members', topic: 'Images, vidéos, liens sympas.' },
         { key: 'memes', name: '👾┃memes', formerNames: ['😂・memes'], type: 'text', access: 'members' },
         { key: 'gaming', name: '🕹️┃gaming', formerNames: ['🎮・gaming'], type: 'text', access: 'members', topic: 'Parle de tes jeux du moment.' },
-        { key: 'meta', name: '🎯┃classes-méta', type: 'text', access: 'members-readonly', topic: 'Les classes méta (Warzone, MW, Black Ops…) : accessoires conseillés par arme. Cherche une arme avec /meta.' },
         { key: 'music', name: '🎧┃musique', formerNames: ['🎵・musique'], type: 'text', access: 'members' },
         { key: 'hall_of_fame', name: '🏯┃hall-of-fame', type: 'text', access: 'members-readonly', topic: 'Les meilleurs messages du dojo (⚔️ x5 pour y entrer).' },
         { key: 'bot_commands', name: '🤖┃commandes', formerNames: ['🤖・commandes-bot'], type: 'text', access: 'members' },
