@@ -115,6 +115,27 @@ const commands = [
   {
     category: '📺 Stream',
     data: new SlashCommandBuilder()
+      .setName('clips')
+      .setDescription('Les meilleurs clips de la chaîne')
+      .addIntegerOption((o) => o.setName('jours').setDescription('Période (7 jours par défaut)').addChoices({ name: '7 jours', value: 7 }, { name: '30 jours', value: 30 }, { name: '1 an', value: 365 })),
+    run(i) {
+      const days = i.options.getInteger('jours') ?? 7;
+      const top = require('./twitchlive').bestClips(days, 10);
+      return i.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setColor(BRAND_COLOR)
+            .setTitle(`🎬 Meilleurs clips (${days} jours)`)
+            .setDescription(top.map((c, k) => `**${k + 1}.** [${c.title}](${c.url}) — ${c.creator} · ${c.views.toLocaleString('fr-FR')} vues`).join('\n') || '_Aucun clip sur cette période._')
+            .setImage(top[0]?.thumb ?? null),
+        ],
+        allowedMentions: { parse: [] },
+      });
+    },
+  },
+  {
+    category: '📺 Stream',
+    data: new SlashCommandBuilder()
       .setName('streams')
       .setDescription('Historique et statistiques des lives')
       .addIntegerOption((o) => o.setName('jours').setDescription('Période (30 jours par défaut)').addChoices({ name: '7 jours', value: 7 }, { name: '30 jours', value: 30 }, { name: '90 jours', value: 90 }, { name: '1 an', value: 365 })),

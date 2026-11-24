@@ -150,6 +150,8 @@ const MODULES = [
   ['schedule', '🗓️ Planning Twitch → événements', 'notifications.schedule', 'Stream'],
   ['tiktok', '📱 Alertes TikTok', 'notifications.tiktok', 'Stream'],
   ['milestones', '🎉 Paliers d\'abonnés', 'modules.milestones', 'Stream'],
+  ['highlights', '💥 Moments forts (lecture du chat Twitch)', 'modules.highlights', 'Stream'],
+  ['liveGames', '🎲 Quiz, pronostics et votes du live', 'modules.liveGames', 'Stream'],
   ['antiRaid', '🛡️ Anti-raid', 'security.antiRaid', 'Sécurité'],
   ['antiSpam', '🤖 Anti-spam', 'security.antiSpam', 'Sécurité'],
   ['antiNuke', '💣 Anti-nuke', 'security.antiNuke', 'Sécurité'],

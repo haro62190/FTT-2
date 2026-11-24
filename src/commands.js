@@ -437,6 +437,7 @@ commands.push(
   ...require('./gaming').commands,
   ...require('./tournaments').commands,
   ...require('./nights').commands,
+  ...require('./livegames').commands,
 );
 
 // /help = /aide

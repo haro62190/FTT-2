@@ -195,7 +195,7 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
 // ───────────────────────── Boutons ─────────────────────────
 
 // Modules avec boutons / menus / formulaires (chacun reconnaît ses propres identifiants)
-const INTERACTIVE = ['./gaming', './tournaments', './nights'];
+const INTERACTIVE = ['./gaming', './tournaments', './nights', './livegames'];
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.inGuild() || interaction.guildId !== GUILD_ID) return;
@@ -313,6 +313,7 @@ client.once(Events.ClientReady, async () => {
   require('./seasons').start(guild);
   require('./quests').init(guild);
   require('./nights').start(client, guild);
+  require('./livegames').start(client);
   giveaway.start(client);
   startTikTokWatcher(guild);
   require('./stats').start(guild, twitch).catch((e) => console.error('Stats :', e.message));
