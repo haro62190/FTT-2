@@ -52,7 +52,7 @@ Dans Discord : **＋ Ajouter un serveur → Créer le mien → Pour moi et mes a
 1. Va sur <https://discord.com/developers/applications> → **New Application**, nomme-la **Kensei**.
 2. Onglet **Bot** → **Reset Token** → copie le token (garde-le secret !).
 3. Toujours dans **Bot**, active les 2 *Privileged Gateway Intents* : **Server Members Intent** et **Message Content Intent**.
-4. Onglet **OAuth2 → URL Generator** : coche `bot`, puis la permission **Administrator**. Ouvre l'URL générée et ajoute le bot à ton serveur.
+4. Dans le dossier du bot, après `npm install` et le `.env` rempli : **`npm run invite`**. Ouvre le lien affiché pour ajouter le bot **avec les permissions minimales** (pas besoin d'Administrateur). Puis place le rôle du bot tout en haut de la liste des rôles.
 
 ### 3. (Optionnel) Alertes de live Twitch
 1. Va sur <https://dev.twitch.tv/console/apps> → **Register Your Application**.
@@ -308,6 +308,20 @@ pm2 save && pm2 startup        # redémarrage automatique si le VPS redémarre
 - **🔊┃logs-vocal** : arrivées, départs, changements de vocal, et qui a déconnecté / déplacé quelqu'un.
 
 ## 🛡️ Sécurité
+
+**Permissions minimales** : le bot n'a plus besoin d'Administrateur. `npm run invite` donne le lien avec exactement les permissions nécessaires (et pourquoi). Au démarrage, il signale dans 🚨┃alertes-sécurité les permissions manquantes. Il ne donne jamais à un rôle une permission qu'il n'a pas lui-même, et ne retire jamais celles qu'il ne contrôle pas (comme l'Administrateur de 👑 Chef) : à donner à la main, `/setup` te le rappelle.
+
+**⛓️ Quarantaine** (`/quarantaine @membre [durée] [raison]`, `/liberer`) : le membre perd ses rôles (mémorisés) et ne voit plus que 🏚️┃cachot où le staff lui parle ; tout lui est rendu à la sortie. Utilisée aussi par l'anti-raid et l'anti-nuke **à la place des expulsions** : en cas de fausse alerte, rien n'est perdu.
+
+- **Anti-raid** : vague d'arrivées *ou* plusieurs comptes suspects (moins de 7 jours ou sans photo) d'un coup → verrouillage ; seuls les comptes suspects sans rôle sont mis en quarantaine 24 h (les comptes anciens ne sont jamais visés). `raidAction: 'kick'` pour expulser à la place.
+- **Anti-spam** : 1re infraction = avertissement, ensuite mute de plus en plus long ; messages répétés détectés ; les invitations vers **ton** serveur restent autorisées.
+- **Anti-nuke** : en plus des suppressions / bans de masse, un **rôle dangereux donné** ou des **droits d'administration ajoutés à un rôle** par quelqu'un hors liste de confiance sont **annulés aussitôt** ; un bot ajouté par un membre non autorisé est expulsé.
+- **Liste de confiance** : `/moderation confiance`, page Modération du site, ou `SECURITY_WHITELIST` dans `.env`.
+- **Commandes** : chaque commande du staff exige sa permission Discord, revérifiée par le bot à chaque utilisation ; toutes sont notées dans le journal d'administration.
+- **Tableau de bord** : limite de tentatives par IP, déconnexion après 2 h d'inactivité, cookie `__Host-` et HSTS en HTTPS, journal des connexions et actions. Derrière Caddy : `DASHBOARD_TRUST_PROXY=1`.
+- **Secrets** : tokens et clés masqués dans les journaux et alertes ; `.env` remis en lecture seule pour son propriétaire (chmod 600) s'il était trop ouvert. Journal des erreurs : `data/logs/erreurs.log`.
+
+### Réglages détaillés
 
 | Protection | Déclencheur (modifiable dans `config/server.js` → `security`) | Réaction |
 |---|---|---|

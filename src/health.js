@@ -38,7 +38,7 @@ async function alert(title, text) {
   lastAlert.set(key, Date.now());
   const channel = guildRef && (findChannel(guildRef, 'security_alerts') ?? findChannel(guildRef, 'mod_logs'));
   await channel
-    ?.send({ embeds: [new EmbedBuilder().setColor(0xff8800).setTitle(`⚠️ ${title}`).setDescription(`\`\`\`\n${String(text).slice(0, 1800)}\n\`\`\``).setTimestamp()] })
+    ?.send({ embeds: [new EmbedBuilder().setColor(0xff8800).setTitle(`⚠️ ${title}`).setDescription(`\`\`\`\n${require('./redact').redact(text).slice(0, 1800)}\n\`\`\``).setTimestamp()] })
     .catch(() => {});
 }
 

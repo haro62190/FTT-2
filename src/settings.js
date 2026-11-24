@@ -31,6 +31,13 @@ const DEFAULTS = {
     maxMentions: 5,
     blockInvites: true,
     antiNuke: true,
+    antiRaid: true,
+    antiSpam: true,
+    raidAction: 'quarantine', // 'quarantine' (réversible) ou 'kick'
+    raidQuarantineHours: 24,
+    youngAccountDays: 7,
+    youngRaidJoins: 5,
+    blockUnknownBots: true,
     whitelist: [],
     ...config.security,
   },

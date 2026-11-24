@@ -23,6 +23,27 @@ const HOST = process.env.DASHBOARD_HOST || '127.0.0.1';
 const BASE = (process.env.DASHBOARD_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
 const SECURE = BASE.startsWith('https://');
 const SESSION_MS = 12 * 3600_000;
+const IDLE_MS = 2 * 3600_000; // déconnexion après 2 h sans activité
+// En HTTPS, cookie « __Host- » : envoyé seulement à ce site, jamais à un sous-domaine
+const COOKIE = (process.env.DASHBOARD_URL || '').startsWith('https://') ? '__Host-ronin_sid' : 'ronin_sid';
+const TRUST_PROXY = process.env.DASHBOARD_TRUST_PROXY === '1'; // derrière Caddy / nginx : lire X-Forwarded-For
+
+// Limitation des requêtes par adresse IP (anti force brute / abus)
+const hits = new Map(); // `${ip}:${kind}` -> { n, reset }
+const LIMITS = { login: [15, 10 * 60_000], post: [60, 60_000], get: [300, 60_000] };
+function limited(ip, kind) {
+  const [max, windowMs] = LIMITS[kind];
+  const key = `${ip}:${kind}`;
+  const now = Date.now();
+  const h = hits.get(key);
+  if (!h || h.reset < now) {
+    hits.set(key, { n: 1, reset: now + windowMs });
+    return false;
+  }
+  h.n++;
+  return h.n > max;
+}
+const clientIp = (req) => (TRUST_PROXY && String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim()) || req.socket.remoteAddress || '?';
 
 const sessions = new Map(); // sid -> { userId, username, avatar, csrf, expires }
 const oauthStates = new Map(); // state -> expires
@@ -37,7 +58,7 @@ const fmtDate = (t) => new Date(t).toLocaleString('fr-FR', { timeZone: 'Europe/P
 function sessionCookie(req) {
   for (const part of (req.headers.cookie ?? '').split(';')) {
     const i = part.indexOf('=');
-    if (i > 0 && part.slice(0, i).trim() === 'ronin_sid') return part.slice(i + 1).trim();
+    if (i > 0 && part.slice(0, i).trim() === COOKIE) return part.slice(i + 1).trim();
   }
   return null;
 }
@@ -48,6 +69,9 @@ function send(res, status, body, headers = {}) {
     'X-Frame-Options': 'DENY',
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'no-referrer',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    ...(SECURE ? { 'Strict-Transport-Security': 'max-age=31536000' } : {}),
     'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' https://cdn.discordapp.com data:; form-action 'self' https://discord.com; base-uri 'none'",
     ...headers,
   });
@@ -467,10 +491,15 @@ function start(client, guildId) {
       const url = new URL(req.url, BASE);
       const sid = sessionCookie(req);
       let sess = sid && sessions.get(sid);
-      if (sess && sess.expires < Date.now()) {
+      // Limites par IP
+      const ip = clientIp(req);
+      const kind = ['/login', '/callback'].includes(url.pathname) ? 'login' : req.method === 'POST' ? 'post' : 'get';
+      if (limited(ip, kind)) return send(res, 429, page(null, '', 'Trop de requêtes', '<p>Trop de tentatives depuis ton adresse. Réessaie dans quelques minutes.</p>'), { 'Retry-After': '120' });
+      if (sess && (sess.expires < Date.now() || Date.now() - (sess.lastSeen ?? 0) > IDLE_MS)) {
         sessions.delete(sid);
         sess = null;
       }
+      if (sess) sess.lastSeen = Date.now();
       const guild = client.guilds.cache.get(guildId);
 
       if (url.pathname === '/health') {
@@ -501,13 +530,14 @@ function start(client, guildId) {
         const allowed = isAdmin(guild, member);
         if (!allowed) return send(res, 403, page(null, '', 'Accès refusé', '<p>Seuls les administrateurs du serveur peuvent utiliser le tableau de bord.</p>'));
         const newSid = rand();
-        sessions.set(newSid, { userId: user.id, username: user.global_name || user.username, avatar: user.avatar, csrf: rand(), expires: Date.now() + SESSION_MS });
+        sessions.set(newSid, { userId: user.id, username: user.global_name || user.username, avatar: user.avatar, csrf: rand(), expires: Date.now() + SESSION_MS, lastSeen: Date.now(), ip });
+        require('./audit').record({ userId: user.id, user: user.username, source: 'web', action: 'connexion', details: `IP ${ip}` });
         console.log(`🌐 Connexion au tableau de bord : ${user.username}`);
-        return redirect(res, '/', { 'Set-Cookie': `ronin_sid=${newSid}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_MS / 1000}${SECURE ? '; Secure' : ''}` });
+        return redirect(res, '/', { 'Set-Cookie': `${COOKIE}=${newSid}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_MS / 1000}${SECURE ? '; Secure' : ''}` });
       }
       if (url.pathname === '/logout') {
         if (sid) sessions.delete(sid);
-        return redirect(res, '/', { 'Set-Cookie': 'ronin_sid=; HttpOnly; Path=/; Max-Age=0' });
+        return redirect(res, '/', { 'Set-Cookie': `${COOKIE}=; HttpOnly; Path=/; Max-Age=0${SECURE ? '; Secure' : ''}` });
       }
 
       if (!sess) {
@@ -530,6 +560,7 @@ function start(client, guildId) {
         const flash = await handler(guild, sess, body).catch((e) => `❌ ${e.message}`);
         sess.flash = flash;
         console.log(`🌐 ${sess.username} : ${url.pathname} — ${flash}`);
+        require('./audit').record({ userId: sess.userId, user: sess.username, source: 'web', action: url.pathname, details: `${body.get('action') ?? ''} → ${flash}` });
         return redirect(res, url.pathname === '/sauvegardes' ? '/sauvegardes' : url.pathname);
       }
 

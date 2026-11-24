@@ -14,6 +14,7 @@
  *   - "vip"              : réservé aux VIP, abonnés Twitch, Streamers et staff
  *   - "staff"            : réservé au staff (Gardiens, Modérateurs, Sentinelles)
  *   - "staff-senior"     : réservé aux Gardiens (et administrateurs)
+ *   - "quarantine"       : visible seulement par les membres en quarantaine et le staff
  *   - "stats"            : salon vocal compteur, visible par tous, personne ne peut y entrer
  */
 
@@ -68,6 +69,8 @@ module.exports = {
     // Rôle donné en acceptant le règlement
     { key: 'member', name: '⚔️ Ronin', formerNames: ['🎮 Membre'], color: 0x5c5c5c, hoist: false },
     // Rôles que les membres peuvent s'attribuer eux-mêmes dans #rôles
+    // Donné par /quarantaine et l'anti-raid : ne voit plus que 🏚️┃cachot (rôles rendus à la sortie)
+    { key: 'quarantine', name: '⛓️ Quarantaine', color: 0x3b3b3b },
     { key: 'notif_live', name: '🔴 Notif Live', color: 0x8c1a1a, selfAssign: true, emoji: '🔴', description: 'Être notifié quand le live commence' },
     { key: 'notif_tiktok', name: '📱 Notif TikTok', color: 0x8c1a1a, selfAssign: true, emoji: '📱', description: 'Être notifié de mes nouveaux TikTok' },
     { key: 'notif_news', name: '📢 Notif Annonces', color: 0x737373, selfAssign: true, emoji: '📢', description: 'Être notifié des annonces et événements' },
@@ -146,6 +149,7 @@ module.exports = {
       name: '🎫 支援 ・ SUPPORT',
       channels: [
         { key: 'tickets', name: '🎫┃ouvrir-un-ticket', type: 'text', access: 'members-readonly', topic: 'Besoin d\'aide ? Clique sur le bouton pour ouvrir un ticket privé avec le staff.' },
+        { key: 'jail', name: '🏚️┃cachot', type: 'text', access: 'quarantine', topic: 'Membres en quarantaine : le staff vous répond ici.' },
       ],
     },
     {

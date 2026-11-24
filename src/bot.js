@@ -4,6 +4,7 @@
  * Usage : npm start
  */
 require('dotenv').config();
+require('./logger').install();
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, Events, MessageFlags } = require('discord.js');
 const { TwitchClient } = require('./twitch');
 const commands = require('./commands');
@@ -235,6 +236,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (interaction.customId.startsWith('verify:')) return community.onVerifyButton(interaction, grantMember);
 
     if (interaction.customId === ACCEPT_RULES_ID) {
+      if (require('./quarantine').isQuarantined(interaction.user.id)) return reply('⛓️ Tu es en quarantaine : un membre du staff va te répondre dans 🏚️┃cachot.');
       const role = findRole(interaction.guild, 'member');
       if (role && member.roles.cache.has(role.id)) return reply('Tu as déjà accepté le règlement, bon séjour ! ⚔️');
       if (await community.startVerification(interaction)) return;
@@ -296,6 +298,13 @@ client.once(Events.ClientReady, async () => {
   await commands.register(guild).catch((err) => console.error('❌ Enregistrement des commandes / :', err.message));
   require('./twitchlive').start(guild, twitch);
   require('./temproles').start(guild);
+  require('./quarantine').start(guild);
+  // Permissions du bot : il n'a plus besoin d'être Administrateur, mais il lui faut celles-ci
+  const missingPerms = require('./permissions').missing(guild);
+  if (missingPerms.length) {
+    console.warn(`⚠️ Permissions manquantes au bot : ${missingPerms.join(', ')} (lance « npm run invite » pour le bon lien)`);
+    health.alert('Permissions manquantes', `Le bot n'a pas : ${missingPerms.join(', ')}.\nCertaines fonctions ne marcheront pas. Réinvite-le avec le lien de « npm run invite » ou ajoute ces permissions à son rôle.`).catch(() => {});
+  }
   await health.start(client, guild);
   require('./voicexp').start(guild);
   require('./birthdays').start(guild);

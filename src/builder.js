@@ -46,6 +46,7 @@ function buildOverwrites(guild, botId, def) {
   switch (def.access) {
     case 'public-readonly':
       add(everyone, READ, WRITE.filter((p) => p !== P.AddReactions));
+      add(role('quarantine'), [], [P.ViewChannel]);
       break;
     case 'members':
       add(everyone, [], [P.ViewChannel]);
@@ -60,6 +61,11 @@ function buildOverwrites(guild, botId, def) {
       add(role('vip'), [...READ, ...WRITE]);
       add(role('sub'), [...READ, ...WRITE]);
       add(role('streamer_role'), [...READ, ...WRITE]);
+      break;
+    case 'quarantine':
+      // 🏚️┃cachot : seulement les membres en quarantaine (et le staff)
+      add(everyone, [], [P.ViewChannel]);
+      add(role('quarantine'), [...READ, P.SendMessages, P.AttachFiles]);
       break;
     case 'staff':
     case 'staff-senior':
@@ -97,14 +103,18 @@ async function ensureRoles(guild, log = console.log) {
     if (existing) {
       const renamed = existing.name !== def.name ? ` (renommé depuis ${existing.name})` : ' (existe déjà)';
       if (existing.editable) {
-        await existing.edit({ name: def.name, color: data.color, hoist: data.hoist, permissions: data.permissions });
+        const { bits, dropped } = require('./permissions').grantable(guild, data.permissions, existing.permissions.bitfield);
+        if (dropped.length) log(`  ⚠ ${def.name} : à donner à la main dans Discord (le bot ne peut pas) → ${dropped.join(', ')}`);
+        await existing.edit({ name: def.name, color: data.color, hoist: data.hoist, permissions: bits });
       } else {
         log(`  ⚠ ${existing.name} est au-dessus du rôle du bot : impossible de le modifier`);
       }
       log(`  ✔ ${def.name}${renamed}`);
     } else {
-      await guild.roles.create({ ...data, reason: 'Setup serveur communautaire' });
+      const { bits, dropped } = require('./permissions').grantable(guild, data.permissions);
+      await guild.roles.create({ ...data, permissions: bits, reason: 'Setup serveur communautaire' });
       log(`  ＋ ${def.name}`);
+      if (dropped.length) log(`  ⚠ ${def.name} : à donner à la main dans Discord (le bot ne peut pas) → ${dropped.join(', ')}`);
     }
   }
 

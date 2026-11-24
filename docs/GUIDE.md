@@ -155,6 +155,8 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/kick membre: [raison:]` | Expulser un membre |
 | `/ban membre: [raison:] [supprimer_messages:]` | Bannir un membre |
 | `/lockdown action: [minutes:]` | Verrouiller le serveur (raid) : invitations en pause, nouveaux arrivants expulsés |
+| `/quarantaine membre: [raison:] [duree:]` | Isoler un membre dans 🏚️┃cachot (ses rôles lui seront rendus) |
+| `/liberer membre:` | Sortir un membre de quarantaine (rend ses rôles) |
 
 ### 🏯 Kensei
 

@@ -418,6 +418,7 @@ commands.push(
   ...require('./seasons').commands,
   ...require('./custom').commands,
   ...require('./guide').commands,
+  ...require('./quarantine').commands,
 );
 
 // /help = /aide
@@ -438,6 +439,15 @@ async function register(guild) {
 async function handle(interaction, ctx) {
   const cmd = byName.get(interaction.commandName);
   if (!cmd) return;
+  // Double vérification des permissions : les réglages Discord « Intégrations » peuvent être modifiés à la main
+  const required = cmd.data.default_member_permissions;
+  if (required && interaction.user.id !== interaction.guild?.ownerId && !interaction.memberPermissions?.has(BigInt(required))) {
+    return interaction.reply({ content: '⛔ Tu n\'as pas la permission d\'utiliser cette commande.', flags: MessageFlags.Ephemeral });
+  }
+  if (cmd.staff) {
+    const audit = require('./audit');
+    audit.record({ userId: interaction.user.id, user: interaction.user.username, source: 'discord', action: `/${interaction.commandName}`, details: audit.describeOptions(interaction) });
+  }
   try {
     await cmd.run(interaction, ctx);
   } catch (err) {
