@@ -57,7 +57,10 @@ function installErrorHandlers(client) {
   });
   process.on('uncaughtException', (err) => {
     console.error('Erreur fatale :', err);
-    // On prévient puis on quitte : pm2 (ou npm run dev) redémarre un bot propre
+    // On enregistre les données, on prévient, puis on quitte : pm2 (ou npm run dev) redémarre un bot propre
+    try {
+      require('./store').flush();
+    } catch {}
     alert('Erreur fatale — redémarrage', err?.stack ?? err).finally(() => setTimeout(() => process.exit(1), 1500));
   });
   client.on('error', (err) => alert('Erreur Discord', err?.message ?? err).catch(() => {}));
@@ -65,6 +68,10 @@ function installErrorHandlers(client) {
 
 async function start(client, guild) {
   guildRef = guild;
+  const { recovery } = require('./store');
+  if (recovery.happened) {
+    await alert('Base de données restaurée', `${recovery.reason}\n${recovery.from ? `Copie utilisée : ${recovery.from}` : 'Aucune copie disponible : base repartie de zéro.'}\nL'ancienne base a été gardée de côté dans data/.`);
+  }
   beat(client);
   setInterval(() => beat(client), 20_000).unref();
   // Le script de mise à jour a annulé la dernière version : on prévient le staff
@@ -100,6 +107,7 @@ function status(client) {
     dbKb: Math.round(dbSize / 1024),
     lastBackup: lastBackup?.created_at ?? null,
     lastOffsite: db.lastOffsiteBackup ?? null,
+    lastFileBackup: db.lastFileBackup ?? null,
   };
 }
 

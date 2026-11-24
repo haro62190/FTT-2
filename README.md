@@ -255,6 +255,9 @@ Les listes sont **générées à partir des commandes du bot** : `/setup` remet 
 
 - **Tests automatiques** : `npm test` (et à chaque envoi sur GitHub, onglet *Actions* : ✅ ou ❌). Ils vérifient que toutes les commandes sont valides et que la logique (niveaux, saisons, dates, sauvegardes, économie…) fonctionne.
 - **Retour arrière automatique** (VPS) : après une mise à jour, le bot doit redonner signe de vie en 2 minutes. Sinon `scripts/update.sh` revient tout seul à la version précédente, ignore la version fautive jusqu'à la suivante, et prévient le staff dans 🚨┃alertes-sécurité.
+- **Copies locales de la base** (`data/sauvegardes/`) : une par jour, en générations (7 jours · 4 semaines · 6 mois · 5 manuelles). **Chaque copie est testée** juste après sa création (ouverte à part, contrôle d'intégrité, relecture des données). Si la base est abîmée au démarrage, le bot **repart tout seul de la dernière copie vérifiée** (l'ancienne est gardée de côté) et prévient le staff. Restauration manuelle depuis le tableau de bord (appliquée au redémarrage).
+- **Aucune perte au redémarrage** : les données sont enregistrées à l'arrêt, même en cas de plantage (testé automatiquement).
+- **Journal des erreurs** : `data/logs/erreurs.log` (secrets masqués, rotation automatique).
 - **Copie de la base** : chaque nuit, `data/ronin.db` compressée est envoyée dans 💾┃sauvegardes (salon staff). Pour restaurer : décompresser (7-Zip) et remplacer `data/ronin.db`, bot arrêté. `/backup copie-base` pour en faire une tout de suite.
 - **Santé** : `/statut` (temps de marche, latence, mémoire, version, sauvegardes), page *État du bot* du site, erreurs graves postées dans 🚨┃alertes-sécurité, et `/health` pour un service de surveillance gratuit (UptimeRobot) si le site est accessible depuis Internet.
 

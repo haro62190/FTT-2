@@ -319,7 +319,7 @@ client.once(Events.ClientReady, async () => {
 
   // Sauvegarde automatique quotidienne du serveur
   const backup = require('./backup');
-  const auto = () => guild.channels.fetch().then(() => { backup.autoBackup(guild); return backup.offsiteBackup(guild); }).catch((e) => console.error('Sauvegarde auto :', e.message));
+  const auto = () => guild.channels.fetch().then(() => { backup.autoBackup(guild); require('./dbbackup').daily(); return backup.offsiteBackup(guild); }).catch((e) => console.error('Sauvegarde auto :', e.message));
   auto();
   setInterval(auto, 6 * 3600_000);
 });

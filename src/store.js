@@ -22,7 +22,58 @@ process.emitWarning = emitWarning;
 // RONIN_DATA_DIR : dossier de données différent (utilisé par les tests automatiques)
 const DIR = process.env.RONIN_DATA_DIR || path.join(__dirname, '..', 'data');
 fs.mkdirSync(DIR, { recursive: true });
-const sql = new DatabaseSync(path.join(DIR, 'ronin.db'));
+const DB_FILE = path.join(DIR, 'ronin.db');
+const BACKUP_DIR = path.join(DIR, 'sauvegardes');
+
+/** Infos de récupération (base abîmée remplacée, restauration demandée) : lues par health.js pour prévenir le staff */
+const recovery = { happened: false, from: null, reason: null };
+
+const moveAside = (suffix) => {
+  for (const ext of ['', '-wal', '-shm']) if (fs.existsSync(DB_FILE + ext)) fs.renameSync(DB_FILE + ext, `${DB_FILE}${ext}.${suffix}`);
+};
+
+/** Dernière copie vérifiée de data/sauvegardes (la plus récente d'abord). */
+function latestVerifiedBackup() {
+  try {
+    const index = JSON.parse(fs.readFileSync(path.join(BACKUP_DIR, 'index.json'), 'utf8'));
+    return index.filter((e) => e.verified && fs.existsSync(path.join(BACKUP_DIR, e.file))).sort((a, b) => b.at - a.at)[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Ouvre la base ; si elle est corrompue, la met de côté et repart de la dernière copie vérifiée. */
+function openDatabase() {
+  // Restauration demandée depuis le tableau de bord : appliquée au démarrage, bot arrêté
+  const pending = path.join(DIR, 'restauration.json');
+  if (fs.existsSync(pending)) {
+    try {
+      const { file } = JSON.parse(fs.readFileSync(pending, 'utf8'));
+      const src = path.join(BACKUP_DIR, path.basename(file));
+      if (fs.existsSync(src)) {
+        moveAside(`avant-restauration-${Date.now()}`);
+        fs.copyFileSync(src, DB_FILE);
+        Object.assign(recovery, { happened: true, from: path.basename(file), reason: 'restauration demandée depuis le tableau de bord' });
+      }
+    } catch {}
+    fs.rmSync(pending, { force: true });
+  }
+  try {
+    const conn = new DatabaseSync(DB_FILE);
+    const check = conn.prepare('PRAGMA quick_check').get();
+    if (Object.values(check ?? {})[0] !== 'ok') throw new Error(`contrôle d'intégrité : ${JSON.stringify(check)}`);
+    return conn;
+  } catch (err) {
+    const backup = latestVerifiedBackup();
+    console.error(`❌ Base de données abîmée (${err.message}). ${backup ? `Restauration automatique depuis ${backup.file}` : 'Aucune copie vérifiée : nouvelle base vide'}.`);
+    moveAside(`corrompue-${Date.now()}`);
+    if (backup) fs.copyFileSync(path.join(BACKUP_DIR, backup.file), DB_FILE);
+    Object.assign(recovery, { happened: true, from: backup?.file ?? null, reason: err.message });
+    return new DatabaseSync(DB_FILE);
+  }
+}
+
+const sql = openDatabase();
 sql.exec(`
   PRAGMA journal_mode = WAL;
   CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -111,4 +162,4 @@ for (const sig of ['SIGINT', 'SIGTERM']) {
   });
 }
 
-module.exports = { db, save, flush, sql, DIR };
+module.exports = { db, save, flush, sql, DIR, DB_FILE, BACKUP_DIR, recovery };
