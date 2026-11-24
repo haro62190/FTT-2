@@ -44,6 +44,7 @@ function full(userId) {
     duels: s.duels ?? 0,
     duelsWon: s.duelsWon ?? 0,
     reactions: s.reactions ?? 0,
+    liveMessages: s.liveMessages ?? 0,
     seasonRank: require('./seasons').rankOf(userId),
     weekRank: require('./seasons').weekRankOf(userId),
     pillarWins: s.pillarWins ?? 0,
@@ -61,6 +62,7 @@ const BOARDS = {
   vocal: ['🎙️ Temps en vocal', () => Object.entries(db.levels ?? {}).map(([u, e]) => [u, e.voiceMinutes ?? 0]), (v) => `${Math.floor(v / 60)} h ${v % 60} min`],
   ryo: ['💰 Ryō', () => Object.entries(db.economy ?? {}).map(([u, w]) => [u, w.bal]), (v) => `${n(v)} 両`],
   quetes: ['📜 Quêtes terminées', () => Object.entries(db.quests ?? {}).map(([u, q]) => [u, q.completed ?? 0]), (v) => `${n(v)} quêtes`],
+  lives: ['📺 Actifs pendant les lives', () => Object.entries(db.memberStats ?? {}).map(([u, x]) => [u, x.liveMessages ?? 0]), (v) => `${n(v)} messages`],
   duels: ['⚔️ Duels gagnés', () => Object.entries(db.memberStats ?? {}).map(([u, x]) => [u, x.duelsWon ?? 0]), (v) => `${n(v)} victoires`],
 };
 

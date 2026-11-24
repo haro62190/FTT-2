@@ -33,40 +33,72 @@ async function getUser() {
 
 // ───────────────────────── Live + récap ─────────────────────────
 
+const EDIT_EVERY_MS = 3 * 60_000; // mise à jour de l'annonce pendant le live
+
+/** Annonce du live (créée puis mise à jour : viewers, durée, jeux, titre). */
+function liveEmbed(stream, u, state) {
+  const url = `https://twitch.tv/${stream.user_login}`;
+  const thumb = stream.thumbnail_url.replace('{width}', '1280').replace('{height}', '720') + `?t=${Math.floor(Date.now() / EDIT_EVERY_MS)}`;
+  const started = new Date(stream.started_at).getTime();
+  const avg = state?.samples ? Math.round(state.viewerSum / state.samples) : stream.viewer_count;
+  return new EmbedBuilder()
+    .setColor(BRAND_COLOR)
+    .setAuthor({ name: `${stream.user_name} est en live`, iconURL: u.profile_image_url, url })
+    .setTitle(stream.title || 'Live en cours')
+    .setURL(url)
+    .addFields(
+      { name: '🎮 Jeu', value: stream.game_name || 'Non défini', inline: true },
+      { name: '👀 Viewers', value: `${stream.viewer_count ?? 0}${state?.peak ? ` (pic ${state.peak})` : ''}`, inline: true },
+      { name: '⏱️ Depuis', value: `<t:${Math.floor(started / 1000)}:R>`, inline: true },
+      ...(state?.games?.length > 1 ? [{ name: '🎮 Jeux du live', value: state.games.join(' → ').slice(0, 1024) }] : []),
+    )
+    .setImage(thumb)
+    .setFooter({ text: `Moyenne ${avg ?? 0} viewers · Stream ID ${stream.id}` })
+    .setTimestamp(new Date(stream.started_at));
+}
+
+async function followerCount(u) {
+  return twitch.getFollowerCount(u.id).catch(() => null);
+}
+
 async function checkLive(guild) {
   const channel = findChannel(guild, 'live');
   if (!channel || !settings.get('notifications.twitch')) return;
   const stream = await twitch.getLiveStream(LOGIN_());
   const state = live();
+  const { watchButton } = require('./streams');
 
   if (stream && stream.id === state?.streamId) {
-    // Live en cours : on suit le pic de viewers et les jeux joués
-    state.peak = Math.max(state.peak ?? 0, stream.viewer_count ?? 0);
+    // Live en cours : pic, moyenne de viewers, jeux joués, et annonce mise à jour toutes les 3 min
+    const viewers = stream.viewer_count ?? 0;
+    state.peak = Math.max(state.peak ?? 0, viewers);
+    state.viewerSum = (state.viewerSum ?? 0) + viewers;
+    state.samples = (state.samples ?? 0) + 1;
     if (stream.game_name && !state.games.includes(stream.game_name)) state.games.push(stream.game_name);
+    const gameChanged = stream.game_name && stream.game_name !== state.game;
+    state.game = stream.game_name;
     state.title = stream.title;
     save();
+    if (gameChanged || Date.now() - (state.editedAt ?? 0) >= EDIT_EVERY_MS) {
+      state.editedAt = Date.now();
+      const u = await getUser();
+      const msg = await guild.channels.cache.get(state.channelId)?.messages.fetch(state.messageId).catch(() => null);
+      await msg?.edit({ embeds: [liveEmbed(stream, u, state)], components: [watchButton(`https://twitch.tv/${stream.user_login}`)] }).catch(() => {});
+      save();
+    }
     return;
   }
 
   if (stream) {
     const u = await getUser();
     const url = `https://twitch.tv/${stream.user_login}`;
-    const thumb = stream.thumbnail_url.replace('{width}', '1280').replace('{height}', '720') + `?t=${Date.now()}`;
     const role = findRole(guild, 'notif_live');
+    const first = { peak: stream.viewer_count ?? 0, games: stream.game_name ? [stream.game_name] : [] };
     const msg = await channel.send({
-      content: `${role ?? ''} 🔴 **${stream.user_name}** est en live ! ${url}`.trim(),
+      content: `${role ?? ''} 🔴 **${stream.user_name}** est en live sur **${stream.game_name || 'Twitch'}** ! ${url}`.trim(),
       allowedMentions: { roles: role ? [role.id] : [] },
-      embeds: [
-        new EmbedBuilder()
-          .setColor(BRAND_COLOR)
-          .setAuthor({ name: stream.user_name, iconURL: u.profile_image_url, url })
-          .setTitle(stream.title || 'Live en cours')
-          .setURL(url)
-          .addFields({ name: '🎮 Jeu', value: stream.game_name || 'Non défini', inline: true })
-          .setImage(thumb)
-          .setFooter({ text: `Stream ID ${stream.id}` })
-          .setTimestamp(new Date(stream.started_at)),
-      ],
+      embeds: [liveEmbed(stream, u, first)],
+      components: [watchButton(url)],
     });
     // Enregistré seulement après l'envoi : en cas d'échec on réessaie au prochain passage
     db.twitchLive = {
@@ -75,8 +107,12 @@ async function checkLive(guild) {
       messageId: msg.id,
       startedAt: stream.started_at,
       title: stream.title,
-      peak: stream.viewer_count ?? 0,
-      games: stream.game_name ? [stream.game_name] : [],
+      game: stream.game_name,
+      ...first,
+      viewerSum: stream.viewer_count ?? 0,
+      samples: 1,
+      editedAt: Date.now(),
+      followersStart: await followerCount(u),
     };
     save();
     console.log(`🔴 Live détecté : ${stream.title}`);
@@ -84,10 +120,28 @@ async function checkLive(guild) {
   }
 
   if (!stream && state) {
-    // Fin du live : l'annonce devient un récap
+    // Fin du live : l'annonce devient un récap, et le live est ajouté à l'historique
     const u = await getUser().catch(() => null);
     const vod = u ? await twitch.getLatestVod(u.id).catch(() => null) : null;
-    const duration = Date.now() - new Date(state.startedAt).getTime();
+    const followersEnd = u ? await followerCount(u) : null;
+    const gained = followersEnd !== null && state.followersStart != null ? followersEnd - state.followersStart : null;
+    const startedAt = new Date(state.startedAt).getTime();
+    const avg = state.samples ? Math.round(state.viewerSum / state.samples) : null;
+    const topChatters = Object.entries(state.chatters ?? {}).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const entry = require('./streams').record({
+      platform: 'twitch',
+      id: state.streamId,
+      title: state.title,
+      games: state.games,
+      startedAt,
+      endedAt: Date.now(),
+      peak: state.peak ?? 0,
+      avg,
+      followersStart: state.followersStart ?? null,
+      followersGained: gained,
+      vod: vod?.url ?? null,
+      topChatters: topChatters.map(([id]) => id),
+    });
     const ch = guild.channels.cache.get(state.channelId);
     const msg = ch && (await ch.messages.fetch(state.messageId).catch(() => null));
     if (msg) {
@@ -96,15 +150,22 @@ async function checkLive(guild) {
         .setAuthor({ name: `${u?.display_name ?? LOGIN_()} — live terminé`, iconURL: u?.profile_image_url })
         .setTitle(state.title || 'Live terminé')
         .addFields(
-          { name: '⏱️ Durée', value: fmtDuration(duration), inline: true },
-          { name: '👀 Pic de viewers', value: String(state.peak ?? 0), inline: true },
-          { name: '🎮 Jeux', value: state.games.join(', ') || '—', inline: true },
+          { name: '⏱️ Durée', value: fmtDuration(entry.durationMin * 60_000), inline: true },
+          { name: '👀 Viewers', value: `pic ${state.peak ?? 0} · moy. ${avg ?? '—'}`, inline: true },
+          { name: '🟣 Followers', value: gained === null ? '—' : `${gained >= 0 ? '+' : ''}${gained}`, inline: true },
+          { name: '🎮 Jeux', value: state.games.join(', ') || '—' },
+          ...(topChatters.length ? [{ name: '💬 Les plus actifs sur le Discord pendant le live', value: topChatters.map(([id, n]) => `<@${id}> (${n})`).join(' · ') }] : []),
         )
-        .setFooter({ text: `Stream ID ${state.streamId}` })
+        .setFooter({ text: `Stream ID ${state.streamId} · historique : /streams` })
         .setTimestamp();
-      if (vod) recap.addFields({ name: '📼 Rediffusion', value: `[Revoir le live](${vod.url})` }).setURL(vod.url);
+      if (vod) recap.setURL(vod.url);
       await msg
-        .edit({ content: '⚫ Le live est terminé, merci d\'être passé·e ! Voici le récap ⚔️', embeds: [recap], allowedMentions: { parse: [] } })
+        .edit({
+          content: '⚫ Le live est terminé, merci d\'être passé·e ! Voici le récap ⚔️',
+          embeds: [recap],
+          components: vod ? [watchButton(vod.url, 'Revoir le live')] : [],
+          allowedMentions: { parse: [] },
+        })
         .catch(() => {});
     }
     db.twitchLive = null;
@@ -126,8 +187,13 @@ async function checkClips(guild) {
   if (s.initialized) {
     for (const c of fresh) {
       await channel
-        .send({ content: `🎬 **Nouveau clip** par **${c.creator_name}** — ${c.title}\n${c.url}`, allowedMentions: { parse: [] } })
+        .send({
+          content: `🎬 **Nouveau clip** par **${c.creator_name}** — ${c.title}\n${c.url}`,
+          components: [require('./streams').watchButton(c.url, 'Voir le clip')],
+          allowedMentions: { parse: [] },
+        })
         .catch(() => {});
+      require('./history').bump('clips');
     }
   }
   s.seen = [...new Set([...fresh.map((c) => c.id), ...s.seen])].slice(0, 300);
@@ -214,4 +280,4 @@ function start(guild, client) {
   console.log(`📺 Twitch ${LOGIN_() || '(chaîne à régler sur le tableau de bord)'} : live toutes les ${POLL_MS / 1000}s, clips toutes les 5 min, planning toutes les 30 min`);
 }
 
-module.exports = { start, checkSchedule };
+module.exports = { start, checkSchedule, checkLive, liveEmbed, _setClient: (c) => (twitch = c) };

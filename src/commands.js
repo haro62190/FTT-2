@@ -99,6 +99,7 @@ const commands = [
         { name: '💬 Activité', value: `${st.messages.toLocaleString('fr-FR')} messages · ${h} h ${st.voiceMinutes % 60} min de vocal · ${st.reactions} réactions`, inline: false },
         { name: '💰 Ryō', value: `${st.ryo.toLocaleString('fr-FR')} 両 (gagnés : ${st.ryoEarned.toLocaleString('fr-FR')}) · série /daily ${st.streak} (record ${st.bestStreak})`, inline: false },
         { name: '📜 Quêtes', value: `${st.questsDone} terminées`, inline: true },
+        ...(st.liveMessages ? [{ name: '📺 Pendant les lives', value: `${st.liveMessages} messages`, inline: true }] : []),
         { name: '⚔️ Duels', value: `${st.duelsWon} / ${st.duels} gagnés`, inline: true },
         ...(st.pillarWins ? [{ name: '🔥 Pilier de la semaine', value: `${st.pillarWins} fois`, inline: true }] : []),
       );
@@ -432,6 +433,7 @@ commands.push(
   ...require('./quests').commands,
   ...require('./boost').commands,
   ...require('./memberstats').commands,
+  ...require('./streams').commands,
 );
 
 // /help = /aide

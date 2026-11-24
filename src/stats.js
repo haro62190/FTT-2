@@ -95,6 +95,9 @@ async function refresh(guild) {
     const history = require('./history');
     for (const k of ['discord', 'twitch', 'tiktok']) history.gauge(k, s[k]);
     save();
+    await require('./streams')
+      .checkMilestones(guild, { discord: s.discord, twitch: s.twitch, tiktok: s.tiktok })
+      .catch((e) => console.error('Paliers :', e.message));
     return s;
   } finally {
     busy = false;

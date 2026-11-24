@@ -60,6 +60,42 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
       };
     },
 
+    // ───────────────────────── Lives ─────────────────────────
+    async '/lives'(guild, sess, query) {
+      const streams = require('./streams');
+      const { lineChart, dataTable, fmt } = require('./charts');
+      const days = [7, 30, 90, 365].includes(Number(query.get('jours'))) ? Number(query.get('jours')) : 30;
+      const sum = streams.summary(days);
+      const since = Date.now() - days * 86_400_000;
+      const items = streams.list().filter((x) => x.endedAt >= since);
+      const pts = items
+        .filter((x) => x.platform === 'twitch')
+        .slice()
+        .reverse()
+        .map((x) => ({ date: new Date(x.startedAt).toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' }), peak: x.peak, avg: x.avg }));
+      const series = [{ key: 'avg', label: 'Moyenne' }, { key: 'peak', label: 'Pic' }];
+      const tile = (v, label) => `<div class="stat"><b>${v}</b><span>${label}</span></div>`;
+      const range = [7, 30, 90, 365].map((d) => `<a class="btn ${d === days ? '' : 'ghost'}" style="margin:0 4px 0 0" href="/lives?jours=${d}">${d === 365 ? '1 an' : `${d} jours`}</a>`).join('');
+      const m = db.milestones ?? {};
+      const next = (n) => (typeof n === 'number' ? fmt([10, 25, 50, 100, 150, 200, 250, 300, 400, 500, 750, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10000, 15000, 20000, 25000, 50000, 75000, 100000].find((x) => x > n) ?? n + 50000) : '—');
+      const counts = db.stats ?? {};
+      const live = db.twitchLive;
+      await fetchMembers(guild, items.flatMap((x) => x.topChatters ?? []));
+      return {
+        title: '📺 Lives & statistiques',
+        body: `${live ? `<div class="card"><h3>🔴 En live en ce moment</h3><p><b>${esc(live.title ?? '')}</b><br>Depuis ${fmtDate(new Date(live.startedAt).getTime())} · pic ${live.peak ?? 0} · moyenne ${live.samples ? Math.round(live.viewerSum / live.samples) : '—'} viewers · ${esc((live.games ?? []).join(', '))}</p></div>` : ''}
+        <div style="margin-bottom:14px">${range}</div>
+        <div class="grid">${tile(sum.count, '🎬 lives')}${tile(`${sum.hours.toFixed(1).replace('.', ',')} h`, '⏱️ de live')}${tile(fmt(sum.avg), '👀 viewers en moyenne')}${tile(fmt(sum.peak), '🔝 pic de viewers')}${tile(`${sum.followers >= 0 ? '+' : ''}${fmt(sum.followers)}`, '🟣 followers gagnés en live')}</div>
+        <div class="card"><h3>👀 Viewers par live (Twitch)</h3>${lineChart({ points: pts, series })}${dataTable(pts, series)}</div>
+        <div class="card"><h3>🎉 Paliers d'abonnés</h3><p class="muted">Annonce automatique dans 📢 quand un palier est franchi (module « Paliers d'abonnés »).</p>
+        <table><tr><th>Plateforme</th><th>Actuellement</th><th>Dernier palier</th><th>Prochain</th></tr>
+        ${[['twitch', '🟣 Twitch'], ['tiktok', '📱 TikTok'], ['discord', '👥 Discord']].map(([k, label]) => `<tr><td>${label}</td><td>${fmt(counts[k])}</td><td>${fmt(m[k] || null)}</td><td>${next(counts[k])}</td></tr>`).join('')}</table></div>
+        <div class="card"><h3>🗓️ Historique</h3><table><tr><th>Date</th><th></th><th>Titre</th><th>Durée</th><th>Viewers</th><th>Followers</th><th>Plus actifs</th></tr>
+        ${items.map((x) => `<tr><td style="white-space:nowrap">${fmtDate(x.startedAt)}</td><td>${x.platform === 'tiktok' ? '📱' : '🟣'}</td><td>${esc(x.title ?? '')}${x.games?.length ? `<br><span class="muted">${esc(x.games.join(', '))}</span>` : ''}${x.vod ? `<br><a href="${esc(x.vod)}" target="_blank" rel="noopener">Revoir</a>` : ''}</td><td>${streams.fmtDuration(x.durationMin)}</td><td>${x.peak ? `pic ${x.peak}` : '—'}${x.avg ? `<br><span class="muted">moy. ${x.avg}</span>` : ''}</td><td>${x.followersGained == null ? '—' : `${x.followersGained >= 0 ? '+' : ''}${x.followersGained}`}</td><td>${(x.topChatters ?? []).map((id) => memberName(guild, id)).join(', ') || '—'}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">Aucun live enregistré sur cette période.</td></tr>'}
+        </table></div>`,
+      };
+    },
+
     // ───────────────────────── Quêtes & boosts ─────────────────────────
     '/quetes-boost'(guild, sess) {
       const boost = require('./boost').active();

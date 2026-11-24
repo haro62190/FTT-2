@@ -121,6 +121,7 @@ const NAV = [
   ['/communaute', '🏯 Hall of Fame & vocal'],
   ['#', 'Stream'],
   ['/notifications', '📡 Twitch & TikTok'],
+  ['/lives', '📺 Lives & statistiques'],
   ['/stats', '📊 Compteurs'],
   ['/annonce', '📢 Annonce & embed'],
   ['/musique', '🎵 Musique'],

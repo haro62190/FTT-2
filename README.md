@@ -152,7 +152,10 @@ Mise à jour **toutes les 10 minutes** (Discord limite le renommage d'un salon �
 
 ## 📺 Twitch : live, récap, clips, planning
 
-- **Alerte de live** dans 🔴┃en-live (mention 🔴 Notif Live), et **récap automatique à la fin** : durée, pic de viewers, jeux joués, lien de la rediffusion.
+- **Alerte de live** dans 🔴┃en-live (mention 🔴 Notif Live) avec un bouton **▶️ Regarder le live**. L'annonce est **mise à jour pendant le live** (viewers, pic, durée, changement de jeu).
+- **Récap automatique à la fin** : durée, pic et moyenne de viewers, **followers gagnés**, jeux joués, membres les plus actifs sur le Discord pendant le live, bouton « Revoir le live ».
+- **Historique des lives** : `/streams` (7 jours, 30 jours, 90 jours ou 1 an) et la page *📺 Lives & statistiques* du site (graphique des viewers par live, tableau complet).
+- **🎉 Paliers d'abonnés** : annonce dans 📡┃annonces quand les followers Twitch, les abonnés TikTok ou les membres Discord passent 50, 100, 250, 500, 1000…
 - **Clips** : chaque nouveau clip de ta chaîne est posté dans 🎬┃clips (vérification toutes les 5 min).
 - **Planning** : ton planning Twitch est affiché et tenu à jour dans 🗓️┃planning, et chaque stream des 7 prochains jours devient un **événement Discord** (supprimé s'il disparaît du planning Twitch). Remplis ton planning sur *Twitch → Tableau de bord créateur → Planning*.
 
@@ -168,6 +171,17 @@ Activables / désactivables avec `/config notifications` ou le tableau de bord.
 | 500 両 le jour de ton anniversaire | `/donner @membre montant:` |
 
 `/bourse` (solde), `/richesse` (top 10), `/ryo` (staff : ajouter / retirer). Les articles se règlent dans `config/server.js` → `shop`.
+
+## 📜 Quêtes, boosts, grades et classements
+
+- **`/quetes`** : chaque membre a **3 quêtes du jour** et **3 quêtes de la semaine** (écrire, vocal, réactions, /daily, duels, suggestions, giveaways…), récompensées en ryō. Nouvelles quêtes à minuit et le lundi.
+- **`/boost lancer heures: xp: ryo:`** (staff) : événement **XP ×2** ou **ryō ×3** pendant quelques heures, annoncé dans 📡┃annonces. Aussi sur le site (*Quêtes, boosts & grades*).
+- **Niveaux plus justes** : pas d'XP pour les messages trop courts (« ok », « mdr ») ni dans 🤖┃commandes ; **bonus ×1,25** pour 🩸 VIP, ⭐ Abonné Twitch et les boosters Nitro.
+- **Récompenses de grade** : prime de **500 / 1500 / 5000 両** en devenant 🗡️ Ashigaru / ⚔️ Samouraï / 🏯 Daimyō, et un bonus sur chaque `/daily` selon ton grade.
+- **🔥 Pilier de la semaine** : chaque lundi, le membre qui a gagné le plus d'XP reçoit le rôle et 750 両.
+- **`/top categorie:`** : XP, semaine, mois, messages, vocal, ryō, quêtes, duels, actifs pendant les lives. **`/profil`** montre toutes les statistiques d'un membre (aussi sur le site → *Membres & classements*).
+
+Tout se règle sur le site, page *📜 Quêtes, boosts & grades*.
 
 ## 🎉 Animation
 
@@ -348,7 +362,7 @@ Le staff (permission « Gérer les messages ») n'est pas concerné par l'anti-s
 
 Remplis `TIKTOK_USERNAME` dans `.env` (pseudo sans @) puis redémarre le bot. Il vérifie ton profil toutes les 2 minutes :
 - **nouvelle vidéo** → lien posté dans 📱┃tiktok avec mention de 📱 Notif TikTok ;
-- **live TikTok** → alerte dans 🔴┃en-live avec mention de 🔴 Notif Live, transformée en « live terminé » à la fin.
+- **live TikTok** → alerte dans 🔴┃en-live avec mention de 🔴 Notif Live et bouton « Regarder », transformée à la fin en récap (durée, pic de viewers si TikTok le donne) et enregistrée dans l'historique `/streams`.
 
 Au premier lancement, les vidéos déjà publiées sont mémorisées sans être annoncées. Nécessite yt-dlp (voir Musique). TikTok n'ayant pas d'API publique pour ça, le bot lit ta page publique : si TikTok change son site, il faut mettre yt-dlp à jour (`yt-dlp -U`, fait automatiquement chaque nuit).
 

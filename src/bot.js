@@ -174,6 +174,7 @@ client.on(Events.MessageCreate, async (message) => {
   if (!counted) return; // message trop court ou salon sans XP : ni XP, ni ryō, ni quête
   economy.onMessage(message.author.id, message.member);
   quests.progress(message.author.id, 'messages');
+  require('./streams').onMessage(message.author.id);
   if (!settings.get('levels.enabled')) return;
   const newLevel = levels.onMessage(message.author.id, message.member);
   if (newLevel !== null) {

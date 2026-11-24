@@ -46,10 +46,12 @@ async function checkVideos(guild) {
     await channel
       .send({
         // Le lien seul suffit : Discord affiche l'aperçu de la vidéo TikTok
-        content: `${role ?? ''} 📱 **Nouveau TikTok !** ${v.title ? `— ${v.title.slice(0, 200)}` : ''}\n${url}`.trim(),
+        content: `${role ?? ''} 📱 **Nouveau TikTok de @${USERNAME_()} !** ${v.title ? `— ${v.title.slice(0, 200)}` : ''}\n${url}`.trim(),
+        components: [require('./streams').watchButton(url, 'Voir le TikTok')],
         allowedMentions: { roles: role ? [role.id] : [] },
       })
       .catch((err) => console.error('TikTok envoi :', err.message));
+    require('./history').bump('tiktoks');
     console.log(`📱 Nouveau TikTok : ${url}`);
   }
 }
@@ -89,25 +91,57 @@ async function checkLive(guild) {
           .setFooter({ text: `TikTok Live ${live.id}` })
           .setTimestamp(),
       ],
+      components: [require('./streams').watchButton(url)],
     });
     // Enregistré seulement après l'envoi : en cas d'échec, on réessaie au prochain passage
     s.liveId = String(live.id);
     s.liveMessageId = msg.id;
+    s.liveStartedAt = Date.now();
+    s.liveTitle = (live.title || live.description || 'Live TikTok').slice(0, 256);
+    s.livePeak = Number(live.concurrent_view_count) || 0;
     save();
     console.log('🔴 Live TikTok détecté');
+  } else if (live && String(live.id) === s.liveId) {
+    const viewers = Number(live.concurrent_view_count);
+    if (viewers > (s.livePeak ?? 0)) {
+      s.livePeak = viewers;
+      save();
+    }
   } else if (!live && s.liveId) {
+    const streams = require('./streams');
+    const entry = streams.record({
+      platform: 'tiktok',
+      id: s.liveId,
+      title: s.liveTitle ?? 'Live TikTok',
+      games: [],
+      startedAt: s.liveStartedAt ?? Date.now(),
+      endedAt: Date.now(),
+      peak: s.livePeak || null,
+      avg: null,
+    });
     const msg = s.liveMessageId && (await channel.messages.fetch(s.liveMessageId).catch(() => null));
     if (msg) {
       await msg
         .edit({
           content: '⚫ Le live TikTok est terminé, merci d\'être passé·e ! 💜',
-          embeds: msg.embeds.map((e) => EmbedBuilder.from(e).setColor(0x2c2f33)),
+          embeds: msg.embeds.map((e) =>
+            EmbedBuilder.from(e)
+              .setColor(0x2c2f33)
+              .setAuthor({ name: `@${USERNAME_()} — live TikTok terminé`, url: profileUrl() })
+              .setFields(
+                { name: '⏱️ Durée', value: streams.fmtDuration(entry.durationMin), inline: true },
+                ...(entry.peak ? [{ name: '👀 Pic de viewers', value: String(entry.peak), inline: true }] : []),
+              )
+              .setFooter({ text: 'Historique des lives : /streams' }),
+          ),
+          components: [streams.watchButton(profileUrl(), 'Voir le profil')],
           allowedMentions: { parse: [] },
         })
         .catch(() => {});
     }
     s.liveId = null;
     s.liveMessageId = null;
+    s.liveStartedAt = null;
     save();
     console.log('⚫ Fin du live TikTok');
   }

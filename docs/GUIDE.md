@@ -54,6 +54,7 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/rang [membre:]` | Ton niveau et ton XP |
 | `/classement` | Le top 10 des membres les plus actifs |
 | `/saison` | Le classement du mois (le 1er : podium, ryō et rôle 🏆 Champion) |
+| `/top [categorie:]` | Les membres les plus actifs, par catégorie |
 
 ### 💰 Ryō & jeux
 
@@ -67,6 +68,7 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/acheter article:` | Acheter (ou rééquiper) un article de la boutique |
 | `/duel adversaire: [mise:]` | Défier un membre en duel de samouraïs |
 | `/chifoumi choix: [mise:]` | Pierre-feuille-ciseaux contre le bot |
+| `/quetes` | Tes quêtes du jour et de la semaine (récompenses en ryō) |
 
 ### 🎉 Animation
 
@@ -89,6 +91,12 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/melanger` | Mélanger la file d'attente |
 | `/file` | Voir la file d'attente |
 | `/retirer position:` | Retirer un morceau de la file |
+
+### 📺 Stream
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `/streams [jours:]` | Historique et statistiques des lives |
 
 ### 📊 Statistiques
 
@@ -119,6 +127,14 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 • En cas de raid : `/lockdown action:Activer`. L'anti-raid et l'anti-nuke se déclenchent aussi tout seuls (alertes dans 🚨┃alertes-sécurité).
 • Les commandes qui modifient le serveur (`/setup`, `/restore`…) montrent d'abord ce qu'elles vont faire et demandent une confirmation.
 • Presque tout se règle aussi sur le **tableau de bord web** (administrateurs).
+
+### ⭐ Niveaux
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `/boost lancer heures: [xp:] [ryo:] [raison:]` | Démarrer un boost |
+| `/boost arreter` | Arrêter le boost en cours |
+| `/boost voir` | Voir le boost en cours |
 
 ### 💰 Ryō & jeux
 
