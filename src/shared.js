@@ -6,8 +6,9 @@ const {
   PermissionFlagsBits,
 } = require('discord.js');
 const config = require('../config/server');
+const { BRAND } = require('./brand');
 
-const BRAND_COLOR = 0xe10600; // rouge néon — Les Ronins de haro62190
+const BRAND_COLOR = Number.parseInt(BRAND.colors.red.replace('#', ''), 16); // palette officielle Kensei
 const ACCEPT_RULES_ID = 'accept_rules';
 const ROLE_BUTTON_PREFIX = 'role:';
 

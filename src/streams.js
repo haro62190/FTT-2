@@ -89,6 +89,7 @@ async function checkMilestones(guild, counts) {
         components: url ? [watchButton(url, 'Voir la chaîne')] : [],
       })
       .catch(() => {});
+    require('./feed').push('🎉', `Palier atteint : ${reached.toLocaleString('fr-FR')} ${p.label}`);
     console.log(`🎉 Palier ${key} : ${reached}`);
   }
   save();

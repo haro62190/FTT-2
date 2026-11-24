@@ -177,18 +177,9 @@ client.on(Events.MessageCreate, async (message) => {
   require('./streams').onMessage(message.author.id);
   if (!settings.get('levels.enabled')) return;
   const newLevel = levels.onMessage(message.author.id, message.member);
-  if (newLevel !== null) {
-    const rewards = message.member ? await levels.applyRewards(message.member, newLevel) : [];
-    if (settings.get('levels.announce') || rewards.length) {
-      await message.channel
-        .send({
-          content:
-            `⚔️ GG ${message.author}, tu passes au **niveau ${newLevel}** !` +
-            (rewards.length ? `\n🎖️ Nouveau grade : ${rewards.map((r) => `**${r.name}**${r.bonus ? ` (+${r.bonus} 両)` : ''}`).join(', ')}` : ''),
-          allowedMentions: { users: [message.author.id] },
-        })
-        .catch(() => {});
-    }
+  if (newLevel !== null && message.member) {
+    const rewards = await levels.applyRewards(message.member, newLevel);
+    if (settings.get('levels.announce') || rewards.length) await require('./levelcard').announce(message.channel, message.member, newLevel, rewards);
   }
 });
 
