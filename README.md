@@ -189,6 +189,7 @@ Tout se règle sur le site, page *📜 Quêtes, boosts & grades*.
 - **Ajouter / modifier** : sur le site, page *🎯 Classes méta* (formulaire avec un menu par emplacement : bouche, canon, optique…), ou avec `/classe ajouter jeu: arme: accessoires: Bouche: Compensateur; Canon: Long; Optique: Viseur 2x` (staff).
 - Chaque classe est **publiée et tenue à jour** dans 🎯┃classes-méta (créé par `/setup`).
 - La liste des jeux (Warzone, MW4, Black Ops 7 par défaut) se modifie sur la même page.
+- **Liens vers ta source de méta** : sous `/meta`, un bouton « 📊 Méta complète » ouvre la page du jeu sur NoLagVPN (Warzone, MW4, BO7 réglés par défaut, modifiables), et chaque classe peut avoir un bouton « 🔗 Build » vers la page de l'arme.
 
 Les classes sont celles que **toi et ton staff** saisissez : il n'existe pas de source officielle de la méta, et les sites qui la publient changent sans arrêt ou interdisent la récupération automatique.
 
