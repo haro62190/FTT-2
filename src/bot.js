@@ -306,6 +306,8 @@ client.once(Events.ClientReady, async () => {
   client.user.setActivity('Les Ronins de haro62190 ⚔️', { type: 3 /* Watching */ });
   await tempVoice.cleanup(guild).catch((err) => console.error('Nettoyage des vocaux temporaires :', err.message));
   await commands.register(guild).catch((err) => console.error('❌ Enregistrement des commandes / :', err.message));
+  // Guide 📖┃guide / 📘┃guide-staff : remis à jour à chaque démarrage (nouvelles commandes après une mise à jour)
+  require('./guide').post(guild, () => {}).catch((err) => console.error('Guide :', err.message));
   require('./twitchlive').start(guild, twitch);
   require('./temproles').start(guild);
   require('./quarantine').start(guild);

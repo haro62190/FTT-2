@@ -21,3 +21,9 @@ test('chaque commande a une catégorie et une fonction run', () => {
     assert.ok(c.category, c.data.name);
   }
 });
+
+test('Discord accepte au plus 100 commandes / par serveur', () => {
+  const { commands } = require('../src/commands');
+  assert.ok(commands.length <= 100, `${commands.length} commandes`);
+  assert.equal(new Set(commands.map((c) => c.data.name)).size, commands.length, 'pas de doublon');
+});

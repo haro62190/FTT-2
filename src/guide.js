@@ -53,7 +53,10 @@ function intro(guild) {
     '',
     '**⚔️ XP et niveaux** — tu gagnes de l\'XP en écrivant (1 fois par minute) et en vocal. Les grades arrivent tout seuls : 🗡️ Ashigaru (niv. 5), ⚔️ Samouraï (niv. 15), 🏯 Daimyō (niv. 30).',
     '**🏆 Saisons** — chaque mois, le top 3 de l\'XP gagne des ryō et le premier devient 🏆 Champion du mois.',
-    '**💰 Ryō (両)** — la monnaie du dojo : gagnée en écrivant, en vocal et avec `/daily`, à dépenser dans la `/boutique` (couleurs de pseudo, VIP…) ou en duel.',
+    '**💰 Ryō (両)** — la monnaie du dojo : gagnée en écrivant, en vocal, avec `/daily` et les `/quetes`, à dépenser dans la `/boutique` (couleurs de pseudo, VIP…), en duel ou en pronostic pendant les lives.',
+    '**📜 Quêtes** — `/quetes` : 3 quêtes par jour et 3 par semaine, payées en ryō.',
+    '**🌟 Distinctions** — 🔥 Pilier de la semaine (le plus actif de la semaine) et 🌟 Membre du mois (XP, vocal, remerciements, quêtes, entraide, présence en live) : `/membre-du-mois`.',
+    '**📊 Ton profil** — `/profil` et `/rang` pour tes stats, `/top` pour les classements.',
     '',
     'Tape `/` dans n\'importe quel salon pour voir toutes les commandes, ou `/guide` pour relire ce guide.',
   ].join('\n');
@@ -69,7 +72,13 @@ function features(guild) {
     `**🏯 Hall of Fame** — réagis ⚔️ aux meilleurs messages : à 5 réactions, ils entrent dans ${ch('hall_of_fame', '#hall-of-fame')}.`,
     `**🎁 Giveaways** — clique sur **Participer** sous un giveaway. Reclique pour te retirer.`,
     `**🎂 Anniversaire** — \`/anniversaire definir\` : le jour J, le dojo te le souhaite et tu reçois un cadeau.`,
-    `**🔴 Lives & TikTok** — les alertes arrivent dans ${ch('live', '#en-live')} et ${ch('tiktok', '#tiktok')}, les clips dans ${ch('clips', '#clips')}, le planning dans ${ch('schedule', '#planning')}.`,
+    `**🔴 Lives & TikTok** — les alertes arrivent dans ${ch('live', '#en-live')} et ${ch('tiktok', '#tiktok')}, les clips dans ${ch('clips', '#clips')} (\`/clips\` pour les meilleurs), le planning dans ${ch('schedule', '#planning')}, l'historique avec \`/streams\`.`,
+    `**🎲 Pendant les lives** — quiz, pronostics en ryō et votes dans ${ch('live_games', '#jeux-du-live')} : clique sur les boutons !`,
+    `**🎮 Trouver des joueurs** — remplis ton profil avec \`/joueur profil\`, puis \`/recherche\` (posté dans ${ch('lfg', '#recherche-joueurs')}) ou \`/joueurs\` pour trouver qui joue à ton jeu. \`/equipes\` fait des équipes équilibrées avec ton vocal.`,
+    `**🏆 Tournois & soirées** — inscris-toi dans ${ch('tournaments', '#tournois')} (\`/tournoi equipe\` pour une équipe) et réserve ta place aux soirées de ${ch('nights', '#soirées-gaming')}. \`/calendrier\` montre tout ce qui arrive, \`/classement-jeu\` le classement de chaque jeu.`,
+    `**🎯 Défis collectifs** — \`/defis\` : toute la commu avance vers un même objectif, chaque participant gagne des ryō.`,
+    `**🙏 Entraide** — \`/merci @membre\` pour remercier quelqu'un qui t'a aidé, \`/rep\` pour la réputation. \`/parrainage lien\` pour inviter tes amis et gagner des ryō.`,
+    `**🚩 Un problème ?** — \`/signaler\` prévient discrètement le staff, \`/mes-signalements\` pour le suivi. Envie d'aider ? \`/candidature\` (modérateur ou streamer partenaire).`,
     cmds.length ? `**⌨️ Raccourcis** — ${cmds.map((c) => `\`${prefix()}${c}\``).join(' ')}` : null,
   ]
     .filter(Boolean)
@@ -87,7 +96,16 @@ const STAFF_TIPS = [
   '• Toutes les actions (kick, ban, mute, rôles, messages supprimés…) sont notées dans 📋┃logs, avec leur auteur.',
   '• En cas de raid : `/lockdown action:Activer`. L\'anti-raid et l\'anti-nuke se déclenchent aussi tout seuls (alertes dans 🚨┃alertes-sécurité).',
   '• Les commandes qui modifient le serveur (`/setup`, `/restore`…) montrent d\'abord ce qu\'elles vont faire et demandent une confirmation.',
-  '• Presque tout se règle aussi sur le **tableau de bord web** (administrateurs).',
+  '• Les signalements arrivent dans 🚩┃signalements : « Je m\'en occupe » puis « Résolu » ou « Sans suite » (le membre est prévenu en MP).',
+  '• Préfère la **quarantaine** (`/quarantaine`) à l\'expulsion quand tu as un doute : c\'est réversible avec `/liberer`.',
+  '• Les candidatures (📝┃candidatures) sont traitées par le staff senior avec les boutons Accepter / Refuser.',
+  '',
+  '**🎉 Animer le serveur**',
+  '• Pendant les lives : `/quiz`, `/prono` (paris en ryō, résultat avec `/prono resultat`), `/vote`. Les moments forts du chat Twitch sont signalés dans 🛡️┃staff : pensez à clipper !',
+  '• Gaming : `/soiree` (réservations), `/tournoi-admin` (créer, lancer, résultats), `/match` pour le classement Elo.',
+  '• Communauté : `/defi` (objectif commun), `/boost` (XP ou ryō multipliés), `/giveaway`.',
+  '• Chaque lundi, un rapport arrive dans 🛡️┃staff : salons inutilisés, meilleurs créneaux, idées d\'événements.',
+  '• Presque tout se règle aussi sur le **tableau de bord web** (administrateurs) : centre d\'alertes 🔔, éditeur de messages, tournois, soirées…',
 ].join('\n');
 
 // ───────────────────────── Embeds ─────────────────────────

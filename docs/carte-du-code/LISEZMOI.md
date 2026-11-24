@@ -2,7 +2,7 @@
 
 Ouvre ces fichiers dans ton navigateur (double-clic) :
 
-- **`graphe.html`** — la carte interactive : 514 éléments (fonctions, fichiers) reliés par 1 230 liens, regroupés en 19 ensembles colorés (cœur du bot, construction du serveur, sécurité, tableau de bord, tickets…). Clique sur un point pour voir ce qu'il fait et à quoi il est relié ; coche / décoche les ensembles à droite.
+- **`graphe.html`** — la carte interactive : 1 018 éléments (fonctions, fichiers) reliés par 2 508 liens, regroupés en 37 ensembles colorés (cœur du bot, sécurité, tableau de bord, tournois, soirées gaming, quêtes, jeux du live, parrainage…). Clique sur un point pour voir ce qu'il fait et à quoi il est relié ; coche / décoche les ensembles à droite.
 - **`architecture.html`** — les schémas d'architecture et d'appels entre modules.
 - **`RAPPORT.md`** — le résumé : éléments les plus centraux (`save()`, `findChannel()`, `findRole()`…), liens surprenants, aucune dépendance circulaire.
 

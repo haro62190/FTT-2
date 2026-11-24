@@ -96,6 +96,13 @@ Pour trouver le `GUILD_ID` : Discord → Paramètres utilisateur → Avancés �
 | Rôles libre-service | Boutons dans 🎴┃rôles (cliquer à nouveau retire le rôle) |
 | Alerte live | Toutes les 60 s, vérifie Twitch ; au début du live, poste titre + jeu + miniature et mentionne 🔴 Notif Live. À la fin, l'annonce passe en « live terminé ». Pas de doublon si le bot redémarre pendant un live. |
 | Logs | Arrivées, départs et messages supprimés dans 📋┃logs |
+| Quêtes, saisons, pilier, membre du mois | Remise à zéro et récompenses automatiques (minuit, lundi, 1er du mois) |
+| Lives Twitch / TikTok | Annonce mise à jour pendant le live, moments forts du chat, récap et historique à la fin, top clips le lundi |
+| Soirées, événements | Rappels en MP 1 h / 30 min avant, liste d'attente automatique |
+| Défis collectifs | Barre de progression mise à jour, ryō distribués quand l'objectif est atteint |
+| Récap hebdo | Chaque lundi : récap pour les membres + rapport pour le staff (salons inutilisés, idées d'événements) |
+| Guide | 📖┃guide et 📘┃guide-staff remis à jour à chaque démarrage du bot |
+| Sauvegardes | Copies de la base vérifiées (7 jours, 4 semaines, 6 mois) et réparation automatique si elle est abîmée |
 
 Le bot doit tourner en permanence : sur ton PC pendant les streams, ou mieux sur un petit hébergement (Raspberry Pi, VPS, Railway, fly.io…).
 
@@ -473,7 +480,19 @@ src/music.js       musique (yt-dlp + ffmpeg)
 src/tempvoice.js   vocaux temporaires
 src/tiktok.js      alertes TikTok · src/twitch.js client Twitch · src/ytdlp.js appels yt-dlp
 src/shared.js      messages et utilitaires communs
-assets/            icône et bannière (浪人 · Les Ronins)
+src/quests.js      quêtes du jour et de la semaine · src/boost.js événements XP / ryō ×2
+src/memberstats.js statistiques par membre, /top · src/feed.js fil des événements et historique des membres
+src/levelcard.js   bannière « Passage de niveau » · src/brand.js couleurs et polices Kensei (assets/fonts)
+src/streams.js     historique des lives, paliers d'abonnés, /streams, /clips · src/twitchchat.js moments forts
+src/gaming.js      profils joueurs, /recherche, /equipes, classements Elo
+src/tournaments.js tournois · src/nights.js soirées gaming, réservations, /calendrier, rappels
+src/livegames.js   quiz, pronostics, votes pendant les lives
+src/social.js      membre du mois, réputation (/merci), parrainage · src/challenges.js défis collectifs
+src/applications.js candidatures · src/reports.js signalements suivis · src/insights.js récap hebdo et rapport staff
+src/quarantine.js  quarantaine · src/permissions.js permissions minimales · src/audit.js journal d'admin
+src/dbbackup.js    copies de la base · src/logger.js journal d'erreurs · src/redact.js masquage des secrets
+src/dashboard-admin.js · dashboard-community.js · dashboard-ops.js   autres pages du tableau de bord
+assets/            icône, bannière, décors Kensei (carte de rang, bannière de niveau, site) et polices libres
 scripts/update.sh  mise à jour automatique depuis GitHub (VPS)
 scripts/dev.js     mode test local : redémarrage auto + mises à jour GitHub (npm run dev)
 ```
