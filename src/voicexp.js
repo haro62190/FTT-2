@@ -19,6 +19,8 @@ async function tick(guild) {
       economy.onVoiceMinute(member.id, member);
       require('./history').bump('voice');
       require('./quests').progress(member.id, 'voice');
+      require('./social').track(member.id, 'voice');
+      require('./challenges').progress('voice', member.id);
       const lvl = levels.addXp(member.id, xp, member);
       if (lvl !== null) {
         const rewards = await levels.applyRewards(member, lvl);

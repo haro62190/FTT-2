@@ -273,6 +273,7 @@ const commands = [
       if (denied) return i.reply(ephemeral(denied));
       const reason = i.options.getString('raison');
       (db.warns[user.id] ??= []).push({ reason, by: i.user.id, at: Date.now() });
+      require('./feed').member(user.id, '⚠️', `Avertissement : ${String(reason).slice(0, 100)}`);
       save();
       const count = db.warns[user.id].length;
       await user.send(`⚠️ Tu as reçu un avertissement sur **${i.guild.name}** : ${reason}`).catch(() => {});
@@ -434,6 +435,14 @@ commands.push(
   ...require('./boost').commands,
   ...require('./memberstats').commands,
   ...require('./streams').commands,
+  ...require('./gaming').commands,
+  ...require('./tournaments').commands,
+  ...require('./nights').commands,
+  ...require('./livegames').commands,
+  ...require('./social').commands,
+  ...require('./challenges').commands,
+  ...require('./applications').commands,
+  ...require('./reports').commands,
 );
 
 // /help = /aide
@@ -459,6 +468,9 @@ async function handle(interaction, ctx) {
   if (required && interaction.user.id !== interaction.guild?.ownerId && !interaction.memberPermissions?.has(BigInt(required))) {
     return interaction.reply({ content: '⛔ Tu n\'as pas la permission d\'utiliser cette commande.', flags: MessageFlags.Ephemeral });
   }
+  if (cmd.module && !require('./settings').on(cmd.module)) {
+    return interaction.reply({ content: '⛔ Cette fonction est désactivée pour le moment (tableau de bord → Modules).', flags: MessageFlags.Ephemeral });
+  }
   if (cmd.staff) {
     const audit = require('./audit');
     audit.record({ userId: interaction.user.id, user: interaction.user.username, source: 'discord', action: `/${interaction.commandName}`, details: audit.describeOptions(interaction) });
@@ -473,4 +485,16 @@ async function handle(interaction, ctx) {
   }
 }
 
-module.exports = { commands, register, handle };
+/** Suggestions pendant la frappe (options avec autocomplétion). */
+async function autocomplete(interaction) {
+  const cmd = byName.get(interaction.commandName);
+  if (!cmd?.autocomplete) return interaction.respond([]).catch(() => {});
+  try {
+    await cmd.autocomplete(interaction);
+  } catch (err) {
+    console.error(`Autocomplétion /${interaction.commandName} :`, err.message);
+    await interaction.respond([]).catch(() => {});
+  }
+}
+
+module.exports = { commands, register, handle, autocomplete };

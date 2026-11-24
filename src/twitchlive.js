@@ -66,6 +66,7 @@ async function checkLive(guild) {
   if (!channel || !settings.get('notifications.twitch')) return;
   const stream = await twitch.getLiveStream(LOGIN_());
   const state = live();
+  require('./twitchchat').sync(guild, LOGIN_(), Boolean(stream));
   const { watchButton } = require('./streams');
 
   if (stream && stream.id === state?.streamId) {
@@ -142,7 +143,10 @@ async function checkLive(guild) {
       followersGained: gained,
       vod: vod?.url ?? null,
       topChatters: topChatters.map(([id]) => id),
+      highlights: state.highlights ?? [],
+      discordMessages: state.discordMsgs ?? 0,
     });
+    const moments = require('./twitchchat').recapLines(state.highlights, vod?.url);
     const ch = guild.channels.cache.get(state.channelId);
     const msg = ch && (await ch.messages.fetch(state.messageId).catch(() => null));
     if (msg) {
@@ -155,6 +159,7 @@ async function checkLive(guild) {
           { name: '👀 Viewers', value: `pic ${state.peak ?? 0} · moy. ${avg ?? '—'}`, inline: true },
           { name: '🟣 Followers', value: gained === null ? '—' : `${gained >= 0 ? '+' : ''}${gained}`, inline: true },
           { name: '🎮 Jeux', value: state.games.join(', ') || '—' },
+          ...(moments.length ? [{ name: '💥 Moments forts', value: moments.join('\n').slice(0, 1024) }] : []),
           ...(topChatters.length ? [{ name: '💬 Les plus actifs sur le Discord pendant le live', value: topChatters.map(([id, n]) => `<@${id}> (${n})`).join(' · ') }] : []),
         )
         .setFooter({ text: `Stream ID ${state.streamId} · historique : /streams` })
@@ -186,6 +191,7 @@ async function checkClips(guild) {
   const since = new Date(Date.now() - 24 * 3600_000).toISOString(); // les clips mettent parfois du temps à apparaître
   const clips = await twitch.getClips(u.id, since);
   const fresh = clips.filter((c) => !s.seen.includes(c.id)).sort((a, b) => a.created_at.localeCompare(b.created_at));
+  storeClips(clips);
   if (s.initialized) {
     for (const c of fresh) {
       await channel
@@ -201,6 +207,59 @@ async function checkClips(guild) {
   s.seen = [...new Set([...fresh.map((c) => c.id), ...s.seen])].slice(0, 300);
   s.initialized = true; // premier passage : on mémorise les clips existants sans les poster
   save();
+}
+
+/** Galerie : on garde les infos des clips (titre, auteur, vues, miniature) et on met les vues à jour. */
+function storeClips(clips) {
+  const g = (db.clipsGallery ??= {});
+  for (const c of clips) {
+    g[c.id] = { id: c.id, url: c.url, title: c.title, creator: c.creator_name, views: c.view_count ?? 0, thumb: c.thumbnail_url, duration: c.duration, game: c.game_id, createdAt: new Date(c.created_at).getTime() };
+  }
+  const keep = Object.values(g).sort((a, b) => b.createdAt - a.createdAt).slice(0, 400).map((c) => c.id);
+  for (const id of Object.keys(g)) if (!keep.includes(id)) delete g[id];
+  save();
+}
+
+/** Meilleurs clips : `days` derniers jours, classés par vues. */
+function bestClips(days = 7, n = 10) {
+  const since = Date.now() - days * 86_400_000;
+  return Object.values(db.clipsGallery ?? {})
+    .filter((c) => c.createdAt >= since)
+    .sort((a, b) => b.views - a.views)
+    .slice(0, n);
+}
+
+/** Chaque lundi : vues à jour des clips de la semaine, puis top 5 posté dans 🎬┃clips. */
+async function weeklyClips(guild) {
+  const week = require('./seasons').currentWeek();
+  if (db.clipsWeekPosted === week || !settings.get('notifications.clips')) return;
+  if (db.clipsWeekPosted === undefined) {
+    // Premier lancement : on attend le lundi suivant pour le premier top
+    db.clipsWeekPosted = week;
+    return save();
+  }
+  const u = await getUser();
+  storeClips(await twitch.getClips(u.id, new Date(Date.now() - 7 * 86_400_000).toISOString()));
+  db.clipsWeekPosted = week;
+  save();
+  const top = bestClips(7, 5);
+  const channel = findChannel(guild, 'clips');
+  if (!top.length || !channel) return;
+  const medals = ['🥇', '🥈', '🥉', '4.', '5.'];
+  await channel
+    .send({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(0xffc400)
+          .setTitle('🎬 Les meilleurs clips de la semaine')
+          .setDescription(top.map((c, k) => `${medals[k]} [${c.title}](${c.url}) — par **${c.creator}** · ${c.views.toLocaleString('fr-FR')} vues`).join('\n'))
+          .setImage(top[0].thumb ?? null)
+          .setFooter({ text: 'Toute la galerie sur le tableau de bord · /clips' }),
+      ],
+      allowedMentions: { parse: [] },
+    })
+    .catch(() => {});
+  require('./feed').push('🎬', `Top clips de la semaine : ${top[0].title}`);
 }
 
 // ───────────────────────── Planning ─────────────────────────
@@ -278,8 +337,9 @@ function start(guild, client) {
   };
   every(checkLive, POLL_MS, 'live');
   every(checkClips, CLIPS_MS, 'clips');
+  every(weeklyClips, 3600_000, 'clips de la semaine');
   every(checkSchedule, SCHEDULE_MS, 'planning');
   console.log(`📺 Twitch ${LOGIN_() || '(chaîne à régler sur le tableau de bord)'} : live toutes les ${POLL_MS / 1000}s, clips toutes les 5 min, planning toutes les 30 min`);
 }
 
-module.exports = { start, checkSchedule, checkLive, liveEmbed, _setClient: (c) => (twitch = c) };
+module.exports = { bestClips, storeClips, weeklyClips, start, checkSchedule, checkLive, liveEmbed, _setClient: (c) => (twitch = c) };

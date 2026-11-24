@@ -54,6 +54,8 @@ module.exports = {
     { key: 'sub', name: '⭐ Abonné Twitch', color: 0xd92b2b, hoist: true },
     // Donné chaque mois au premier de la saison (/saison)
     { key: 'champion', name: '🏆 Champion du mois', color: 0xffc400, hoist: true },
+    // Membre du mois : score sur plusieurs critères (XP, vocal, réputation, quêtes, entraide…)
+    { key: 'motm', name: '🌟 Membre du mois', color: 0xf5b942, hoist: true },
     // Donné chaque lundi au membre qui a gagné le plus d'XP pendant la semaine
     { key: 'pillar', name: '🔥 Pilier de la semaine', color: 0xff7a1a, hoist: true },
     // Couleurs de pseudo achetables dans la boutique (au-dessus des grades pour que la couleur s'affiche)
@@ -118,12 +120,21 @@ module.exports = {
       ],
     },
     {
+      name: '🎮 遊 ・ GAMING',
+      channels: [
+        { key: 'lfg', name: '🎮┃recherche-joueurs', type: 'text', access: 'members-readonly', topic: 'Cherche des coéquipiers : /recherche jeu: plateforme: — ton profil joueur : /joueur profil' },
+        { key: 'tournaments', name: '🏆┃tournois', type: 'text', access: 'members-readonly', topic: 'Inscriptions, tableaux et résultats des tournois de la commu.' },
+        { key: 'nights', name: '🌙┃soirées-gaming', type: 'text', access: 'members-readonly', topic: 'Les soirées gaming : réserve ta place avec le bouton. /calendrier pour tout voir.' },
+      ],
+    },
+    {
       name: '📡 配信 ・ STREAM',
       formerNames: ['📺 STREAM'],
       channels: [
         { key: 'schedule', name: '🗓️┃planning', formerNames: ['📅・planning'], type: 'text', access: 'members-readonly', topic: 'Le planning des streams de la semaine.' },
         { key: 'clips', name: '🎬┃clips', formerNames: ['✂️・clips'], type: 'text', access: 'members', topic: 'Partage tes meilleurs clips du stream !' },
         { key: 'fanart', name: '🖌️┃fan-art', formerNames: ['🎨・fan-art'], type: 'text', access: 'members' },
+        { key: 'live_games', name: '🎲┃jeux-du-live', type: 'text', access: 'members-readonly', topic: 'Quiz, pronostics et votes pendant les lives : clique sur les boutons !' },
         { key: 'suggestions', name: '💡┃suggestions', formerNames: ['💡・suggestions'], type: 'text', access: 'members', topic: 'Idées de jeux, de défis ou d\'améliorations pour la chaîne.' },
       ],
     },
@@ -163,6 +174,8 @@ module.exports = {
         { key: 'security_alerts', name: '🚨┃alertes-sécurité', formerNames: ['🚨・alertes-sécurité'], type: 'text', access: 'staff', topic: 'Anti-raid / anti-nuke : alertes importantes.' },
         { key: 'mod_logs', name: '📋┃logs', formerNames: ['📋・logs'], type: 'text', access: 'staff', topic: 'Kicks, bans, mutes, rôles, pseudos, salons, messages supprimés/modifiés…' },
         { key: 'db_backups', name: '💾┃sauvegardes', type: 'text', access: 'staff-senior', topic: 'Copie quotidienne de la base du bot (à garder !).' },
+        { key: 'reports', name: '🚩┃signalements', type: 'text', access: 'staff', topic: 'Signalements des membres (/signaler) : prends-les en charge avec les boutons.' },
+        { key: 'applications', name: '📝┃candidatures', type: 'text', access: 'staff-senior', topic: 'Candidatures modérateur / streamer partenaire (/candidature).' },
         { key: 'voice_logs', name: '🔊┃logs-vocal', formerNames: ['🔊・logs-vocal'], type: 'text', access: 'staff', topic: 'Arrivées, départs et déconnexions des vocaux.' },
       ],
     },

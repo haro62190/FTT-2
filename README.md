@@ -96,6 +96,13 @@ Pour trouver le `GUILD_ID` : Discord → Paramètres utilisateur → Avancés �
 | Rôles libre-service | Boutons dans 🎴┃rôles (cliquer à nouveau retire le rôle) |
 | Alerte live | Toutes les 60 s, vérifie Twitch ; au début du live, poste titre + jeu + miniature et mentionne 🔴 Notif Live. À la fin, l'annonce passe en « live terminé ». Pas de doublon si le bot redémarre pendant un live. |
 | Logs | Arrivées, départs et messages supprimés dans 📋┃logs |
+| Quêtes, saisons, pilier, membre du mois | Remise à zéro et récompenses automatiques (minuit, lundi, 1er du mois) |
+| Lives Twitch / TikTok | Annonce mise à jour pendant le live, moments forts du chat, récap et historique à la fin, top clips le lundi |
+| Soirées, événements | Rappels en MP 1 h / 30 min avant, liste d'attente automatique |
+| Défis collectifs | Barre de progression mise à jour, ryō distribués quand l'objectif est atteint |
+| Récap hebdo | Chaque lundi : récap pour les membres + rapport pour le staff (salons inutilisés, idées d'événements) |
+| Guide | 📖┃guide et 📘┃guide-staff remis à jour à chaque démarrage du bot |
+| Sauvegardes | Copies de la base vérifiées (7 jours, 4 semaines, 6 mois) et réparation automatique si elle est abîmée |
 
 Le bot doit tourner en permanence : sur ton PC pendant les streams, ou mieux sur un petit hébergement (Raspberry Pi, VPS, Railway, fly.io…).
 
@@ -182,6 +189,39 @@ Activables / désactivables avec `/config notifications` ou le tableau de bord.
 - **`/top categorie:`** : XP, semaine, mois, messages, vocal, ryō, quêtes, duels, actifs pendant les lives. **`/profil`** montre toutes les statistiques d'un membre (aussi sur le site → *Membres & classements*).
 
 Tout se règle sur le site, page *📜 Quêtes, boosts & grades*.
+
+## 🎮 Gaming
+
+- **Profil joueur** : `/joueur profil` (plateformes PC / PlayStation / Xbox / Switch / mobile, disponibilités, jeux, pseudos PSN / Xbox / Steam / Activision), `/joueur voir`, `/joueurs jeu:` pour trouver des partenaires.
+- **Recherche de coéquipiers** : `/recherche jeu: places:` publie une annonce dans 🎮┃recherche-joueurs avec un bouton « Je viens » et propose les membres qui ont ce jeu dans leur profil.
+- **Équipes automatiques** : `/equipes taille:` répartit les joueurs de ton vocal en équipes équilibrées (selon l'Elo du jeu), avec un bouton pour créer un vocal par équipe et y déplacer tout le monde.
+- **Tournois** (🏆┃tournois) : `/tournoi-admin creer` (solo ou équipes, places, date, prix en ryō), inscription par bouton ou `/tournoi equipe`, tableau à élimination directe avec têtes de série, résultats avec `/tournoi-admin resultat` ou sur le site.
+- **Classements compétitifs** : un classement Elo par jeu (`/classement-jeu`), alimenté par les tournois et `/match`.
+- **Soirées gaming** (🌙┃soirées-gaming) : `/soiree` avec réservation de places, liste d'attente automatique, rappel en MP 1 h avant, événement Discord créé tout seul.
+- **Calendrier** : `/calendrier` regroupe soirées, tournois, lives, événements, défis et anniversaires. Les membres « intéressés » par un événement Discord reçoivent un rappel en MP 30 min avant.
+
+## 🔴 Pendant les lives
+
+- **🎲┃jeux-du-live** : `/quiz` (bonnes réponses récompensées en ryō, bonus aux 3 plus rapides, banque de questions avec `/quiz hasard`), `/prono` (les membres misent leurs ryō, le pot est partagé entre les gagnants), `/vote` (résultats en direct).
+- **Moments forts** : pendant le live, le bot lit le chat Twitch (lecture seule, sans compte) et repère les pics d'activité. Le staff est prévenu pour clipper, et le récap de fin de live contient un lien vers chaque moment dans la rediffusion.
+- **Clips** : galerie sur le site, `/clips`, et top 5 de la semaine posté chaque lundi dans 🎬┃clips.
+
+## 👥 Communauté
+
+- **🌟 Membre du mois** : score sur plusieurs critères (XP, vocal, remerciements reçus, quêtes, suggestions, présence en live). Le 1er du mois : rôle 🌟 Membre du mois + 2000 両. `/membre-du-mois` pour le classement provisoire.
+- **🙏 Réputation** : `/merci @membre` (3 par jour), `/rep`.
+- **🤝 Parrainage** : `/parrainage lien` donne un lien d'invitation perso ; quand le filleul atteint le niveau 3, le parrain gagne 500 両 et le filleul 250 両.
+- **🎯 Défis collectifs** : `/defi` (staff) fixe un objectif commun (messages, vocal, quêtes, nouveaux membres…), barre de progression dans 📡┃annonces, ryō pour chaque participant si l'objectif est atteint. `/defis` pour les voir.
+- **📝 Candidatures** : `/candidature` modérateur ou streamer partenaire → formulaire → décision du staff senior par boutons dans 📝┃candidatures (rôle donné automatiquement, réponse en MP).
+
+## 🤖 Automatisation
+
+- **Récap hebdomadaire** chaque lundi dans 📡┃annonces, et **rapport staff** : salons inutilisés depuis 30 jours, meilleurs créneaux d'activité, jeux les plus joués, idées d'événements.
+- **Signalements suivis** : `/signaler @membre raison:` → carte dans 🚩┃signalements avec boutons pour le staff, MP de suivi, `/mes-signalements`.
+
+## 🖥️ Nouveautés du tableau de bord
+
+🔔 Centre d'alertes (signalements, candidatures, tickets, quarantaines, permissions, erreurs, avec une cloche dans l'en-tête) · ✉️ Éditeur de messages avec aperçu en direct (et modification d'un message du bot) · 🏆 Tournois (tableau, résultats en un clic, classements Elo) · 🌙 Soirées, défis & calendrier · 👥 Équipes & inscriptions · 📊 Stats Twitch + Discord réunies · 🎬 Galerie de clips · historique de chaque membre sur la page *Membres*.
 
 ## 🎉 Animation
 
@@ -440,8 +480,21 @@ src/music.js       musique (yt-dlp + ffmpeg)
 src/tempvoice.js   vocaux temporaires
 src/tiktok.js      alertes TikTok · src/twitch.js client Twitch · src/ytdlp.js appels yt-dlp
 src/shared.js      messages et utilitaires communs
-assets/            icône et bannière (浪人 · Les Ronins)
+src/quests.js      quêtes du jour et de la semaine · src/boost.js événements XP / ryō ×2
+src/memberstats.js statistiques par membre, /top · src/feed.js fil des événements et historique des membres
+src/levelcard.js   bannière « Passage de niveau » · src/brand.js couleurs et polices Kensei (assets/fonts)
+src/streams.js     historique des lives, paliers d'abonnés, /streams, /clips · src/twitchchat.js moments forts
+src/gaming.js      profils joueurs, /recherche, /equipes, classements Elo
+src/tournaments.js tournois · src/nights.js soirées gaming, réservations, /calendrier, rappels
+src/livegames.js   quiz, pronostics, votes pendant les lives
+src/social.js      membre du mois, réputation (/merci), parrainage · src/challenges.js défis collectifs
+src/applications.js candidatures · src/reports.js signalements suivis · src/insights.js récap hebdo et rapport staff
+src/quarantine.js  quarantaine · src/permissions.js permissions minimales · src/audit.js journal d'admin
+src/dbbackup.js    copies de la base · src/logger.js journal d'erreurs · src/redact.js masquage des secrets
+src/dashboard-admin.js · dashboard-community.js · dashboard-ops.js   autres pages du tableau de bord
+assets/            icône, bannière, décors Kensei (carte de rang, bannière de niveau, site) et polices libres
 scripts/update.sh  mise à jour automatique depuis GitHub (VPS)
+scripts/banner.js  régénère la bannière du serveur (npm run banner)
 scripts/dev.js     mode test local : redémarrage auto + mises à jour GitHub (npm run dev)
 ```
 

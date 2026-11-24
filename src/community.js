@@ -55,6 +55,7 @@ async function onSuggestionMessage(message) {
   suggestions()[card.id] = s;
   save();
   require('./quests').progress(message.author.id, 'suggestion');
+  require('./social').track(message.author.id, 'helps');
   await message.delete().catch(() => {});
   await card.startThread({ name: `💬 Suggestion #${s.number}`, autoArchiveDuration: 10080 }).catch(() => {});
 }
@@ -204,6 +205,7 @@ function register(client, guildId) {
     if (seen.size > 20_000) for (const k of [...seen.keys()].slice(0, 5_000)) seen.delete(k);
     require('./memberstats').bump(user.id, 'reactions');
     require('./quests').progress(user.id, 'reactions');
+    require('./challenges').progress('reactions', user.id);
   });
   client.on(Events.MessageReactionRemove, react);
 }

@@ -52,3 +52,28 @@ test('modules : tous les interrupteurs s\'enregistrent', async () => {
   assert.equal(settings.on('tickets'), true);
   assert.equal(settings.on('giveaways'), false);
 });
+
+test('éditeur de messages : embed, boutons https seulement, aucune mention', async () => {
+  const guild = fakeGuild();
+  const sent = [];
+  guild.channels.cache.get('c1').send = async (p) => sent.push(p);
+  const body = new URLSearchParams({ channel: 'c1', content: '@everyone salut', title: 'Titre', description: 'Texte', color: '#ff0000', buttons: 'Site | https://exemple.fr\nPiège | javascript:alert(1)', image: 'http://pas-https.fr/x.png' });
+  const msg = await pages['POST /editeur'](guild, { username: 'haro' }, body);
+  assert.match(msg, /envoyé/);
+  assert.equal(sent[0].embeds[0].data.title, 'Titre');
+  assert.equal(sent[0].embeds[0].data.color, 0xff0000);
+  assert.equal(sent[0].embeds[0].data.image, undefined, 'image non https ignorée');
+  assert.equal(sent[0].components[0].components.length, 1, 'bouton javascript: refusé');
+  assert.deepEqual(sent[0].allowedMentions, { parse: [] });
+  assert.match(await pages['POST /editeur'](guild, { username: 'haro' }, new URLSearchParams({ channel: 'c1' })), /vide/);
+});
+
+test('centre d\'alertes : traiter un signalement depuis le site', async () => {
+  const rp = require('../src/reports');
+  const r = rp.create({ reporter: 'r1', target: 't1', reason: 'spam' });
+  const guild = fakeGuild();
+  guild.client.users = { send: async () => {}, fetch: async () => null };
+  const msg = await pages['POST /alertes'](guild, { userId: 'staff', username: 'haro' }, new URLSearchParams({ action: 'report', id: String(r.id), status: 'resolved' }));
+  assert.match(msg, /Résolu/);
+  assert.equal(r.status, 'resolved');
+});

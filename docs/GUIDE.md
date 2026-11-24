@@ -13,7 +13,10 @@
 
 **⚔️ XP et niveaux** — tu gagnes de l'XP en écrivant (1 fois par minute) et en vocal. Les grades arrivent tout seuls : 🗡️ Ashigaru (niv. 5), ⚔️ Samouraï (niv. 15), 🏯 Daimyō (niv. 30).
 **🏆 Saisons** — chaque mois, le top 3 de l'XP gagne des ryō et le premier devient 🏆 Champion du mois.
-**💰 Ryō (両)** — la monnaie du dojo : gagnée en écrivant, en vocal et avec `/daily`, à dépenser dans la `/boutique` (couleurs de pseudo, VIP…) ou en duel.
+**💰 Ryō (両)** — la monnaie du dojo : gagnée en écrivant, en vocal, avec `/daily` et les `/quetes`, à dépenser dans la `/boutique` (couleurs de pseudo, VIP…), en duel ou en pronostic pendant les lives.
+**📜 Quêtes** — `/quetes` : 3 quêtes par jour et 3 par semaine, payées en ryō.
+**🌟 Distinctions** — 🔥 Pilier de la semaine (le plus actif de la semaine) et 🌟 Membre du mois (XP, vocal, remerciements, quêtes, entraide, présence en live) : `/membre-du-mois`.
+**📊 Ton profil** — `/profil` et `/rang` pour tes stats, `/top` pour les classements.
 
 Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` pour relire ce guide.
 
@@ -31,7 +34,19 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 
 **🎂 Anniversaire** — `/anniversaire definir` : le jour J, le dojo te le souhaite et tu reçois un cadeau.
 
-**🔴 Lives & TikTok** — les alertes arrivent dans #en-live et #tiktok, les clips dans #clips, le planning dans #planning.
+**🔴 Lives & TikTok** — les alertes arrivent dans #en-live et #tiktok, les clips dans #clips (`/clips` pour les meilleurs), le planning dans #planning, l'historique avec `/streams`.
+
+**🎲 Pendant les lives** — quiz, pronostics en ryō et votes dans #jeux-du-live : clique sur les boutons !
+
+**🎮 Trouver des joueurs** — remplis ton profil avec `/joueur profil`, puis `/recherche` (posté dans #recherche-joueurs) ou `/joueurs` pour trouver qui joue à ton jeu. `/equipes` fait des équipes équilibrées avec ton vocal.
+
+**🏆 Tournois & soirées** — inscris-toi dans #tournois (`/tournoi equipe` pour une équipe) et réserve ta place aux soirées de #soirées-gaming. `/calendrier` montre tout ce qui arrive, `/classement-jeu` le classement de chaque jeu.
+
+**🎯 Défis collectifs** — `/defis` : toute la commu avance vers un même objectif, chaque participant gagne des ryō.
+
+**🙏 Entraide** — `/merci @membre` pour remercier quelqu'un qui t'a aidé, `/rep` pour la réputation. `/parrainage lien` pour inviter tes amis et gagner des ryō.
+
+**🚩 Un problème ?** — `/signaler` prévient discrètement le staff, `/mes-signalements` pour le suivi. Envie d'aider ? `/candidature` (modérateur ou streamer partenaire).
 
 ## Commandes des membres
 
@@ -46,6 +61,13 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/serveur` | Infos sur le serveur |
 | `/sondage question: choix1: choix2: [choix3:] [choix4:] [duree:]` | Créer un sondage |
 | `/guide [staff:]` | Le guide du serveur et de toutes les commandes |
+| `/merci membre: [raison:]` | Remercier un membre qui t'a aidé (+1 réputation) |
+| `/rep [membre:]` | La réputation d'un membre et le classement |
+| `/parrainage lien` | Ton lien d'invitation personnel |
+| `/parrainage stats` | Tes filleuls |
+| `/candidature poste:` | Postuler pour devenir modérateur ou streamer partenaire |
+| `/signaler membre: raison: [message:]` | Signaler discrètement un problème au staff |
+| `/mes-signalements` | Le suivi de tes signalements |
 
 ### ⭐ Niveaux
 
@@ -55,6 +77,7 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/classement` | Le top 10 des membres les plus actifs |
 | `/saison` | Le classement du mois (le 1er : podium, ryō et rôle 🏆 Champion) |
 | `/top [categorie:]` | Les membres les plus actifs, par catégorie |
+| `/membre-du-mois` | Le classement provisoire du Membre du mois |
 
 ### 💰 Ryō & jeux
 
@@ -77,6 +100,7 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/anniversaire definir jour: mois:` | Enregistrer ta date d'anniversaire |
 | `/anniversaire retirer` | Effacer ta date |
 | `/anniversaire prochains` | Les prochains anniversaires du serveur |
+| `/defis` | Les défis collectifs en cours |
 
 ### 🎵 Musique
 
@@ -92,10 +116,25 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/file` | Voir la file d'attente |
 | `/retirer position:` | Retirer un morceau de la file |
 
+### 🎮 Gaming
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `/joueur profil` | Créer ou modifier ton profil joueur |
+| `/joueur voir [membre:]` | Voir le profil joueur d'un membre |
+| `/recherche jeu: places: [plateforme:] [message:]` | Chercher des coéquipiers (posté dans 🎮┃recherche-joueurs) |
+| `/joueurs jeu: [plateforme:] [dispo:]` | Trouver des membres qui jouent à un jeu |
+| `/equipes taille: [jeu:] [joueurs:]` | Faire des équipes équilibrées avec les joueurs de ton vocal |
+| `/classement-jeu jeu:` | Le classement compétitif (Elo) d'un jeu |
+| `/tournoi voir tournoi:` | Voir un tournoi (tableau et résultats) |
+| `/tournoi equipe tournoi: nom: [joueur2:] [joueur3:] [joueur4:] [joueur5:]` | Inscrire ton équipe (tu es le capitaine) |
+| `/calendrier` | Ce qui arrive sur le serveur : soirées, tournois, lives, événements, anniversaires |
+
 ### 📺 Stream
 
 | Commande | Ce qu'elle fait |
 |---|---|
+| `/clips [jours:]` | Les meilleurs clips de la chaîne |
 | `/streams [jours:]` | Historique et statistiques des lives |
 
 ### 📊 Statistiques
@@ -126,7 +165,16 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 • Toutes les actions (kick, ban, mute, rôles, messages supprimés…) sont notées dans 📋┃logs, avec leur auteur.
 • En cas de raid : `/lockdown action:Activer`. L'anti-raid et l'anti-nuke se déclenchent aussi tout seuls (alertes dans 🚨┃alertes-sécurité).
 • Les commandes qui modifient le serveur (`/setup`, `/restore`…) montrent d'abord ce qu'elles vont faire et demandent une confirmation.
-• Presque tout se règle aussi sur le **tableau de bord web** (administrateurs).
+• Les signalements arrivent dans 🚩┃signalements : « Je m'en occupe » puis « Résolu » ou « Sans suite » (le membre est prévenu en MP).
+• Préfère la **quarantaine** (`/quarantaine`) à l'expulsion quand tu as un doute : c'est réversible avec `/liberer`.
+• Les candidatures (📝┃candidatures) sont traitées par le staff senior avec les boutons Accepter / Refuser.
+
+**🎉 Animer le serveur**
+• Pendant les lives : `/quiz`, `/prono` (paris en ryō, résultat avec `/prono resultat`), `/vote`. Les moments forts du chat Twitch sont signalés dans 🛡️┃staff : pensez à clipper !
+• Gaming : `/soiree` (réservations), `/tournoi-admin` (créer, lancer, résultats), `/match` pour le classement Elo.
+• Communauté : `/defi` (objectif commun), `/boost` (XP ou ryō multipliés), `/giveaway`.
+• Chaque lundi, un rapport arrive dans 🛡️┃staff : salons inutilisés, meilleurs créneaux, idées d'événements.
+• Presque tout se règle aussi sur le **tableau de bord web** (administrateurs) : centre d'alertes 🔔, éditeur de messages, tournois, soirées…
 
 ### ⭐ Niveaux
 
@@ -149,6 +197,29 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/giveaway lancer prix: duree: [gagnants:] [salon:] [mention:]` | Lancer un giveaway |
 | `/giveaway terminer message:` | Terminer maintenant |
 | `/giveaway relancer message:` | Tirer un nouveau gagnant |
+| `/defi titre: type: objectif: [jours:] [recompense:]` | Lancer un défi collectif (staff) |
+
+### 🎮 Gaming
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `/match jeu: gagnants: perdants:` | Enregistrer le résultat d'un match pour le classement (staff) |
+| `/tournoi-admin creer nom: jeu: [taille:] [places:] [date:] [prix:]` | Créer un tournoi et ouvrir les inscriptions |
+| `/tournoi-admin lancer tournoi:` | Fermer les inscriptions et générer le tableau |
+| `/tournoi-admin resultat tournoi: match: gagnant:` | Valider le gagnant d'un match |
+| `/tournoi-admin annuler tournoi:` | Annuler un tournoi |
+| `/soiree titre: date: places: [jeu:] [vocal:]` | Organiser une soirée gaming avec réservation de places (staff) |
+
+### 📺 Stream
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `/quiz lancer question: bonne: mauvaise1: [mauvaise2:] [mauvaise3:] [secondes:] [recompense:] [garder:]` | Poser une question |
+| `/quiz hasard [secondes:] [recompense:]` | Poser une question au hasard de la banque |
+| `/vote question: choix1: choix2: [choix3:] [choix4:] [choix5:] [minutes:]` | Lancer un vote pendant le live (staff) |
+| `/prono creer question: choix1: choix2: [choix3:] [choix4:] [minutes:]` | Ouvrir les paris |
+| `/prono resultat prono: gagnant:` | Donner la bonne issue et payer les gagnants |
+| `/prono annuler prono:` | Annuler et rembourser tout le monde |
 
 ### 📢 Staff
 

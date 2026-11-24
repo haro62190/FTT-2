@@ -24,6 +24,7 @@ const week = () => (db.week ??= { week: currentWeek(), xp: {} });
 
 /** XP gagnée (message ou vocal) : comptée aussi pour la saison et la semaine en cours. */
 function add(userId, amount) {
+  require('./social').track(userId, 'xp', amount);
   if (settings.get('seasons.weekly') !== false) {
     const w = week();
     if (w.week === currentWeek()) w.xp[userId] = (w.xp[userId] ?? 0) + amount;

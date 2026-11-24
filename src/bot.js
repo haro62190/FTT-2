@@ -90,7 +90,12 @@ function fillTemplate(text, member, rules) {
 }
 
 client.on(Events.GuildMemberAdd, async (member) => {
-  if (member.guild.id === GUILD_ID) require('./history').bump('joins');
+  if (member.guild.id === GUILD_ID) {
+    require('./history').bump('joins');
+    require('./challenges').progress('members', member.id);
+    require('./feed').member(member.id, '🚪', 'Arrivée sur le serveur');
+    require('./social').onJoin(member).catch(() => {});
+  }
   if (security.lockdown.active) return; // pas de bienvenue pendant un raid
   if (member.guild.id !== GUILD_ID) return;
   const welcome = findChannel(member.guild, 'welcome');
@@ -170,10 +175,12 @@ client.on(Events.MessageDelete, async (message) => {
 client.on(Events.MessageCreate, async (message) => {
   if (!message.guild || message.guild.id !== GUILD_ID || message.author.bot) return;
   require('./history').bump('messages');
+  require('./insights').track(message.channelId);
   const counted = levels.counts({ content: message.content, attachments: message.attachments.size, channelId: message.channelId, guild: message.guild });
   if (!counted) return; // message trop court ou salon sans XP : ni XP, ni ryō, ni quête
   economy.onMessage(message.author.id, message.member);
   quests.progress(message.author.id, 'messages');
+  require('./challenges').progress('messages', message.author.id);
   require('./streams').onMessage(message.author.id);
   if (!settings.get('levels.enabled')) return;
   const newLevel = levels.onMessage(message.author.id, message.member);
@@ -189,14 +196,20 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
   if (newState.guild.id !== GUILD_ID) return;
   tempVoice.onVoiceStateUpdate(oldState, newState).catch((err) => console.error('Vocal temporaire :', err.message));
   music.onVoiceStateUpdate(oldState, newState);
+  require('./gaming').onVoiceStateUpdate(oldState).catch(() => {});
+  if (newState.channelId && newState.channelId !== oldState.channelId) require('./insights').track(newState.channelId, false);
 });
 
 // ───────────────────────── Boutons ─────────────────────────
 
+// Modules avec boutons / menus / formulaires (chacun reconnaît ses propres identifiants)
+const INTERACTIVE = ['./gaming', './tournaments', './nights', './livegames', './applications', './reports'];
+
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.inGuild() || interaction.guildId !== GUILD_ID) return;
+  if (interaction.isAutocomplete()) return commands.autocomplete(interaction);
   if (interaction.isChatInputCommand()) return commands.handle(interaction, ctx);
-  if (interaction.isButton() || interaction.isUserSelectMenu() || interaction.isModalSubmit()) {
+  if (interaction.isButton() || interaction.isUserSelectMenu() || interaction.isStringSelectMenu() || interaction.isModalSubmit()) {
     const id = interaction.customId ?? '';
     try {
       if (await tempVoice.handleInteraction(interaction)) return;
@@ -204,6 +217,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (await giveaway.handleInteraction(interaction)) return;
       if (await community.handleInteraction(interaction)) return;
       if (await custom.handleInteraction(interaction)) return;
+      for (const mod of INTERACTIVE) if (await require(mod).handleInteraction(interaction)) return;
     } catch (err) {
       const module = id.startsWith('ticket:') ? 'Ticket' : id.startsWith('tv:') ? 'Vocal temporaire' : 'Interaction';
       console.error(`${module} :`, err);
@@ -292,6 +306,8 @@ client.once(Events.ClientReady, async () => {
   client.user.setActivity('Les Ronins de haro62190 ⚔️', { type: 3 /* Watching */ });
   await tempVoice.cleanup(guild).catch((err) => console.error('Nettoyage des vocaux temporaires :', err.message));
   await commands.register(guild).catch((err) => console.error('❌ Enregistrement des commandes / :', err.message));
+  // Guide 📖┃guide / 📘┃guide-staff : remis à jour à chaque démarrage (nouvelles commandes après une mise à jour)
+  require('./guide').post(guild, () => {}).catch((err) => console.error('Guide :', err.message));
   require('./twitchlive').start(guild, twitch);
   require('./temproles').start(guild);
   require('./quarantine').start(guild);
@@ -306,6 +322,11 @@ client.once(Events.ClientReady, async () => {
   require('./birthdays').start(guild);
   require('./seasons').start(guild);
   require('./quests').init(guild);
+  require('./nights').start(client, guild);
+  require('./livegames').start(client);
+  require('./social').start(guild);
+  require('./challenges').start(client, guild);
+  require('./insights').start(guild);
   giveaway.start(client);
   startTikTokWatcher(guild);
   require('./stats').start(guild, twitch).catch((e) => console.error('Stats :', e.message));

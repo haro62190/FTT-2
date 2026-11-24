@@ -92,6 +92,7 @@ function renderLevelUp({ username, level, grade = null }) {
  */
 async function announce(channel, member, level, rewards = [], { voice = false } = {}) {
   if (!channel) return;
+  require('./feed').member(member.id, '⚔️', `Niveau ${level}${rewards.length ? ` · grade ${rewards.map((r) => r.name).join(', ')}` : ''}`);
   require('./feed').push('🏆', `${member.displayName ?? member.user?.username} a atteint le niveau ${level}${rewards.length ? ` (${rewards.map((r) => r.name).join(', ')})` : ''}`);
   const { AttachmentBuilder } = require('discord.js');
   const settings = require('./settings');

@@ -73,7 +73,7 @@ function send(res, status, body, headers = {}, nonce = null) {
     'Cross-Origin-Opener-Policy': 'same-origin',
     ...(SECURE ? { 'Strict-Transport-Security': 'max-age=31536000' } : {}),
     // Aucun script, sauf celui de la page avec son jeton unique (nonce) pour le temps réel
-    'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; img-src 'self' https://cdn.discordapp.com data:; font-src 'self'; form-action 'self' https://discord.com; base-uri 'none'; frame-ancestors 'none'${nonce ? `; script-src 'nonce-${nonce}'; connect-src 'self'` : ''}`,
+    'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; img-src 'self' https://cdn.discordapp.com https://static-cdn.jtvnw.net https://clips-media-assets2.twitch.tv data:; font-src 'self'; form-action 'self' https://discord.com; base-uri 'none'; frame-ancestors 'none'${nonce ? `; script-src 'nonce-${nonce}'; connect-src 'self'` : ''}`,
     ...headers,
   });
   res.end(body);
@@ -100,6 +100,7 @@ function readBody(req) {
 const NAV = [
   ['#', 'Serveur'],
   ['/', '🏯 Accueil'],
+  ['/alertes', '🔔 Centre d\'alertes'],
   ['/graphiques', '📈 Graphiques'],
   ['/serveur', '🏗️ Construction'],
   ['/logo', '🖼️ Logo & identité'],
@@ -118,10 +119,17 @@ const NAV = [
   ['/suggestions', '💡 Suggestions'],
   ['/commandes', '⌨️ Commandes perso'],
   ['/menus-roles', '🎭 Menus de rôles'],
+  ['/editeur', '✉️ Éditeur de messages'],
   ['/communaute', '🏯 Hall of Fame & vocal'],
+  ['#', 'Gaming'],
+  ['/tournois', '🏆 Tournois'],
+  ['/soirees', '🌙 Soirées, défis & calendrier'],
+  ['/equipes', '👥 Équipes & inscriptions'],
   ['#', 'Stream'],
   ['/notifications', '📡 Twitch & TikTok'],
   ['/lives', '📺 Lives & statistiques'],
+  ['/stats-reunies', '📊 Stats Twitch + Discord'],
+  ['/clips', '🎬 Galerie de clips'],
   ['/stats', '📊 Compteurs'],
   ['/annonce', '📢 Annonce & embed'],
   ['/musique', '🎵 Musique'],
@@ -137,6 +145,13 @@ const NAV = [
   ['/journal', '📜 Journal d\'admin'],
   ['/diagnostic', '🩺 Diagnostic'],
 ];
+
+/** Nombre d'éléments à traiter (cloche de l'en-tête). */
+function alertCount() {
+  const reports = Object.values(db.reports ?? {}).filter((r) => r.status === 'open').length;
+  const apps = Object.values(db.applications ?? {}).filter((a) => a.status === 'pending').length;
+  return reports + apps + Object.keys(db.tickets?.open ?? {}).length;
+}
 
 // Serveur affiché dans l'en-tête (renseigné au démarrage du tableau de bord)
 let BADGE = null;
@@ -173,7 +188,7 @@ h2{position:relative;margin:0 0 22px;padding:0 0 12px;font-size:25px;font-weight
 .stat:hover{border-color:rgba(225,6,0,.58);box-shadow:0 8px 26px rgba(225,6,0,.09);transform:translateY(-2px)}.stat:before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,var(--red),transparent)}
 .stat b{display:block;font-size:28px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(225,6,0,.12)}.stat span{color:var(--muted);font-size:13px}
 label{display:block;margin:12px 0 5px;color:var(--muted);font-size:13px}
-input[type=text],input[type=number],input[type=url],textarea,select{width:100%;background:#0b0b0e;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 12px;font:inherit;transition:border-color .15s,box-shadow .15s}
+input[type=text],input[type=number],input[type=url],input[type=datetime-local],input[type=color],textarea,select{width:100%;background:#0b0b0e;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 12px;font:inherit;transition:border-color .15s,box-shadow .15s}
 textarea{min-height:96px;resize:vertical}input:focus,textarea:focus,select:focus{outline:0;border-color:var(--red);box-shadow:0 0 0 3px var(--glow)}
 .check{display:flex;align-items:center;gap:10px;margin:10px 0;color:var(--text);cursor:pointer}
 .check input{appearance:none;-webkit-appearance:none;flex-shrink:0;width:40px;height:22px;border-radius:999px;background:#2a2a31;position:relative;cursor:pointer;transition:background .2s;margin:0}
@@ -196,6 +211,7 @@ body:after{content:"剣聖";position:fixed;right:26px;top:96px;writing-mode:vert
 nav a.brand:hover{background:none}@media(max-width:820px){nav a.brand,body:before,body:after{display:none}}
 nav .brand{display:block;text-align:center;margin:2px 0 12px;padding:0 0 12px;border-bottom:1px solid var(--line)}nav .brand img{width:150px;max-width:100%;border-radius:12px;filter:drop-shadow(0 0 14px rgba(225,6,0,.35))}
 header .server{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(225,6,0,.35);background:linear-gradient(90deg,rgba(225,6,0,.14),rgba(20,20,26,.8));border-radius:10px;padding:5px 12px 5px 6px;font-size:13px;font-weight:600}header .server img{width:24px;height:24px;border-radius:6px}
+header .bell{position:relative;text-decoration:none;font-size:18px;padding:2px 6px}header .bell i{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font:700 11px/18px Inter,sans-serif;text-align:center;font-style:normal;padding:0 4px;box-shadow:0 0 10px var(--glow)}
 header .live .pulse{width:26px;height:12px;stroke:var(--ok);fill:none;stroke-width:1.6}
 h2.brush{font:400 40px/1.15 Brush,'Segoe Script',cursive;letter-spacing:.01em;padding-bottom:6px;margin-bottom:4px}h2.brush:after{display:none}.subtitle{color:var(--muted);margin:0 0 22px;font-size:15px}
 .kpi{position:relative;overflow:hidden;min-height:118px;border-radius:var(--radius);padding:16px 18px;border:1px solid rgba(225,6,0,.35);background:linear-gradient(100deg,rgba(12,8,10,.96) 35%,rgba(12,8,10,.55)),url(/assets/hero.jpg) var(--pos,50%) 40%/auto 180% no-repeat;box-shadow:0 10px 30px rgba(0,0,0,.35);transition:transform .2s,border-color .2s}
@@ -205,7 +221,7 @@ h2.brush{font:400 40px/1.15 Brush,'Segoe Script',cursive;letter-spacing:.01em;pa
 .split{display:grid;grid-template-columns:1.6fr 1fr;gap:18px}@media(max-width:900px){.split{grid-template-columns:1fr}}
 .feed{list-style:none;margin:0;padding:0}.feed li{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}.feed li .i{width:26px;text-align:center}.feed li .w{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap}
 </style></head><body>
-<header><img class="logo" src="/logo.png" alt=""><h1>剣聖 <span>KENSEI</span></h1>${sess ? '<span class="live" title="Mis à jour en direct"><i></i>Bot en ligne <svg class="pulse" viewBox="0 0 26 12"><path d="M0 6h7l2-5 3 10 3-8 2 3h9"/></svg></span>' : ''}${sess && BADGE ? `<span class="server">${BADGE.icon ? `<img src="${esc(BADGE.icon)}" alt="">` : ''}${esc(BADGE.name)}</span>` : ''}<div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
+<header><img class="logo" src="/logo.png" alt=""><h1>剣聖 <span>KENSEI</span></h1>${sess ? '<span class="live" title="Mis à jour en direct"><i></i>Bot en ligne <svg class="pulse" viewBox="0 0 26 12"><path d="M0 6h7l2-5 3 10 3-8 2 3h9"/></svg></span>' : ''}${sess ? (() => { const k = alertCount(); return `<a class="bell" href="/alertes" title="Centre d'alertes">🔔${k ? `<i>${k}</i>` : ''}</a>`; })() : ''}${sess && BADGE ? `<span class="server">${BADGE.icon ? `<img src="${esc(BADGE.icon)}" alt="">` : ''}${esc(BADGE.name)}</span>` : ''}<div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
 <div class="wrap">${sess ? `<nav><a class="brand" href="/" title="Accueil"><img src="/assets/logo-kensei.jpg" alt="Kensei · Les Ronins"></a>${NAV.map(([href, label]) => (href === '#' ? `<div class="sec">${label}</div>` : `<a href="${href}" class="${href === path ? 'on' : ''}">${label}</a>`)).join('')}</nav>` : ''}
 <main>${flash ? `<div class="flash${flash.startsWith('❌') ? ' err' : ''}">${esc(flash)}</div>` : ''}${SUBTITLES[path] ? `<h2 class="brush">${esc(title)}</h2><p class="subtitle">${esc(SUBTITLES[path])}</p>` : `<h2>${esc(title)}</h2>`}${body}</main></div>${nonce && script ? `<script nonce="${nonce}">${script}</script>` : ''}</body></html>`;
 }
@@ -551,6 +567,7 @@ Object.assign(pages, require('./dashboard-pages')({ esc, csrf, checkbox, fetchMe
 // Pages d'administration (remplacent aussi les anciennes versions de Twitch & TikTok et Tickets)
 Object.assign(pages, require('./dashboard-admin')({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }));
 Object.assign(pages, require('./dashboard-community')({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }));
+Object.assign(pages, require('./dashboard-ops')({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }));
 
 // ───────────────────────── Connexion Discord ─────────────────────────
 
