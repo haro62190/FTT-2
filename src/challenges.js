@@ -23,7 +23,7 @@ const dirty = new Set();
 function create({ title, type, target, days, reward, by = null }) {
   if (!TYPES[type]) throw new Error('Type de défi inconnu.');
   const id = `c${Date.now().toString(36)}`;
-  const c = { id, title: String(title).slice(0, 100), type, target: Math.max(1, target), progress: 0, contributors: {}, reward: Math.max(0, reward), startedAt: Date.now(), endsAt: Date.now() + days * 86_400_000, by };
+  const c = { id, title: String(title).slice(0, 100), type, target: Math.max(1, target), progress: 0, contributors: {}, reward: Math.min(2000, Math.max(0, reward)), startedAt: Date.now(), endsAt: Date.now() + days * 86_400_000, by };
   all()[id] = c;
   save();
   return c;
@@ -88,7 +88,7 @@ async function complete(c) {
   await publish(guild, c).catch(() => {});
   await guild.channels.cache
     .get(c.channelId)
-    ?.send({ content: `🎉 **Défi réussi : ${c.title}** ! ${ids.length} participant(s) reçoivent **${c.reward} 両** chacun. Merci les ronins ⚔️` })
+    ?.send({ content: `🎉 **Défi réussi : ${c.title}** ! ${ids.length} participant(s) reçoivent **${c.reward} 両** chacun. Merci les ronins ⚔️`, allowedMentions: { parse: [] } })
     .catch(() => {});
 }
 
@@ -103,7 +103,8 @@ async function tick(guild) {
   }
   for (const id of [...dirty]) {
     dirty.delete(id);
-    if (all()[id]) await publish(guild, all()[id]).catch(() => {});
+    const c = require('./shared').own(all(), id);
+    if (c) await publish(guild, c).catch(() => {});
   }
 }
 
@@ -140,7 +141,7 @@ const commands = [
       )
       .addIntegerOption((o) => o.setName('objectif').setDescription('Nombre à atteindre').setRequired(true).setMinValue(1).setMaxValue(10_000_000))
       .addIntegerOption((o) => o.setName('jours').setDescription('Durée en jours (7 par défaut)').setMinValue(1).setMaxValue(60))
-      .addIntegerOption((o) => o.setName('recompense').setDescription('Ryō pour chaque participant (200 par défaut)').setMinValue(0).setMaxValue(100_000)),
+      .addIntegerOption((o) => o.setName('recompense').setDescription('Ryō pour chaque participant (200 par défaut, 2000 max)').setMinValue(0).setMaxValue(2000)),
     async run(i) {
       const c = create({
         title: i.options.getString('titre'),

@@ -50,6 +50,9 @@ const client = new Client({
     GatewayIntentBits.GuildMessageReactions, // Hall of Fame
   ],
   partials: [Partials.Message, Partials.GuildMember, Partials.Reaction, Partials.User],
+  // Sécurité : par défaut, aucun @everyone / @here / rôle n'est mentionné (seulement les membres).
+  // Les messages qui doivent notifier un rôle (lives, annonces) le précisent eux-mêmes.
+  allowedMentions: { parse: ['users'], repliedUser: false },
 });
 
 health.installErrorHandlers(client);

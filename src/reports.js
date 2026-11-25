@@ -79,7 +79,7 @@ async function handleInteraction(i) {
   const id = i.customId ?? '';
   if (!id.startsWith('rp:')) return false;
   const [, status, rid] = id.split(':');
-  const r = all()[rid];
+  const r = require('./shared').own(all(), rid);
   if (!r) {
     await i.reply(ephemeral('Signalement introuvable.'));
     return true;

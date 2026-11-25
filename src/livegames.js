@@ -113,7 +113,7 @@ function scheduleRefresh(g) {
 /** Quiz : récompense les bonnes réponses. Renvoie la liste des gagnants (dans l'ordre de réponse). */
 function finishQuiz(g) {
   const right = Object.entries(g.answers)
-    .filter(([, a]) => a.choice === g.correct)
+    .filter(([id, a]) => a.choice === g.correct && id !== g.by) // l'organisateur connaît la réponse
     .sort((a, b) => a[1].at - b[1].at)
     .map(([id]) => id);
   right.forEach((id, k) => {
@@ -179,8 +179,20 @@ function arm(id) {
   timers.set(id, setTimeout(() => expire(id).catch((e) => console.error('Jeux du live :', e.message)), Math.max(0, g.endsAt - Date.now())));
 }
 
+/** Pronostic fermé mais jamais clôturé par le staff : tout le monde est remboursé au bout de 24 h. */
+async function refundStale() {
+  for (const g of Object.values(games())) {
+    if (g.type !== 'prono' || g.ended || !g.locked || Date.now() - g.endsAt < 24 * 3600_000) continue;
+    settleProno(g, null);
+    g.ended = true;
+    save();
+    await refresh(g);
+  }
+}
+
 function start(client) {
   clientRef = client;
+  setInterval(() => refundStale().catch((e) => console.error('Pronostics :', e.message)), 10 * 60_000).unref?.();
   for (const id of Object.keys(games())) arm(id);
   // Ménage : jeux terminés depuis plus de 7 jours
   for (const [id, g] of Object.entries(games())) if (g.ended && Date.now() - g.endsAt > 7 * 86_400_000) delete games()[id];
@@ -206,7 +218,7 @@ async function handleInteraction(i) {
   const [, kind, raw] = id.split(':');
   if (kind === 'bet') {
     // Formulaire de mise
-    const g = games()[raw];
+    const g = require('./shared').own(games(), raw);
     const choice = Number(i.customId.split(':')[3]);
     if (!g || g.ended || g.locked || Date.now() > g.endsAt) {
       await i.reply(ephemeral('🔒 Les paris sont fermés.'));
@@ -215,6 +227,14 @@ async function handleInteraction(i) {
     const amount = Math.floor(Number(i.fields.getTextInputValue('amount').replace(/\s/g, '')));
     if (!Number.isFinite(amount) || amount < 10) {
       await i.reply(ephemeral('❌ Mise minimum : 10 両.'));
+      return true;
+    }
+    if (i.user.id === g.by) {
+      await i.reply(ephemeral('Tu as lancé ce pronostic : tu ne peux pas parier dessus.'));
+      return true;
+    }
+    if (amount > 100_000) {
+      await i.reply(ephemeral('❌ Mise maximum : 100 000 両.'));
       return true;
     }
     const prev = g.bets[i.user.id];
@@ -233,10 +253,14 @@ async function handleInteraction(i) {
     await i.reply(ephemeral(`🔮 Mise enregistrée : **${g.bets[i.user.id].amount} 両** sur **${g.options[choice]}**.`));
     return true;
   }
-  const g = games()[i.message.id];
+  const g = require('./shared').own(games(), i.message.id);
   const choice = Number(raw);
   if (!g || g.ended || g.locked || Date.now() > g.endsAt) {
     await i.reply(ephemeral('⌛ C\'est terminé !'));
+    return true;
+  }
+  if (i.user.id === g.by && kind !== 'v') {
+    await i.reply(ephemeral('Tu as lancé ce jeu : tu ne peux pas y participer 😉'));
     return true;
   }
   if (kind === 'q') {
@@ -303,7 +327,7 @@ const commands = [
           .addStringOption((o) => o.setName('mauvaise2').setDescription('Mauvaise réponse').setMaxLength(80))
           .addStringOption((o) => o.setName('mauvaise3').setDescription('Mauvaise réponse').setMaxLength(80))
           .addIntegerOption((o) => o.setName('secondes').setDescription('Temps pour répondre (30 par défaut)').setMinValue(10).setMaxValue(600))
-          .addIntegerOption((o) => o.setName('recompense').setDescription('Ryō par bonne réponse (50 par défaut)').setMinValue(0).setMaxValue(10000))
+          .addIntegerOption((o) => o.setName('recompense').setDescription('Ryō par bonne réponse (50 par défaut, 500 max)').setMinValue(0).setMaxValue(500))
           .addBooleanOption((o) => o.setName('garder').setDescription('Ajouter aussi cette question à la banque')),
       )
       .addSubcommand((s) =>
@@ -311,7 +335,7 @@ const commands = [
           .setName('hasard')
           .setDescription('Poser une question au hasard de la banque')
           .addIntegerOption((o) => o.setName('secondes').setDescription('Temps pour répondre').setMinValue(10).setMaxValue(600))
-          .addIntegerOption((o) => o.setName('recompense').setDescription('Ryō par bonne réponse').setMinValue(0).setMaxValue(10000)),
+          .addIntegerOption((o) => o.setName('recompense').setDescription('Ryō par bonne réponse (500 max)').setMinValue(0).setMaxValue(500)),
       ),
     async run(i) {
       let q;
@@ -330,7 +354,7 @@ const commands = [
         }
       }
       const options = shuffle([q.correct, ...q.wrong]).slice(0, 5);
-      const g = { type: 'quiz', question: q.question, options, correct: options.indexOf(q.correct), reward: i.options.getInteger('recompense') ?? 50, answers: {}, endsAt: Date.now() + (i.options.getInteger('secondes') ?? 30) * 1000, by: i.user.id };
+      const g = { type: 'quiz', question: q.question, options, correct: options.indexOf(q.correct), reward: Math.min(500, i.options.getInteger('recompense') ?? 50), answers: {}, endsAt: Date.now() + (i.options.getInteger('secondes') ?? 30) * 1000, by: i.user.id };
       const msg = await launch(i, g);
       return i.reply(ephemeral(`🧠 Quiz lancé : ${msg.url}`));
     },
@@ -398,7 +422,7 @@ const commands = [
         const msg = await launch(i, g);
         return i.reply(ephemeral(`🔮 Paris ouverts : ${msg.url}`));
       }
-      const g = games()[i.options.getString('prono')];
+      const g = require('./shared').own(games(), i.options.getString('prono'));
       if (!g || g.type !== 'prono' || g.ended) return i.reply(ephemeral('Pronostic introuvable ou déjà terminé.'));
       clearTimeout(timers.get(g.messageId));
       if (sub === 'annuler') settleProno(g, null);
@@ -417,4 +441,4 @@ const commands = [
   },
 ];
 
-module.exports = { render, finishQuiz, settleProno, start, handleInteraction, bank, games, commands };
+module.exports = { refundStale, render, finishQuiz, settleProno, start, handleInteraction, bank, games, commands };

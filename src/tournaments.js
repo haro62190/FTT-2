@@ -19,7 +19,7 @@ function create({ name, game, teamSize = 1, max = 16, startsAt = null, prize = 0
     teamSize: Math.min(5, Math.max(1, teamSize)),
     max: Math.min(64, Math.max(2, max)),
     startsAt,
-    prize: Math.max(0, prize),
+    prize: Math.min(20_000, Math.max(0, prize)),
     by,
     status: 'open',
     entrants: [],
@@ -208,13 +208,13 @@ async function report(guild, t, matchId, winnerId) {
   return champion;
 }
 
-const find = (q) => all()[q] ?? Object.values(all()).find((t) => t.name.toLowerCase() === String(q).toLowerCase()) ?? null;
+const find = (q) => require('./shared').own(all(), q) ?? Object.values(all()).find((t) => t.name.toLowerCase() === String(q).toLowerCase()) ?? null;
 
 async function handleInteraction(i) {
   const id = i.customId ?? '';
   if (!id.startsWith('tn:')) return false;
   const [, action, tid] = id.split(':');
-  const t = all()[tid];
+  const t = require('./shared').own(all(), tid);
   if (!t) {
     await i.reply(ephemeral('Tournoi introuvable.'));
     return true;
@@ -309,7 +309,7 @@ const commands = [
           .addIntegerOption((o) => o.setName('taille').setDescription('Joueurs par équipe (1 = solo)').setMinValue(1).setMaxValue(5))
           .addIntegerOption((o) => o.setName('places').setDescription('Nombre d\'équipes max (16 par défaut)').setMinValue(2).setMaxValue(64))
           .addStringOption((o) => o.setName('date').setDescription('Début : JJ/MM/AAAA HH:MM'))
-          .addIntegerOption((o) => o.setName('prix').setDescription('Ryō pour le vainqueur').setMinValue(0).setMaxValue(1_000_000)),
+          .addIntegerOption((o) => o.setName('prix').setDescription('Ryō pour le vainqueur (20 000 max)').setMinValue(0).setMaxValue(20_000)),
       )
       .addSubcommand((s) =>
         s

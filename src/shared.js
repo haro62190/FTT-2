@@ -121,7 +121,14 @@ function rolesPayload() {
   return { embeds: [embed], components: rows };
 }
 
+/**
+ * Lecture sûre d'une clé venant de l'extérieur (identifiant de bouton, formulaire du site, commande…) :
+ * seulement les clés propres à l'objet. « __proto__ », « constructor »… renvoient undefined.
+ */
+const own = (obj, key) => (obj && typeof obj === 'object' && Object.prototype.hasOwnProperty.call(obj, String(key)) ? obj[String(key)] : undefined);
+
 module.exports = {
+  own,
   config,
   twitchLogin,
   tiktokUser,

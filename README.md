@@ -381,6 +381,10 @@ pm2 save && pm2 startup        # redémarrage automatique si le VPS redémarre
 - **Commandes** : chaque commande du staff exige sa permission Discord, revérifiée par le bot à chaque utilisation ; toutes sont notées dans le journal d'administration.
 - **Tableau de bord** : limite de tentatives par IP, déconnexion après 2 h d'inactivité, cookie `__Host-` et HSTS en HTTPS, journal des connexions et actions. Derrière Caddy : `DASHBOARD_TRUST_PROXY=1`.
 - **Secrets** : tokens et clés masqués dans les journaux et alertes ; `.env` remis en lecture seule pour son propriétaire (chmod 600) s'il était trop ouvert. Journal des erreurs : `data/logs/erreurs.log`.
+- **Mentions** : par défaut le bot ne peut **jamais** mentionner @everyone, @here ou un rôle ; seuls les messages prévus pour (alertes de live, annonces) notifient leur rôle.
+- **Données saisies** : aucune clé spéciale (`__proto__`, `constructor`…) n'est lue depuis un bouton, une commande ou le site ; les liens sont limités au `https` ; les mots du chat Twitch montrés au staff sont nettoyés (pas de liens ni de mentions).
+- **Anti-triche économie** : récompenses plafonnées (quiz 500 両, défi 2 000 両, tournoi 20 000 両), l'organisateur d'un quiz ou d'un pronostic n'y participe pas, pronostic jamais clôturé = remboursé après 24 h, parrainage refusé pour les comptes de moins de 14 jours et les anciens membres (10 récompenses max par mois), `/merci` après 3 jours sur le serveur, `/recherche` limitée à une toutes les 5 min, `/equipes` ne déplace que les joueurs du vocal concerné.
+- **Site** : connexion liée au navigateur qui l'a commencée, jetons comparés à temps constant, IP réelle prise derrière le proxy sans pouvoir être falsifiée, connexions lentes coupées, aucune erreur technique affichée au visiteur.
 
 ### Réglages détaillés
 

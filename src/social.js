@@ -139,6 +139,9 @@ async function onJoin(member) {
   const used = Object.entries(ref().uses).find(([code, n]) => n > (before[code] ?? 0));
   const sponsor = used && ref().codes[used[0]];
   if (!sponsor || sponsor === member.id || ref().members[member.id]) return null;
+  // Anti-triche : pas de comptes tout neufs (multi-comptes) ni de membres qui reviennent
+  const accountDays = (Date.now() - (member.user?.createdTimestamp ?? Date.now())) / 86_400_000;
+  if (accountDays < 14 || db.levels?.[member.id]) return null;
   ref().members[member.id] = { sponsor, joinedAt: Date.now(), rewarded: false };
   save();
   member.guild.client.users.send(sponsor, `🤝 **${member.user.username}** vient d'arriver sur ${member.guild.name} grâce à toi ! Tu recevras ta récompense quand il se sera installé (niveau 3).`).catch(() => {});
@@ -149,7 +152,11 @@ async function onJoin(member) {
 async function checkReferrals(guild) {
   const reward = settings.get('community.referralReward') ?? 500;
   for (const [userId, r] of Object.entries(ref().members)) {
-    if (r.rewarded || require('./levels').rankOf(userId).level < 3) continue;
+    if (r.rewarded || r.blocked || require('./levels').rankOf(userId).level < 3) continue;
+    // Maximum 10 parrainages récompensés par parrain sur 30 jours
+    const recent = Object.values(ref().members).filter((x) => x.sponsor === r.sponsor && x.rewarded && Date.now() - x.rewarded < 30 * 86_400_000).length;
+    if (recent >= 10) continue;
+    if (db.quarantine?.[userId]) continue;
     const member = await guild.members.fetch(userId).catch(() => null);
     if (!member) continue;
     r.rewarded = Date.now();
@@ -198,6 +205,10 @@ const commands = [
     run(i) {
       const user = i.options.getUser('membre');
       if (user.bot) return i.reply(ephemeral('Les bots n\'ont pas besoin de réputation 🤖'));
+      // Anti-triche : il faut être là depuis 3 jours, avec un compte de plus de 7 jours
+      const since = Date.now() - (i.member?.joinedTimestamp ?? Date.now());
+      const age = Date.now() - i.user.createdTimestamp;
+      if (since < 3 * 86_400_000 || age < 7 * 86_400_000) return i.reply(ephemeral('🙏 Tu pourras remercier les membres après 3 jours sur le serveur.'));
       let points;
       try {
         points = thank(i.user.id, user.id);

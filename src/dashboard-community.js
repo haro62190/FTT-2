@@ -22,7 +22,7 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
     // ───────────────────────── Membres ─────────────────────────
     async '/membres'(guild, sess, query) {
       const stats = require('./memberstats');
-      const board = stats.BOARDS[query.get('top')] ? query.get('top') : 'xp';
+      const board = require('./shared').own(stats.BOARDS, query.get('top')) ? query.get('top') : 'xp';
       const list = stats.board(board, 25);
       await fetchMembers(guild, list.map((e) => e.userId));
       let detail = '';

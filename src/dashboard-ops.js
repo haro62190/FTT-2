@@ -59,7 +59,7 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
         await tn.publish(guild, t).catch(() => {});
         return `✅ Tournoi ${t.name} créé et publié dans 🏆┃tournois.`;
       }
-      const t = tn.all()[body.get('id')];
+      const t = require('./shared').own(tn.all(), body.get('id'));
       if (!t) return '❌ Tournoi introuvable.';
       if (action === 'start') {
         tn.start(t);
@@ -140,7 +140,7 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
     async 'POST /equipes'(guild, sess, body) {
       if (body.get('action') === 'unregister') {
         const tn = require('./tournaments');
-        const t = tn.all()[body.get('id')];
+        const t = require('./shared').own(tn.all(), body.get('id'));
         if (!t) return '❌ Tournoi introuvable.';
         const e = tn.unregister(t, body.get('user'));
         await tn.publish(guild, t).catch(() => {});
@@ -148,7 +148,7 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
       }
       if (body.get('action') === 'unbook') {
         const nt = require('./nights');
-        const x = nt.all()[body.get('id')];
+        const x = require('./shared').own(nt.all(), body.get('id'));
         if (!x) return '❌ Soirée introuvable.';
         const promoted = nt.cancel(x, body.get('user'));
         if (promoted) guild.client.users.send(promoted, `🎟️ Une place s'est libérée : tu participes à **${x.title}** !`).catch(() => {});
@@ -213,14 +213,14 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
     async 'POST /alertes'(guild, sess, body) {
       if (body.get('action') === 'report') {
         const rp = require('./reports');
-        const r = rp.all()[body.get('id')];
+        const r = require('./shared').own(rp.all(), body.get('id'));
         if (!r) return '❌ Signalement introuvable.';
         await rp.update(guild, r, body.get('status'), sess.userId);
         return `✅ Signalement #${r.id} : ${rp.STATUS[r.status][1]}.`;
       }
       if (body.get('action') === 'app') {
         const ap = require('./applications');
-        const a = ap.all()[body.get('id')];
+        const a = require('./shared').own(ap.all(), body.get('id'));
         if (!a) return '❌ Candidature introuvable.';
         await ap.decide(guild, a, body.get('ok') === '1', sess.userId);
         return body.get('ok') === '1' ? '✅ Candidature acceptée (rôle donné, candidat prévenu).' : '✅ Candidature refusée (candidat prévenu).';

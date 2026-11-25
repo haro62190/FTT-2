@@ -43,7 +43,22 @@ function limited(ip, kind) {
   h.n++;
   return h.n > max;
 }
-const clientIp = (req) => (TRUST_PROXY && String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim()) || req.socket.remoteAddress || '?';
+// Derrière un proxy de confiance, l'IP réelle est la DERNIÈRE ajoutée (les premières peuvent être inventées par le visiteur)
+const clientIp = (req) => (TRUST_PROXY && String(req.headers['x-forwarded-for'] ?? '').split(',').map((s) => s.trim()).filter(Boolean).at(-1)) || req.socket.remoteAddress || '?';
+/** Comparaison à temps constant (jetons CSRF) */
+const sameToken = (a, b) => {
+  const x = Buffer.from(String(a ?? ''));
+  const y = Buffer.from(String(b ?? ''));
+  return x.length === y.length && x.length > 0 && crypto.timingSafeEqual(x, y);
+};
+const STATE_COOKIE = 'ronin_oauth';
+function readCookie(req, name) {
+  for (const part of String(req.headers.cookie ?? '').split(';')) {
+    const i = part.indexOf('=');
+    if (i > 0 && part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
+  }
+  return null;
+}
 
 const sessions = new Map(); // sid -> { userId, username, avatar, csrf, expires }
 const oauthStates = new Map(); // state -> expires
@@ -647,13 +662,17 @@ function start(client, guildId) {
       }
       if (url.pathname === '/login') {
         const state = rand();
+        if (oauthStates.size > 2000) oauthStates.clear(); // protection contre le remplissage
         oauthStates.set(state, Date.now() + 600_000);
         const q = new URLSearchParams({ client_id: clientId, response_type: 'code', scope: 'identify', redirect_uri: `${BASE}/callback`, state });
-        return redirect(res, `https://discord.com/oauth2/authorize?${q}`);
+        // L'état est aussi gardé dans un cookie : la connexion doit se terminer dans le navigateur qui l'a commencée
+        return redirect(res, `https://discord.com/oauth2/authorize?${q}`, { 'Set-Cookie': `${STATE_COOKIE}=${state}; HttpOnly; SameSite=Lax; Path=/callback; Max-Age=600${SECURE ? '; Secure' : ''}` });
       }
       if (url.pathname === '/callback') {
         const state = url.searchParams.get('state');
-        if (!state || !(oauthStates.get(state) > Date.now())) return send(res, 400, page(null, '', 'Lien expiré', '<a class="btn" href="/login">Réessayer</a>'));
+        if (!state || !(oauthStates.get(state) > Date.now()) || !sameToken(state, readCookie(req, STATE_COOKIE)) || !url.searchParams.get('code')) {
+          return send(res, 400, page(null, '', 'Lien expiré', '<a class="btn" href="/login">Réessayer</a>'));
+        }
         oauthStates.delete(state);
         const user = await exchangeCode(url.searchParams.get('code'), clientId);
         const member = await guild?.members.fetch(user.id).catch(() => null);
@@ -663,7 +682,7 @@ function start(client, guildId) {
         sessions.set(newSid, { userId: user.id, username: user.global_name || user.username, avatar: user.avatar, csrf: rand(), expires: Date.now() + SESSION_MS, lastSeen: Date.now(), ip });
         require('./audit').record({ userId: user.id, user: user.username, source: 'web', action: 'connexion', details: `IP ${ip}` });
         console.log(`🌐 Connexion au tableau de bord : ${user.username}`);
-        return redirect(res, '/', { 'Set-Cookie': `${COOKIE}=${newSid}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_MS / 1000}${SECURE ? '; Secure' : ''}` });
+        return redirect(res, '/', { 'Set-Cookie': [`${COOKIE}=${newSid}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_MS / 1000}${SECURE ? '; Secure' : ''}`, `${STATE_COOKIE}=; HttpOnly; Path=/callback; Max-Age=0${SECURE ? '; Secure' : ''}`] });
       }
       if (url.pathname === '/logout') {
         if (sid) sessions.delete(sid);
@@ -688,7 +707,7 @@ function start(client, guildId) {
       }
       if (req.method === 'POST') {
         const body = await readBody(req);
-        if (body.get('csrf') !== sess.csrf) return send(res, 403, page(sess, '', 'Requête refusée', '<p>Jeton de sécurité invalide, recharge la page.</p>'));
+        if (!sameToken(body.get('csrf'), sess.csrf)) return send(res, 403, page(sess, '', 'Requête refusée', '<p>Jeton de sécurité invalide, recharge la page.</p>'));
         const handler = pages[`POST ${url.pathname}`];
         if (!handler) return send(res, 404, page(sess, '', 'Introuvable', ''));
         const flash = await handler(guild, sess, body).catch((e) => `❌ ${e.message}`);
@@ -707,16 +726,22 @@ function start(client, guildId) {
       return send(res, 200, page(sess, url.pathname, title, body, flash, refresh, nonce, script), {}, nonce);
     } catch (err) {
       console.error('Tableau de bord :', err);
-      send(res, 500, page(null, '', 'Erreur', `<p>${esc(err.message)}</p><a class="btn" href="/">Accueil</a>`));
+      // Aucun détail technique montré au visiteur (il est dans le journal d'erreurs)
+      send(res, 500, page(null, '', 'Erreur', '<p>Une erreur est survenue. Elle a été enregistrée dans le journal du bot.</p><a class="btn" href="/">Accueil</a>'));
     }
   });
 
+  // Coupe les connexions trop lentes (attaque « slowloris »)
+  server.headersTimeout = 15_000;
+  server.requestTimeout = 30_000;
+  server.keepAliveTimeout = 5_000;
   server.on('error', (err) => console.error(`❌ Tableau de bord (port ${PORT}) :`, err.message));
   server.listen(PORT, HOST, () => console.log(`🌐 Tableau de bord : ${BASE} (écoute sur ${HOST}:${PORT})`));
   setInterval(() => {
     const now = Date.now();
     for (const [k, s] of sessions) if (s.expires < now) sessions.delete(k);
     for (const [k, e] of oauthStates) if (e < now) oauthStates.delete(k);
+    for (const [k, h] of hits) if (h.reset < now) hits.delete(k);
   }, 3600_000).unref();
 }
 

@@ -106,7 +106,8 @@ async function handleInteraction(i) {
   if (!id.startsWith('app:')) return false;
   const [, action, arg] = id.split(':');
   if (action === 'form') {
-    const kind = KINDS[arg];
+    const kind = require('./shared').own(KINDS, arg);
+    if (!kind) return true;
     const a = { id: `a${Date.now().toString(36)}`, userId: i.user.id, kind: arg, answers: Object.fromEntries(kind.questions.map(([q]) => [q, i.fields.getTextInputValue(q).trim()])), status: 'pending', at: Date.now(), accountCreated: i.user.createdTimestamp, joinedAt: i.member?.joinedTimestamp };
     all()[a.id] = a;
     save();
@@ -120,7 +121,7 @@ async function handleInteraction(i) {
     await i.reply(ephemeral('📝 Candidature envoyée ! Le staff te répondra en message privé.'));
     return true;
   }
-  const a = all()[arg];
+  const a = require('./shared').own(all(), arg);
   if (!a) {
     await i.reply(ephemeral('Candidature introuvable.'));
     return true;
