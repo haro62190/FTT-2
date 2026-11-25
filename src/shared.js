@@ -2,6 +2,7 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  ChannelType,
   EmbedBuilder,
   PermissionFlagsBits,
 } = require('discord.js');
@@ -41,11 +42,30 @@ function findRole(guild, key) {
   return guild.roles.cache.find((r) => r.name === def.name) ?? guild.roles.cache.find((r) => names.includes(r.name));
 }
 
+/** Salons compteurs correspondant à une définition `stat` (le plus ancien d'abord). */
+function statCandidates(guild, def) {
+  const prefix = `${def.name.split(' : ')[0]} :`;
+  const cache = guild.channels.cache;
+  return (typeof cache.values === 'function' ? [...cache.values()] : []).filter((c) => c.type === ChannelType.GuildVoice && c.name?.startsWith(prefix)).sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+}
+
 function findChannel(guild, key) {
   const def = channelDef(key);
   if (!def) return undefined;
   // Salons compteurs : leur nom change, on les retrouve par leur ID enregistré
-  if (def.stat) return guild.channels.cache.get(require('./store').db.statChannels?.[key]);
+  if (def.stat) {
+    const { db, save } = require('./store');
+    const known = guild.channels.cache.get(db.statChannels?.[key]);
+    if (known) return known;
+    // ID perdu (nouvelle base, VPS…) : on retrouve le compteur par le début de son nom (« 👥 Membres : »)
+    // au lieu d'en recréer un, ce qui faisait des salons en double.
+    const found = statCandidates(guild, def)[0];
+    if (found) {
+      (db.statChannels ??= {})[key] = found.id;
+      save();
+    }
+    return found;
+  }
   const names = [def.name, ...(def.formerNames ?? [])];
   return guild.channels.cache.find((c) => c.name === def.name) ?? guild.channels.cache.find((c) => names.includes(c.name));
 }
@@ -143,6 +163,7 @@ module.exports = {
   channelDef,
   findRole,
   findChannel,
+  statCandidates,
   rulesPayload,
   rolesPayload,
 };

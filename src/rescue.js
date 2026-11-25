@@ -164,6 +164,7 @@ async function restoreTo(target, { messages = true, emojis = true, log = console
   const backup = require('./backup');
   const snap = backup.getBackup(s.snapshotId);
   if (!snap) throw new Error('Copie de secours introuvable dans la base.');
+  if (target.id === process.env.GUILD_ID) throw new Error('Le serveur de secours ne peut pas être le serveur principal.');
   const missing = missingPerms(target);
   if (missing.length) throw new Error(`Permissions manquantes au bot sur le serveur de secours : ${missing.join(', ')}`);
   restoring = true;

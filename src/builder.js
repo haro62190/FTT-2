@@ -14,7 +14,7 @@ const {
   GuildDefaultMessageNotifications,
   GuildSystemChannelFlags,
 } = require('discord.js');
-const { config, findRole, findChannel, rulesPayload, rolesPayload, BRAND_COLOR, staffRoles } = require('./shared');
+const { config, findRole, findChannel, statCandidates, rulesPayload, rolesPayload, BRAND_COLOR, staffRoles } = require('./shared');
 
 const TEXT_READ = [P.ViewChannel, P.ReadMessageHistory];
 const TEXT_WRITE = [P.SendMessages, P.SendMessagesInThreads, P.CreatePublicThreads, P.AddReactions, P.AttachFiles, P.EmbedLinks];
@@ -169,6 +169,15 @@ async function ensureChannels(guild, log = console.log) {
         ? findChannel(guild, def.key)
         : guild.channels.cache.find((c) => c.name === def.name && c.type !== ChannelType.GuildCategory) ??
           guild.channels.cache.find((c) => names.includes(c.name) && c.type !== ChannelType.GuildCategory);
+      if (def.stat && channel) {
+        // Compteurs en double (recréés après une perte de base) : personne ne peut y entrer, on garde le premier.
+        for (const extra of statCandidates(guild, def).filter((c) => c.id !== channel.id)) {
+          await extra.delete('Compteur en double').then(() => log(`     🗑 ${extra.name} (compteur en double)`)).catch(() => {});
+        }
+      } else if (channel) {
+        const twins = guild.channels.cache.filter((c) => c.id !== channel.id && c.type === channel.type && names.includes(c.name));
+        if (twins.size) log(`     ⚠ ${def.name} existe ${twins.size + 1} fois : supprime à la main le doublon inutile`);
+      }
       if (channel && !def.stat && channel.name !== def.name) {
         log(`     ✎ ${channel.name} → ${def.name}`);
         await channel.setName(def.name);
