@@ -96,3 +96,13 @@ test('youtube : flux lu, Shorts reconnus, rien annoncé au 1er passage puis seul
     settings.set('stream.youtubeChannel', '');
   }
 });
+
+test('compteur YouTube : textes d’abonnés lus (anglais, français, arrondis)', () => {
+  const { parseSubs } = require('../src/stats');
+  assert.equal(parseSubs('1.23K'), 1230);
+  assert.equal(parseSubs('12,3 k abonnés'), 12300);
+  assert.equal(parseSubs('1 234 abonnés'), 1234);
+  assert.equal(parseSubs('1,234 subscribers'), 1234);
+  assert.equal(parseSubs('2.5M subscribers'), 2_500_000);
+  assert.equal(parseSubs('aucun'), null);
+});

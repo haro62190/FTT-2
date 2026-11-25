@@ -389,20 +389,24 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
       const row = (k, label) => `<div class="stat"><b>${fmt(s[k])}</b><span>${label}</span>${s[`${k}Error`] ? `<br><span class="muted">⚠️ ${esc(s[`${k}Error`])}</span>` : ''}</div>`;
       return {
         title: '📊 Compteurs',
-        body: `<div class="grid">${row('discord', '👥 membres Discord')}${row('twitch', '🟣 followers Twitch')}${row('tiktok', '📱 abonnés TikTok')}</div>
+        body: `<div class="grid">${row('discord', '👥 membres Discord')}${row('twitch', '🟣 followers Twitch')}${row('tiktok', '📱 abonnés TikTok')}${row('youtube', '▶️ abonnés YouTube')}</div>
         <p class="muted">Mis à jour ${s.updatedAt ? fmtDate(s.updatedAt) : 'jamais'} · automatiquement toutes les 10 minutes (limite Discord).</p>
         <form method="post" class="card">${csrf(sess)}${hidden('action', 'refresh')}<button>Mettre à jour maintenant</button></form>
         <form method="post" class="card">${csrf(sess)}${hidden('action', 'tiktok')}<h3>Valeur de secours TikTok</h3>
         <p class="muted">Utilisée si TikTok bloque la lecture automatique (0 = aucune).</p>
-        <input type="number" name="value" value="${esc(s.tiktokManual ?? 0)}" min="0"><button>Enregistrer</button></form>`,
+        <input type="number" name="value" value="${esc(s.tiktokManual ?? 0)}" min="0"><button>Enregistrer</button></form>
+        <form method="post" class="card">${csrf(sess)}${hidden('action', 'youtube')}<h3>Valeur de secours YouTube</h3>
+        <p class="muted">Utilisée si YouTube bloque la lecture automatique (0 = aucune). YouTube n'affiche publiquement qu'un nombre arrondi (ex. 1,23 k).</p>
+        <input type="number" name="value" value="${esc(s.youtubeManual ?? 0)}" min="0"><button>Enregistrer</button></form>`,
       };
     },
     async 'POST /stats'(guild, sess, body) {
-      if (body.get('action') === 'tiktok') {
+      const k = body.get('action');
+      if (k === 'tiktok' || k === 'youtube') {
         const v = int(body.get('value'), 0, 1e10);
         db.stats ??= {};
-        db.stats.tiktokManual = v || null;
-        if (v) db.stats.tiktok = v;
+        db.stats[`${k}Manual`] = v || null;
+        if (v) db.stats[k] = v;
         save();
       }
       await require('./stats').refresh(guild);

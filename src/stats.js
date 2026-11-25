@@ -1,5 +1,5 @@
 /**
- * Salons compteurs (catégorie 📊 STATS) : membres Discord, followers Twitch, abonnés TikTok.
+ * Salons compteurs (catégorie 📊 STATS) : membres Discord, followers Twitch, abonnés TikTok et YouTube.
  * Le nom des salons vocaux est mis à jour toutes les 10 minutes
  * (Discord limite le renommage d'un salon à 2 fois par 10 minutes).
  */
@@ -28,6 +28,7 @@ const LABELS = {
   discord: (n) => `👥 Membres : ${fmt(n)}`,
   twitch: (n) => `🟣 Twitch : ${fmt(n)}`,
   tiktok: (n) => `📱 TikTok : ${fmt(n)}`,
+  youtube: (n) => `▶️ YouTube : ${fmt(n)}`,
 };
 
 // ───────────────────────── Sources ─────────────────────────
@@ -69,6 +70,41 @@ async function tiktokCount() {
   return state().tiktokManual ?? null;
 }
 
+/** « 1.23K subscribers » / « 12,3 k abonnés » / « 1 234 abonnés » → nombre (YouTube arrondit en public). */
+function parseSubs(text) {
+  const m = String(text ?? '').replace(/\u00a0|\u202f/g, ' ').match(/([\d][\d.,\s]*)\s*([KkMmBb]|k|M|Md|Mrd)?\b/);
+  if (!m) return null;
+  const mult = { k: 1e3, m: 1e6, b: 1e9, md: 1e9, mrd: 1e9 }[String(m[2] ?? '').toLowerCase()] ?? 1;
+  let num = m[1].trim().replace(/\s/g, '');
+  num = mult > 1 ? num.replace(',', '.') : num.replace(/[.,]/g, '');
+  const n = Math.round(parseFloat(num) * mult);
+  return Number.isFinite(n) ? n : null;
+}
+
+async function youtubeCount() {
+  const yt = require('./youtube');
+  if (!yt.source()) return null;
+  const id = await yt.channelId();
+  // 1) Page publique de la chaîne (en anglais pour un format stable)
+  try {
+    const res = await fetch(`https://www.youtube.com/channel/${id}`, {
+      headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'en-US,en;q=0.9', Cookie: 'CONSENT=YES+cb; SOCS=CAI' },
+      signal: AbortSignal.timeout(20_000),
+    });
+    const html = await res.text();
+    const m = html.match(/"([\d.,]+\s*[KMB]?) subscribers"/) ?? html.match(/"subscriberCountText":\{[^}]*?"simpleText":"([^"]+)"/);
+    const n = m && parseSubs(m[1]);
+    if (n !== null) return n;
+  } catch {}
+  // 2) yt-dlp
+  try {
+    const info = await ytdlpJson(['-J', '--flat-playlist', '--playlist-end', '1', '--no-warnings', `https://www.youtube.com/channel/${id}`], { cookies: false });
+    if (Number.isFinite(info?.channel_follower_count)) return info.channel_follower_count;
+  } catch {}
+  // 3) Valeur réglée à la main (/stats youtube ou site)
+  return state().youtubeManual ?? null;
+}
+
 // ───────────────────────── Mise à jour ─────────────────────────
 
 async function refresh(guild) {
@@ -76,7 +112,7 @@ async function refresh(guild) {
   busy = true;
   try {
     const s = state();
-    const sources = { discord: async () => discordCount(guild), twitch: twitchCount, tiktok: tiktokCount };
+    const sources = { discord: async () => discordCount(guild), twitch: twitchCount, tiktok: tiktokCount, youtube: youtubeCount };
     for (const [key, getter] of Object.entries(sources)) {
       try {
         const n = await getter();
@@ -93,10 +129,10 @@ async function refresh(guild) {
     }
     s.updatedAt = Date.now();
     const history = require('./history');
-    for (const k of ['discord', 'twitch', 'tiktok']) history.gauge(k, s[k]);
+    for (const k of ['discord', 'twitch', 'tiktok', 'youtube']) history.gauge(k, s[k]);
     save();
     await require('./streams')
-      .checkMilestones(guild, { discord: s.discord, twitch: s.twitch, tiktok: s.tiktok })
+      .checkMilestones(guild, { discord: s.discord, twitch: s.twitch, tiktok: s.tiktok, youtube: s.youtube })
       .catch((e) => console.error('Paliers :', e.message));
     return s;
   } finally {
@@ -126,7 +162,8 @@ function statsEmbed(s) {
       [
         line('discord', '👥 Membres Discord'),
         line('twitch', `🟣 Followers Twitch${require('./shared').twitchLogin() ? '' : ' (chaîne Twitch non configurée)'}`),
-        line('tiktok', `📱 Abonnés TikTok${TIKTOK_USERNAME_() ? '' : ' (TIKTOK_USERNAME_() non configuré)'}${s.tiktokManual ? ' — valeur manuelle en secours' : ''}`),
+        line('tiktok', `📱 Abonnés TikTok${TIKTOK_USERNAME_() ? '' : ' (compte TikTok non configuré)'}${s.tiktokManual ? ' — valeur manuelle en secours' : ''}`),
+        line('youtube', `▶️ Abonnés YouTube${require('./youtube').source() ? '' : ' (chaîne YouTube non configurée)'}${s.youtubeManual ? ' — valeur manuelle en secours' : ''}`),
       ].join('\n'),
     )
     .setFooter({ text: s.updatedAt ? `Mis à jour ${new Date(s.updatedAt).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' })} · toutes les 10 min` : 'Pas encore mis à jour' });
@@ -137,13 +174,19 @@ const commands = [
     category: '📊 Statistiques',
     data: new SlashCommandBuilder()
       .setName('stats')
-      .setDescription('Statistiques Discord, Twitch et TikTok')
+      .setDescription('Statistiques Discord, Twitch, TikTok et YouTube')
       .addSubcommand((s) => s.setName('voir').setDescription('Voir les compteurs'))
       .addSubcommand((s) => s.setName('rafraichir').setDescription('Mettre à jour les salons compteurs maintenant (staff)'))
       .addSubcommand((s) =>
         s
           .setName('tiktok')
           .setDescription('Valeur de secours pour TikTok, utilisée si la lecture automatique échoue (staff)')
+          .addIntegerOption((o) => o.setName('nombre').setDescription('Nombre d\'abonnés (0 = pas de valeur de secours)').setRequired(true).setMinValue(0)),
+      )
+      .addSubcommand((s) =>
+        s
+          .setName('youtube')
+          .setDescription('Valeur de secours pour YouTube, utilisée si la lecture automatique échoue (staff)')
           .addIntegerOption((o) => o.setName('nombre').setDescription('Nombre d\'abonnés (0 = pas de valeur de secours)').setRequired(true).setMinValue(0)),
       ),
     async run(i) {
@@ -153,10 +196,10 @@ const commands = [
       }
       if (sub === 'voir') return i.reply({ embeds: [statsEmbed(state())] });
       await i.deferReply({ flags: MessageFlags.Ephemeral });
-      if (sub === 'tiktok') {
+      if (sub === 'tiktok' || sub === 'youtube') {
         const n = i.options.getInteger('nombre');
-        state().tiktokManual = n || null;
-        if (n) state().tiktok = n;
+        state()[`${sub}Manual`] = n || null;
+        if (n) state()[sub] = n;
         save();
       }
       const s = await refresh(i.guild);
@@ -165,4 +208,4 @@ const commands = [
   },
 ];
 
-module.exports = { start, refresh, commands, fmt };
+module.exports = { start, refresh, commands, fmt, parseSubs };
