@@ -374,20 +374,17 @@ pm2 save && pm2 startup        # redémarrage automatique si le VPS redémarre
 
 **Dépôt privé — clé de déploiement (lecture seule) :** sur le VPS, `ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519`, puis `cat ~/.ssh/id_ed25519.pub` et colle la clé dans GitHub → ton dépôt → *Settings → Deploy keys → Add deploy key* (ne coche pas *Allow write access*). Clone ensuite avec `git clone -b <branche> git@github.com:<toi>/<depot>.git /root/bot`.
 
-## 🌐 Page vitrine, ⛏️ Minecraft et 📈 surveillance (sur le VPS)
+## 🌐 Page vitrine et 📈 surveillance (sur le VPS)
 
 **DNS d'abord** (Hostinger → Domaines → haro62190.tech → Zone DNS) : enregistrements **A** `@`, `www` et `status` vers l'IP du VPS (remplace l'ancien A de `@`).
 
 | Script (en root sur le VPS) | Ce qu'il fait |
 | --- | --- |
 | `bash /root/bot/scripts/site-install.sh` | Publie la vitrine sur `https://haro62190.tech` (+ www), garde le tableau de bord sur `bot.`, prépare `status.` ; HTTPS automatique (Caddy) |
-| `bash /root/bot/scripts/minecraft-install.sh` | Serveur Minecraft Java officiel (dernière version), liste blanche, RCON local, service qui redémarre seul, pare-feu ; remplit le `.env` |
-| `bash /root/bot/scripts/modpack-install.sh <server-pack.zip> 25 6G` | **À la place** du Minecraft normal : un modpack (ex. FTB Evolution 2) depuis son « Server Pack » officiel ; l'ancien serveur est sauvegardé dans `/opt/minecraft-sauvegarde-<date>` |
 | `bash /root/bot/scripts/uptime-kuma-install.sh` | Uptime Kuma sur `https://status.haro62190.tech` (crée ton compte admin tout de suite) |
 
-- **Vitrine** : présentation, live Twitch intégré pendant les lives, prochains lives, meilleurs clips, compteurs, état Minecraft, bouton « Rejoindre le Discord » (invitation créée par le bot). Textes et liens : tableau de bord → *🌐 Page vitrine*.
-- **Minecraft** : `/minecraft etat`, `/minecraft inscrire pseudo:` (liste blanche, un pseudo par compte, retiré si le membre quitte le Discord), salon ⛏️┃serveur-minecraft mis à jour chaque minute (`/setup` le crée). Tableau de bord → *⛏️ Serveur Minecraft* (inscrits, message dans le jeu).
-- **Surveillance** (dans Uptime Kuma) : sonde HTTP `http://127.0.0.1:3000/health` (bot), HTTP `https://haro62190.tech` (site), « Minecraft Server » `127.0.0.1:25565` ; notification **Discord** avec un webhook d'un salon staff (Paramètres du salon → Intégrations → Webhooks).
+- **Vitrine** : présentation, live Twitch intégré pendant les lives, prochains lives, meilleurs clips, compteurs, bouton « Rejoindre le Discord » (invitation créée par le bot). Textes et liens : tableau de bord → *🌐 Page vitrine*.
+- **Surveillance** (dans Uptime Kuma) : sonde HTTP `http://127.0.0.1:3000/health` (bot), HTTP `https://haro62190.tech` (site) ; notification **Discord** avec un webhook d'un salon staff (Paramètres du salon → Intégrations → Webhooks).
 
 ## 📋 Logs
 
