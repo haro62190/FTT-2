@@ -141,3 +141,18 @@ test('grades du staff : niveaux et accès', () => {
   assert.ok(!defs.helper.permissions.includes('KickMembers') && !defs.helper.permissions.includes('BanMembers'));
   assert.ok(!defs.mod.permissions.includes('BanMembers') && defs.senior.permissions.includes('BanMembers'));
 });
+
+test('compteurs : retrouvés par leur nom quand leur ID est perdu (pas de doublon)', () => {
+  const { Collection, ChannelType } = require('discord.js');
+  const { findChannel, statCandidates, config } = require('../src/shared');
+  const { db } = require('../src/store');
+  const def = config.categories.flatMap((c) => c.channels).find((d) => d.stat);
+  const prefix = def.name.split(' : ')[0];
+  const ch = (id, name, t) => [id, { id, name, type: ChannelType.GuildVoice, createdTimestamp: t }];
+  const cache = new Collection([ch('2', `${prefix} : 120`, 20), ch('1', `${prefix} : 118`, 10), ch('3', 'autre', 5)]);
+  const guild = { channels: { cache } };
+  delete (db.statChannels ??= {})[def.key];
+  assert.equal(findChannel(guild, def.key).id, '1');
+  assert.equal(db.statChannels[def.key], '1');
+  assert.deepEqual(statCandidates(guild, def).map((c) => c.id), ['1', '2']);
+});
