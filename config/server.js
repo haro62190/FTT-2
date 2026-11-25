@@ -76,6 +76,7 @@ module.exports = {
     // Donné par /quarantaine et l'anti-raid : ne voit plus que 🏚️┃cachot (rôles rendus à la sortie)
     { key: 'quarantine', name: '⛓️ Quarantaine', color: 0x3b3b3b },
     { key: 'notif_live', name: '🔴 Notif Live', color: 0x8c1a1a, selfAssign: true, emoji: '🔴', description: 'Être notifié quand le live commence' },
+    { key: 'notif_youtube', name: '▶️ Notif YouTube', color: 0xcc0000, selfAssign: true, emoji: '▶️', description: 'Être notifié de mes nouvelles vidéos YouTube' },
     { key: 'notif_tiktok', name: '📱 Notif TikTok', color: 0x8c1a1a, selfAssign: true, emoji: '📱', description: 'Être notifié de mes nouveaux TikTok' },
     { key: 'notif_news', name: '📢 Notif Annonces', color: 0x737373, selfAssign: true, emoji: '📢', description: 'Être notifié des annonces et événements' },
     { key: 'gamer', name: '🕹️ Joueur', color: 0x737373, selfAssign: true, emoji: '🕹️', description: 'Jouer avec la commu' },
@@ -103,6 +104,7 @@ module.exports = {
         { key: 'announcements', name: '📡┃annonces', formerNames: ['📢・annonces'], type: 'announcement', access: 'members-readonly', topic: 'Les annonces importantes de la chaîne.' },
         { key: 'live', name: '🔴┃en-live', formerNames: ['🔴・en-live'], type: 'text', access: 'members-readonly', topic: 'Alerte automatique quand je suis en live (Twitch / TikTok).' },
         { key: 'tiktok', name: '📱┃tiktok', formerNames: ['📱・tiktok'], type: 'text', access: 'members-readonly', topic: 'Mes nouvelles vidéos TikTok, postées automatiquement.' },
+        { key: 'youtube', name: '▶️┃youtube', type: 'text', access: 'members-readonly', topic: 'Mes nouvelles vidéos et Shorts YouTube, postés automatiquement.' },
         { key: 'roles', name: '🎴┃rôles', formerNames: ['🎭・rôles'], type: 'text', access: 'members-readonly', topic: 'Choisis tes rôles et tes notifications.' },
       ],
     },

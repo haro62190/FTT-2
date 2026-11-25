@@ -30,6 +30,7 @@ const REQUIRED = {
   ReadMessageHistory: 'retrouver ses messages fixes',
   AddReactions: 'réactions',
   UseExternalEmojis: 'emojis',
+  ManageGuildExpressions: 'ajouter / supprimer les émojis personnalisés (/emoji, site)',
   MentionEveryone: 'mentionner les rôles de notification',
   Connect: 'musique',
   Speak: 'musique',

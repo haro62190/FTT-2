@@ -43,5 +43,41 @@ module.exports = ({ esc, csrf, fetchMembers, memberName, fmtDate }) => {
       settings.set('vitrine.invite', httpsOrEmpty(body.get('invite')) || null);
       return '✅ Page vitrine mise à jour.';
     },
+
+    // ───────────────────────── Émojis ─────────────────────────
+    async '/emojis'(guild, sess) {
+      const em = require('./emojis');
+      await guild.emojis.fetch().catch(() => {});
+      const u = em.usage(guild);
+      const can = guild.members.me?.permissions.has('ManageGuildExpressions');
+      const cell = (e) => `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;width:110px;margin:6px;padding:8px;border:1px solid var(--line);border-radius:10px">
+        <img src="https://cdn.discordapp.com/emojis/${esc(e.id)}.${e.animated ? 'gif' : 'png'}?size=64" alt="" width="48" height="48" style="object-fit:contain">
+        <code style="font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis">:${esc(e.name)}:</code>
+        <form method="post" class="inline">${csrf(sess)}${hidden('action', 'delete')}${hidden('id', e.id)}<button class="ghost" style="margin:0;padding:4px 10px;font-size:12px">Supprimer</button></form></div>`;
+      const list = (animated) => [...guild.emojis.cache.values()].filter((e) => e.animated === animated).sort((a, b) => a.name.localeCompare(b.name));
+      return {
+        title: '😀 Émojis personnalisés',
+        body: `${can ? '' : '<div class="card"><p>⚠️ Le bot n\'a pas la permission <b>Gérer les expressions</b> : ouvre le nouveau lien d\'invitation (<code>npm run invite</code>) ou ajoute-la au rôle du bot.</p></div>'}
+        <form method="post" class="card" id="up">${csrf(sess)}${hidden('action', 'add')}<input type="hidden" name="data" id="data">
+          <h3>Ajouter un émoji</h3><p class="muted">PNG, JPEG ou WebP pour un émoji normal, <b>GIF pour un émoji animé</b>. 256 Ko maximum, idéalement carré (128×128).</p>
+          <label>Image</label><input type="file" id="file" accept="image/png,image/jpeg,image/gif,image/webp">
+          <label>Nom (lettres, chiffres, _)</label><input name="name" id="name" maxlength="32" pattern="[A-Za-z0-9_]{2,32}" required>
+          <p id="info" class="muted"></p><button id="go" disabled>Ajouter</button></form>
+        <div class="card"><h3>Statiques · ${u.statics}/${u.max}</h3>${list(false).map(cell).join('') || '<p class="muted">Aucun.</p>'}</div>
+        <div class="card"><h3>Animés · ${u.animated}/${u.max}</h3>${list(true).map(cell).join('') || '<p class="muted">Aucun.</p>'}</div>
+        <p class="muted">Aussi sur Discord : <code>/emoji ajouter</code>, <code>/emoji supprimer</code>, <code>/emoji liste</code>.</p>`,
+        script: `const $=(i)=>document.getElementById(i);$('file').addEventListener('change',()=>{const f=$('file').files[0];$('go').disabled=true;if(!f)return;if(f.size>${em.MAX_BYTES}){$('info').textContent='❌ Trop lourd ('+Math.ceil(f.size/1024)+' Ko) : 256 Ko maximum.';return}if(!$('name').value)$('name').value=f.name.replace(/\\.[^.]+$/,'').replace(/[^A-Za-z0-9_]+/g,'_').replace(/^_+|_+$/g,'').slice(0,32);const r=new FileReader();r.onload=()=>{$('data').value=String(r.result).split(',')[1];$('info').textContent=(f.type==='image/gif'?'🎞️ Émoji animé':'🖼️ Émoji statique')+' · '+Math.ceil(f.size/1024)+' Ko';$('go').disabled=false};r.readAsDataURL(f)});`,
+      };
+    },
+    async 'POST /emojis'(guild, sess, body) {
+      const em = require('./emojis');
+      if (body.get('action') === 'delete') {
+        const name = await em.remove(guild, String(body.get('id') ?? ''), sess.username);
+        return `🗑️ Émoji :${name}: supprimé.`;
+      }
+      const data = Buffer.from(String(body.get('data') ?? ''), 'base64');
+      const emoji = await em.add(guild, { name: body.get('name'), data, by: sess.username });
+      return `✅ Émoji :${emoji.name}: ajouté.`;
+    },
   };
 };
