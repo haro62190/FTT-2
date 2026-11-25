@@ -10,7 +10,7 @@ console.log('\n🔗 Lien d\'invitation de Kensei (permissions minimales, sans Ad
 console.log(`   ${inviteUrl(id)}\n`);
 console.log(`Permissions (${bitfield()}) :`);
 for (const [name, why] of Object.entries(REQUIRED)) console.log(`   • ${name.padEnd(22)} ${why}`);
-console.log('\n🛟 Lien pour le serveur de secours (mêmes permissions + gérer les émojis, pour les recopier) :\n');
+console.log('\n🛟 Lien pour le serveur de secours (Administrateur : nécessaire pour recopier TOUS les rôles à l’identique) :\n');
 console.log(`   ${inviteUrl(id, { rescue: true })}`);
 console.log('\nSi le bot est déjà sur le serveur : ouvre ce lien quand même, Discord mettra simplement ses permissions à jour.');
-console.log('Ensuite, dans Paramètres du serveur → Rôles : place le rôle du bot tout en haut, et retire-lui Administrateur.\n');
+console.log('Ensuite, dans Paramètres du serveur → Rôles : place le rôle du bot tout en haut (sur le serveur principal, sans Administrateur).\n');

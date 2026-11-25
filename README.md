@@ -251,7 +251,7 @@ Tout se règle sur le site, page *📜 Quêtes, boosts & grades*.
 Si le serveur est piraté ou détruit, le bot recopie tout **à l'identique** sur un serveur de secours :
 rôles (couleurs, permissions, ordre), catégories, salons et permissions, nom, icône, bannière, émojis, messages du bot (règlement, rôles, guide, tickets), **les 50 derniers messages de chaque salon** (auteur, avatar, date), et il **rend ses rôles à chaque membre** quand il rejoint (sauf les rôles Administrateur, à redonner à la main). Niveaux, ryō, quêtes, tickets… sont liés aux comptes : rien n'est perdu.
 
-**Préparation (une fois)** : crée un serveur Discord vide, colle son identifiant sur le site (*🛟 Serveur de secours*) ou dans `.env` (`SECOURS_GUILD_ID=`), invite le bot dessus (`npm run invite`) et mets son rôle tout en haut. Le bot y reste, avec seulement la commande `/secours`.
+**Préparation (une fois)** : crée un serveur Discord vide, colle son identifiant sur le site (*🛟 Serveur de secours*) ou dans `.env` (`SECOURS_GUILD_ID=`), invite le bot dessus avec le lien « serveur de secours » de `npm run invite` (Administrateur : sans lui Discord l’empêche de recréer les rôles qui ont des permissions qu’il n’a pas) et mets son rôle tout en haut. Le bot y reste, avec seulement la commande `/secours`.
 
 **Chaque jour**, une copie est prise et gardée sur le VPS. Elle n'est **jamais écrasée** par un serveur qui vient d'être vidé (plus de 30 % de salons ou de rôles disparus).
 

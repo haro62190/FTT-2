@@ -60,9 +60,13 @@ function clientIdFromToken(token) {
   }
 }
 
-/** Lien d'invitation. `rescue` : version serveur de secours (+ gérer les émojis pour les recopier). */
+/**
+ * Lien d'invitation. `rescue` : version serveur de secours, avec Administrateur : sans lui, Discord
+ * interdit au bot de recréer les rôles qui ont des permissions qu'il n'a pas (Administrateur, webhooks…),
+ * et la copie ne serait pas identique. Le serveur de secours est privé et vide, ce droit y est sans risque.
+ */
 function inviteUrl(clientId, { rescue = false } = {}) {
-  const bits = rescue ? bitfield() | P.ManageGuildExpressions : bitfield();
+  const bits = rescue ? P.Administrator : bitfield();
   return `https://discord.com/oauth2/authorize?client_id=${clientId}&scope=bot%20applications.commands&permissions=${bits}`;
 }
 
