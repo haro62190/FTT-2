@@ -305,7 +305,7 @@ f.addEventListener('input',up);up();`,
       const rescue = require('./rescue');
       const st = rescue.status(guild.client);
       const clientId = guild.client.user.id;
-      const invite = require('./permissions').inviteUrl?.(clientId);
+      const invite = require('./permissions').inviteUrl?.(clientId, { rescue: true });
       const step = (ok, text) => `<li style="margin:6px 0">${ok ? '✅' : '⬜'} ${text}</li>`;
       return {
         title: '🛟 Serveur de secours',
