@@ -286,3 +286,7 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/backup exporter id:` | Télécharger une sauvegarde (fichier .json) |
 | `/backup supprimer id:` | Supprimer une sauvegarde |
 | `/restore [id:] [fichier:]` | Restaurer une sauvegarde (recrée ce qui manque, ne supprime rien) |
+| `/secours etat` | Voir l'état de la copie de secours |
+| `/secours copier` | Faire une copie de secours maintenant (serveur principal) |
+| `/secours restaurer [messages:]` | Tout recopier sur CE serveur (à lancer sur le serveur de secours) |
+| `/secours prevenir` | Envoyer le lien du serveur de secours aux membres en MP |

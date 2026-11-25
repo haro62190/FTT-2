@@ -33,7 +33,12 @@ function createDetector({ factor = 3, min = 15 } = {}) {
     push(t, text = '') {
       const b = bucketAt(t);
       b.n++;
-      for (const w of new Set(String(text).split(/\s+/).filter((x) => x.length >= 2 && x.length <= 25).slice(0, 8))) b.words.set(w, (b.words.get(w) ?? 0) + 1);
+      // Seulement des mots simples (lettres, chiffres) : pas de liens, mentions ni balisage venant du chat
+      const words = String(text)
+        .split(/\s+/)
+        .filter((x) => x.length >= 2 && x.length <= 25 && /^[\p{L}\p{N}_'!?.-]+$/u.test(x) && !/https?|www\.|discord\.gg/i.test(x))
+        .slice(0, 8);
+      for (const w of new Set(words)) b.words.set(w, (b.words.get(w) ?? 0) + 1);
     },
     /** Renvoie { rate, words } si un pic commence maintenant, sinon null. */
     check(t) {

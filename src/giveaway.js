@@ -111,7 +111,7 @@ function start(client) {
 
 async function handleInteraction(i) {
   if (i.customId !== 'gw:join') return false;
-  const g = all()[i.message.id];
+  const g = require('./shared').own(all(), i.message.id);
   if (!g || g.ended) {
     await i.reply(ephemeral('Ce giveaway est terminé.'));
     return true;
@@ -159,7 +159,7 @@ const commands = [
         return i.reply(ephemeral(`✅ Giveaway lancé dans ${channel}. ID : \`${msg.id}\``));
       }
       const id = i.options.getString('message').trim();
-      const g = all()[id];
+      const g = require('./shared').own(all(), id);
       if (!g) return i.reply(ephemeral('Giveaway introuvable (clic droit sur le message → Copier l\'identifiant).'));
       await i.deferReply({ flags: MessageFlags.Ephemeral });
       if (sub === 'terminer' && g.ended) return i.editReply('Ce giveaway est déjà terminé (utilise `relancer`).');

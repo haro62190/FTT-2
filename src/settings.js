@@ -145,6 +145,7 @@ const MODULES = [
   ['motm', '🌟 Membre du mois', 'modules.motm', 'Communauté'],
   ['challenges', '🎯 Défis collectifs', 'modules.challenges', 'Communauté'],
   ['applications', '📝 Candidatures staff / streamer', 'modules.applications', 'Communauté'],
+  ['rescue', '🛟 Copie quotidienne pour le serveur de secours', 'modules.rescue', 'Sécurité'],
   ['weeklyRecap', '📜 Récap hebdomadaire + rapport staff', 'modules.weeklyRecap', 'Automatisation'],
   ['reports', '🚩 Signalements suivis (/signaler)', 'modules.reports', 'Automatisation'],
   ['customCommands', '⌨️ Commandes personnalisées', 'modules.customCommands', 'Communauté'],

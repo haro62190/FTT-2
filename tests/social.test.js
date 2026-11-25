@@ -41,7 +41,11 @@ test('parrainage : invitation utilisée détectée, récompense au niveau 3', as
   const invites = new Collection([['abc', { code: 'abc', uses: 1 }], ['other', { code: 'other', uses: 4 }]]);
   const dms = [];
   const guild = { invites: { fetch: async () => invites }, client: { users: { send: async (id, t) => dms.push([id, t]) } }, members: { fetch: async (id) => ({ id, displayName: 'Filleul' }) } };
-  const sponsor = await s.onJoin({ id: 'newbie', user: { username: 'newbie' }, guild });
+  const old = Date.now() - 400 * 86_400_000;
+  assert.equal(await s.onJoin({ id: 'alt', user: { username: 'alt', createdTimestamp: Date.now() - 86_400_000 }, guild }), null, 'compte créé hier : pas de parrainage');
+  invites.get('abc').uses = 2;
+  db.referrals.uses.abc = 1;
+  const sponsor = await s.onJoin({ id: 'newbie', user: { username: 'newbie', createdTimestamp: old }, guild });
   assert.equal(sponsor, 'sponsor');
   assert.equal(db.referrals.members.newbie.sponsor, 'sponsor');
   await s.checkReferrals(guild);

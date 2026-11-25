@@ -67,7 +67,7 @@ const BOARDS = {
 };
 
 function board(key, limit = 10) {
-  const def = BOARDS[key];
+  const def = require('./shared').own(BOARDS, key);
   if (!def) return [];
   return def[1]()
     .filter(([, v]) => v > 0)

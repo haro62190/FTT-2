@@ -120,7 +120,7 @@ async function handleInteraction(i) {
   const id = i.customId ?? '';
   if (!id.startsWith('nt:')) return false;
   const [, action, nid] = id.split(':');
-  const n = all()[nid];
+  const n = require('./shared').own(all(), nid);
   if (!n) {
     await i.reply(ephemeral('Soirée introuvable.'));
     return true;

@@ -20,7 +20,11 @@ const ephemeral = (content) => ({ content, flags: MessageFlags.Ephemeral });
 const commandsDb = () => (db.customCommands ??= {});
 const menus = () => (db.roleMenus ??= {});
 const PREFIX = () => db.customPrefix ?? '!';
-const cleanName = (n) => String(n ?? '').trim().toLowerCase().replace(/^!/, '').replace(/[^a-z0-9àâäéèêëîïôöùûüç_-]/g, '').slice(0, 32);
+const RESERVED = new Set(['__proto__', 'constructor', 'prototype', 'hasownproperty', 'tostring', 'valueof']);
+const cleanName = (n) => {
+  const c = String(n ?? '').trim().toLowerCase().replace(/^!/, '').replace(/[^a-z0-9àâäéèêëîïôöùûüç_-]/g, '').slice(0, 32);
+  return RESERVED.has(c) ? '' : c;
+};
 
 /** Un rôle peut-il être distribué en libre-service ? (jamais de rôle avec des permissions dangereuses) */
 function safeRole(role) {
@@ -37,7 +41,7 @@ async function onMessage(message) {
   if (!message.guild || message.author.bot || !message.content.startsWith(PREFIX())) return;
   if (!require('./settings').on('customCommands')) return;
   const name = cleanName(message.content.slice(PREFIX().length).split(/\s+/)[0]);
-  const cmd = commandsDb()[name];
+  const cmd = require('./shared').own(commandsDb(), name);
   if (!cmd) return;
   const key = `${message.channelId}:${name}`;
   if (Date.now() - (cooldown.get(key) ?? 0) < 5000) return; // anti-spam : 5 s par salon
@@ -109,7 +113,7 @@ async function publishMenu(guild, { id, channelId, title, description, roles, ex
 }
 
 async function deleteMenu(guild, id) {
-  const m = menus()[id];
+  const m = require('./shared').own(menus(), id);
   if (!m) return false;
   const msg = await guild.channels.cache.get(m.channelId)?.messages.fetch(m.messageId).catch(() => null);
   await msg?.delete().catch(() => {});
@@ -179,4 +183,4 @@ function register(client, guildId) {
   client.on(Events.MessageCreate, (m) => m.guild?.id === guildId && onMessage(m).catch(() => {}));
 }
 
-module.exports = { register, handleInteraction, commands, setCommand, deleteCommand, publishMenu, deleteMenu, safeRole, PREFIX, cleanName };
+module.exports = { register, onMessage, handleInteraction, commands, setCommand, deleteCommand, publishMenu, deleteMenu, safeRole, PREFIX, cleanName };

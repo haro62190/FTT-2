@@ -59,7 +59,7 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
         await tn.publish(guild, t).catch(() => {});
         return `✅ Tournoi ${t.name} créé et publié dans 🏆┃tournois.`;
       }
-      const t = tn.all()[body.get('id')];
+      const t = require('./shared').own(tn.all(), body.get('id'));
       if (!t) return '❌ Tournoi introuvable.';
       if (action === 'start') {
         tn.start(t);
@@ -140,7 +140,7 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
     async 'POST /equipes'(guild, sess, body) {
       if (body.get('action') === 'unregister') {
         const tn = require('./tournaments');
-        const t = tn.all()[body.get('id')];
+        const t = require('./shared').own(tn.all(), body.get('id'));
         if (!t) return '❌ Tournoi introuvable.';
         const e = tn.unregister(t, body.get('user'));
         await tn.publish(guild, t).catch(() => {});
@@ -148,7 +148,7 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
       }
       if (body.get('action') === 'unbook') {
         const nt = require('./nights');
-        const x = nt.all()[body.get('id')];
+        const x = require('./shared').own(nt.all(), body.get('id'));
         if (!x) return '❌ Soirée introuvable.';
         const promoted = nt.cancel(x, body.get('user'));
         if (promoted) guild.client.users.send(promoted, `🎟️ Une place s'est libérée : tu participes à **${x.title}** !`).catch(() => {});
@@ -213,14 +213,14 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
     async 'POST /alertes'(guild, sess, body) {
       if (body.get('action') === 'report') {
         const rp = require('./reports');
-        const r = rp.all()[body.get('id')];
+        const r = require('./shared').own(rp.all(), body.get('id'));
         if (!r) return '❌ Signalement introuvable.';
         await rp.update(guild, r, body.get('status'), sess.userId);
         return `✅ Signalement #${r.id} : ${rp.STATUS[r.status][1]}.`;
       }
       if (body.get('action') === 'app') {
         const ap = require('./applications');
-        const a = ap.all()[body.get('id')];
+        const a = require('./shared').own(ap.all(), body.get('id'));
         if (!a) return '❌ Candidature introuvable.';
         await ap.decide(guild, a, body.get('ok') === '1', sess.userId);
         return body.get('ok') === '1' ? '✅ Candidature acceptée (rôle donné, candidat prévenu).' : '✅ Candidature refusée (candidat prévenu).';
@@ -235,7 +235,7 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
       const field = (name, label, attrs = '') => `<label>${label}</label><input type="text" name="${name}" data-p="${name}" ${attrs}>`;
       return {
         title: '✉️ Éditeur de messages',
-        body: `<div class="split" style="grid-template-columns:1fr 1fr">
+        body: `<div class="split split2" style="grid-template-columns:1fr 1fr">
         <form method="post" class="card" id="ed">${csrf(sess)}
           <label>Salon</label><select name="channel">${channels.map((c) => `<option value="${c.id}" ${c.id === def ? 'selected' : ''}>#${esc(c.name)}</option>`).join('')}</select>
           <label>Modifier un message existant du bot (lien, facultatif)</label><input type="url" name="edit" placeholder="https://discord.com/channels/…">
@@ -298,6 +298,76 @@ f.addEventListener('input',up);up();`,
       if (!channel?.isTextBased()) return '❌ Salon invalide.';
       await channel.send(payload);
       return `✅ Message envoyé dans #${channel.name}.`;
+    },
+
+    // ───────────────────────── Serveur de secours ─────────────────────────
+    '/secours'(guild, sess) {
+      const rescue = require('./rescue');
+      const st = rescue.status(guild.client);
+      const clientId = guild.client.user.id;
+      const invite = require('./permissions').inviteUrl?.(clientId);
+      const step = (ok, text) => `<li style="margin:6px 0">${ok ? '✅' : '⬜'} ${text}</li>`;
+      return {
+        title: '🛟 Serveur de secours',
+        body: `<div class="card"><p>Si le serveur est piraté, détruit ou corrompu, le bot recopie tout à l'identique sur un serveur de secours : rôles et leur ordre, salons, permissions, nom, icône, bannière, émojis, messages du bot, <b>les 50 derniers messages de chaque salon</b>, et il rend à chaque membre ses rôles quand il rejoint. Les niveaux, ryō et quêtes suivent les comptes : rien n'est perdu.</p>
+        <p class="muted">La copie est prise chaque jour et gardée sur le VPS. Elle n'est jamais écrasée par un serveur qui vient d'être vidé (plus de 30 % de salons ou de rôles disparus).</p></div>
+        <div class="card"><h3>Préparation (une seule fois)</h3><ol style="padding-left:18px;margin:0">
+          ${step(true, 'Crée un serveur Discord vide (le « + » dans la liste des serveurs → Créer le mien).')}
+          ${step(st.guildId, 'Copie son identifiant (clic droit sur le serveur → Copier l\'identifiant du serveur, mode développeur activé) et colle-le ci-dessous.')}
+          ${step(st.connected, `Invite le bot sur ce serveur${invite ? ` avec <a href="${esc(invite)}" target="_blank" rel="noopener">ce lien</a>` : ' (npm run invite)'} : il y restera, avec seulement la commande /secours.`)}
+          ${step(st.connected && !st.missing.length, `Donne au bot le rôle le plus haut sur le serveur de secours${st.missing.length ? ` — manque : ${esc(st.missing.join(', '))}` : ''}.`)}
+          ${step(st.at, 'Fais une première copie (bouton ci-dessous). Ensuite elle se refait toute seule chaque jour.')}
+        </ol>
+        <form method="post" style="margin-top:12px">${csrf(sess)}${hidden('action', 'guild')}<label>Identifiant du serveur de secours</label><div class="row"><input type="text" name="guildId" inputmode="numeric" pattern="\\d{17,20}" value="${esc(st.guildId ?? '')}" placeholder="123456789012345678"><button style="flex:0 0 auto;margin:0">Enregistrer</button></div></form></div>
+        <div class="grid">
+          <div class="stat"><b>${st.at ? fmtDate(st.at) : '—'}</b><span>dernière copie</span></div>
+          <div class="stat"><b>${st.counts ? `${st.counts.roles} / ${st.counts.channels}` : '—'}</b><span>rôles / salons</span></div>
+          <div class="stat"><b>${st.counts ? st.counts.members : '—'}</b><span>membres et leurs rôles</span></div>
+          <div class="stat"><b>${st.messages} · ${st.emojis}</b><span>messages archivés · émojis</span></div>
+        </div>
+        <div class="row">
+          <form method="post" class="card">${csrf(sess)}${hidden('action', 'capture')}<h3>📸 Copie</h3><p class="muted">Prend tout de suite une nouvelle copie du serveur principal.</p><button>Faire une copie maintenant</button></form>
+          <form method="post" class="card">${csrf(sess)}${hidden('action', 'restore')}<h3>🛟 Restaurer</h3><p class="muted">Recopie tout sur le serveur de secours${st.targetName ? ` (<b>${esc(st.targetName)}</b>)` : ''}.</p>
+            ${checkbox('messages', true, 'Recopier aussi l\'archive des messages')}
+            <label class="check" style="margin-top:8px"><input type="checkbox" name="confirm" required> Je confirme la restauration</label>
+            <button ${st.connected && st.at ? '' : 'disabled'}>Restaurer sur le serveur de secours</button></form>
+          <form method="post" class="card">${csrf(sess)}${hidden('action', 'notify')}<h3>📨 Prévenir</h3><p class="muted">Envoie le lien du serveur de secours en MP à tous les membres copiés (1 par seconde).</p>${st.invite ? `<p>🔗 <a href="${esc(st.invite)}" target="_blank" rel="noopener">${esc(st.invite)}</a></p>` : ''}
+            <label class="check"><input type="checkbox" name="confirm" required> Je confirme l'envoi</label><button class="ghost" ${st.invite ? '' : 'disabled'}>Prévenir les membres</button></form>
+        </div>
+        <div class="card"><h3>Ensuite : en faire le serveur principal</h3><p>Sur le VPS : <code>nano /root/bot/.env</code>, remplace <code>GUILD_ID</code> par l'identifiant du serveur de secours, puis <code>pm2 restart bot-discord</code>. Les rôles Administrateur ne sont jamais redonnés automatiquement : redonne-les à la main aux personnes de confiance.</p></div>`,
+      };
+    },
+    async 'POST /secours'(guild, sess, body) {
+      const rescue = require('./rescue');
+      const action = body.get('action');
+      // Actions sensibles : réservées au propriétaire du serveur
+      if (action !== 'capture' && sess.userId !== guild.ownerId) return '❌ Réservé au propriétaire du serveur.';
+      if (action === 'guild') {
+        const id = String(body.get('guildId') ?? '').trim();
+        if (id && !/^\d{17,20}$/.test(id)) return '❌ Identifiant invalide (17 à 20 chiffres).';
+        if (id === guild.id) return '❌ Ce doit être un AUTRE serveur que le serveur principal.';
+        settings.set('rescue.guildId', id);
+        return id ? '✅ Serveur de secours enregistré. Invite maintenant le bot dessus.' : '✅ Serveur de secours retiré.';
+      }
+      if (action === 'capture') {
+        const r = await rescue.capture(guild, { force: true });
+        return `✅ Copie faite : ${r.roles} rôles, ${r.channels} salons, ${r.members} membres, ${r.emojis} émojis, ${r.messages} messages.`;
+      }
+      if (!body.has('confirm')) return '❌ Coche la case de confirmation.';
+      if (action === 'restore') {
+        const target = guild.client.guilds.cache.get(rescue.rescueGuildId());
+        if (!target) return '❌ Le bot n\'est pas sur le serveur de secours.';
+        const lines = [];
+        const r = await rescue.restoreTo(target, { messages: body.has('messages'), log: (l) => lines.push(l) });
+        const warn = lines.filter((l) => l.includes('⚠')).length;
+        return `✅ Serveur de secours restauré${warn ? ` (${warn} avertissement(s), voir le journal)` : ''}.${r.invite ? ` Lien : ${r.invite}` : ''}`;
+      }
+      if (action === 'notify') {
+        // Long : on lance en arrière-plan
+        rescue.notifyMembers(guild.client).then((r) => console.log(`🛟 Lien de secours envoyé : ${r.ok} ok, ${r.fail} échecs`)).catch((e) => console.error('Secours :', e.message));
+        return '📨 Envoi lancé en arrière-plan (1 membre par seconde). Le résultat sera dans le journal du bot.';
+      }
+      return 'Action inconnue.';
     },
 
     // ───────────────────────── Galerie de clips ─────────────────────────

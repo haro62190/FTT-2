@@ -19,7 +19,7 @@ const REQUIRED = {
   ModerateMembers: '/mute, anti-spam',
   ManageMessages: '/clear, anti-spam, suggestions, épingles',
   ManageThreads: 'fils des suggestions',
-  CreateInstantInvite: 'liens de parrainage (/parrainage)',
+  CreateInstantInvite: 'liens de parrainage (/parrainage), serveur de secours',
   ManageEvents: 'événements Discord (planning Twitch, /evenement)',
   CreateEvents: 'événements Discord',
   SendMessages: 'écrire',

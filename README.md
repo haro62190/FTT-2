@@ -246,6 +246,17 @@ Tout se règle sur le site, page *📜 Quêtes, boosts & grades*.
 - **Menus de rôles** : sur le site (*Menus de rôles*), choisis un salon et des rôles, le bot publie un message à boutons.
 - **Graphiques** (site → *Graphiques*) : membres, followers Twitch, abonnés TikTok, messages, vocal, arrivées et départs sur 7, 30 ou 90 jours.
 
+## 🛟 Serveur de secours (piratage, suppression, corruption)
+
+Si le serveur est piraté ou détruit, le bot recopie tout **à l'identique** sur un serveur de secours :
+rôles (couleurs, permissions, ordre), catégories, salons et permissions, nom, icône, bannière, émojis, messages du bot (règlement, rôles, guide, tickets), **les 50 derniers messages de chaque salon** (auteur, avatar, date), et il **rend ses rôles à chaque membre** quand il rejoint (sauf les rôles Administrateur, à redonner à la main). Niveaux, ryō, quêtes, tickets… sont liés aux comptes : rien n'est perdu.
+
+**Préparation (une fois)** : crée un serveur Discord vide, colle son identifiant sur le site (*🛟 Serveur de secours*) ou dans `.env` (`SECOURS_GUILD_ID=`), invite le bot dessus (`npm run invite`) et mets son rôle tout en haut. Le bot y reste, avec seulement la commande `/secours`.
+
+**Chaque jour**, une copie est prise et gardée sur le VPS. Elle n'est **jamais écrasée** par un serveur qui vient d'être vidé (plus de 30 % de salons ou de rôles disparus).
+
+**En cas de problème** : sur le serveur de secours, `/secours restaurer` (ou le bouton du site), puis `/secours prevenir` pour envoyer le lien aux membres en MP. Pour en faire le nouveau serveur principal : change `GUILD_ID` dans `.env` et redémarre. Seul le propriétaire du serveur peut restaurer.
+
 ## 🎫 Tickets
 
 Dans 🎫┃ouvrir-un-ticket, le bouton **Ouvrir un ticket** demande un sujet puis crée un salon privé visible seulement par le membre et les modos. Boutons **Prendre en charge** et **Fermer** (avec confirmation). À la fermeture, la transcription complète est envoyée dans 📋┃logs et en MP au membre. Un ticket ouvert à la fois par membre.
@@ -381,6 +392,10 @@ pm2 save && pm2 startup        # redémarrage automatique si le VPS redémarre
 - **Commandes** : chaque commande du staff exige sa permission Discord, revérifiée par le bot à chaque utilisation ; toutes sont notées dans le journal d'administration.
 - **Tableau de bord** : limite de tentatives par IP, déconnexion après 2 h d'inactivité, cookie `__Host-` et HSTS en HTTPS, journal des connexions et actions. Derrière Caddy : `DASHBOARD_TRUST_PROXY=1`.
 - **Secrets** : tokens et clés masqués dans les journaux et alertes ; `.env` remis en lecture seule pour son propriétaire (chmod 600) s'il était trop ouvert. Journal des erreurs : `data/logs/erreurs.log`.
+- **Mentions** : par défaut le bot ne peut **jamais** mentionner @everyone, @here ou un rôle ; seuls les messages prévus pour (alertes de live, annonces) notifient leur rôle.
+- **Données saisies** : aucune clé spéciale (`__proto__`, `constructor`…) n'est lue depuis un bouton, une commande ou le site ; les liens sont limités au `https` ; les mots du chat Twitch montrés au staff sont nettoyés (pas de liens ni de mentions).
+- **Anti-triche économie** : récompenses plafonnées (quiz 500 両, défi 2 000 両, tournoi 20 000 両), l'organisateur d'un quiz ou d'un pronostic n'y participe pas, pronostic jamais clôturé = remboursé après 24 h, parrainage refusé pour les comptes de moins de 14 jours et les anciens membres (10 récompenses max par mois), `/merci` après 3 jours sur le serveur, `/recherche` limitée à une toutes les 5 min, `/equipes` ne déplace que les joueurs du vocal concerné.
+- **Site** : connexion liée au navigateur qui l'a commencée, jetons comparés à temps constant, IP réelle prise derrière le proxy sans pouvoir être falsifiée, connexions lentes coupées, aucune erreur technique affichée au visiteur.
 
 ### Réglages détaillés
 
@@ -490,6 +505,7 @@ src/livegames.js   quiz, pronostics, votes pendant les lives
 src/social.js      membre du mois, réputation (/merci), parrainage · src/challenges.js défis collectifs
 src/applications.js candidatures · src/reports.js signalements suivis · src/insights.js récap hebdo et rapport staff
 src/quarantine.js  quarantaine · src/permissions.js permissions minimales · src/audit.js journal d'admin
+src/rescue.js      serveur de secours (copie complète, restauration, rôles rendus)
 src/dbbackup.js    copies de la base · src/logger.js journal d'erreurs · src/redact.js masquage des secrets
 src/dashboard-admin.js · dashboard-community.js · dashboard-ops.js   autres pages du tableau de bord
 assets/            icône, bannière, décors Kensei (carte de rang, bannière de niveau, site) et polices libres

@@ -193,7 +193,7 @@ function makeTeams(ids, size, game = null) {
 
 const teamVoices = () => (db.teamVoices ??= []);
 
-async function createTeamVoices(guild, teams, parentId) {
+async function createTeamVoices(guild, teams, parentId, sourceVoiceId = null) {
   const created = [];
   for (const [k, team] of teams.entries()) {
     const ch = await guild.channels.create({ name: `⚔️ Équipe ${k + 1}`, type: ChannelType.GuildVoice, parent: parentId ?? undefined, reason: 'Équipes automatiques' });
@@ -201,7 +201,8 @@ async function createTeamVoices(guild, teams, parentId) {
     created.push(ch);
     for (const id of team) {
       const m = guild.members.cache.get(id) ?? (await guild.members.fetch(id).catch(() => null));
-      if (m?.voice?.channelId) await m.voice.setChannel(ch, 'Équipes automatiques').catch(() => {});
+      // Seulement les joueurs encore dans le vocal d'où /equipes a été lancé (jamais quelqu'un d'ailleurs)
+      if (m?.voice?.channelId && m.voice.channelId === sourceVoiceId) await m.voice.setChannel(ch, 'Équipes automatiques').catch(() => {});
     }
   }
   save();
@@ -306,7 +307,7 @@ async function handleInteraction(i) {
     }
     await i.deferUpdate();
     const parent = findChannel(i.guild, 'voice_create')?.parentId ?? null;
-    const created = await createTeamVoices(i.guild, t.teams, parent);
+    const created = await createTeamVoices(i.guild, t.teams, parent, t.voiceId);
     delete db.lastTeams[i.message.id];
     save();
     await i.editReply({ components: [] });
@@ -368,6 +369,9 @@ const commands = [
       .addStringOption((o) => o.setName('message').setDescription('Ex. « ranked, micro obligatoire »').setMaxLength(150)),
     autocomplete: autocompleteGames,
     async run(i) {
+      // Anti-spam : une recherche toutes les 5 minutes par membre
+      const last = Object.values(lfgs()).filter((x) => x.author === i.user.id).reduce((m, x) => Math.max(m, x.expiresAt - LFG_HOURS * 3600_000), 0);
+      if (Date.now() - last < 5 * 60_000) return i.reply(ephemeral(`⏳ Tu pourras relancer une recherche <t:${Math.floor((last + 5 * 60_000) / 1000)}:R>.`));
       const channel = findChannel(i.guild, 'lfg') ?? i.channel;
       const l = {
         author: i.user.id,
@@ -451,7 +455,7 @@ const commands = [
       });
       if (canVoice) {
         const msg = await i.fetchReply();
-        (db.lastTeams ??= {})[msg.id] = { teams, by: i.user.id, at: Date.now() };
+        (db.lastTeams ??= {})[msg.id] = { teams, by: i.user.id, voiceId: voice.id, at: Date.now() };
         for (const [k, v] of Object.entries(db.lastTeams)) if (Date.now() - v.at > 3600_000) delete db.lastTeams[k];
         save();
       }

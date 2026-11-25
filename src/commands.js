@@ -443,6 +443,7 @@ commands.push(
   ...require('./challenges').commands,
   ...require('./applications').commands,
   ...require('./reports').commands,
+  ...require('./rescue').commands,
 );
 
 // /help = /aide

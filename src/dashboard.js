@@ -43,7 +43,22 @@ function limited(ip, kind) {
   h.n++;
   return h.n > max;
 }
-const clientIp = (req) => (TRUST_PROXY && String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim()) || req.socket.remoteAddress || '?';
+// Derrière un proxy de confiance, l'IP réelle est la DERNIÈRE ajoutée (les premières peuvent être inventées par le visiteur)
+const clientIp = (req) => (TRUST_PROXY && String(req.headers['x-forwarded-for'] ?? '').split(',').map((s) => s.trim()).filter(Boolean).at(-1)) || req.socket.remoteAddress || '?';
+/** Comparaison à temps constant (jetons CSRF) */
+const sameToken = (a, b) => {
+  const x = Buffer.from(String(a ?? ''));
+  const y = Buffer.from(String(b ?? ''));
+  return x.length === y.length && x.length > 0 && crypto.timingSafeEqual(x, y);
+};
+const STATE_COOKIE = 'ronin_oauth';
+function readCookie(req, name) {
+  for (const part of String(req.headers.cookie ?? '').split(';')) {
+    const i = part.indexOf('=');
+    if (i > 0 && part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
+  }
+  return null;
+}
 
 const sessions = new Map(); // sid -> { userId, username, avatar, csrf, expires }
 const oauthStates = new Map(); // state -> expires
@@ -142,6 +157,7 @@ const NAV = [
   ['/tickets', '🎫 Tickets'],
   ['/sauvegardes', '💾 Sauvegardes du serveur'],
   ['/copies-base', '🗄️ Copies de la base'],
+  ['/secours', '🛟 Serveur de secours'],
   ['/journal', '📜 Journal d\'admin'],
   ['/diagnostic', '🩺 Diagnostic'],
 ];
@@ -204,7 +220,29 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:10px 8px;
 .flash.err{background:#2a0f0f;border-color:#5a1f1f;color:#f3bfbf}.muted{color:var(--muted)}.row{display:flex;gap:14px;flex-wrap:wrap}.row>*{flex:1;min-width:150px}
 code{background:#1c1c22;padding:1px 6px;border-radius:5px;font-size:.92em}pre{background:#0b0b0e;border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font-size:12.5px}
 .legend{display:flex;gap:16px;margin:0 0 6px;font-size:13px;color:#c3c2b7}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}details{margin-top:8px}details table{font-size:13px}form.inline{display:inline}
-@media(max-width:820px){nav .sec{display:none}.wrap{flex-direction:column}nav{position:static;height:auto;width:auto;border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;gap:4px;padding:8px}nav a{white-space:nowrap}main{padding:18px 16px}header .live{display:none}}
+/* ── Téléphone : menu repliable (sans JavaScript), tableaux défilants, tailles adaptées ── */
+.menu-btn,#menu,nav .mobile-only{display:none}
+@media(max-width:820px){
+header{padding:10px 14px;gap:10px}header h1{font-size:16px;white-space:nowrap}header .live,header .server,header .who{display:none!important}header .logo{width:32px;height:32px}nav .mobile-only{display:block!important}
+.menu-btn{display:inline-flex;align-items:center;gap:6px;margin-left:auto;padding:7px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);font-weight:600;font-size:14px;cursor:pointer}
+header .who{margin-left:0}
+.wrap{flex-direction:column}
+nav{display:none;position:static;width:auto;height:auto;max-height:none;border-right:0;border-bottom:1px solid var(--line);padding:8px 10px 14px}
+#menu:checked~.wrap nav{display:block}
+nav a{padding:11px 12px;font-size:15px}nav .sec{margin:14px 12px 4px}
+main{padding:16px 14px;max-width:100%}
+h2{font-size:21px}h2.brush{font-size:32px}.subtitle{margin-bottom:16px}
+.grid{grid-template-columns:1fr 1fr;gap:10px}.grid.mini{grid-template-columns:1fr 1fr}
+.kpi{min-height:0;padding:12px 14px}.kpi b{font-size:24px}.stat{padding:12px}.stat b{font-size:21px}
+.card{padding:14px;border-radius:12px}
+.card table,main>table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}
+td,th{padding:8px 6px}
+.row>*{min-width:100%}
+input[type=text],input[type=number],input[type=url],input[type=datetime-local],textarea,select{font-size:16px}
+button,.btn{padding:11px 16px}
+.split,.split2{grid-template-columns:1fr!important}
+}
+@media(max-width:380px){.grid,.grid.mini{grid-template-columns:1fr}}
 body:before{content:"";position:fixed;right:0;bottom:0;width:min(46vw,620px);height:min(62vh,640px);background:url(/assets/pagoda.jpg) right bottom/cover no-repeat;opacity:.22;pointer-events:none;z-index:0;-webkit-mask-image:radial-gradient(circle at 100% 100%,#000 25%,transparent 72%);mask-image:radial-gradient(circle at 100% 100%,#000 25%,transparent 72%)}
 body:after{content:"剣聖";position:fixed;right:26px;top:96px;writing-mode:vertical-rl;font:72px/1 Kanji,serif;color:var(--gold);opacity:.16;pointer-events:none;z-index:0}
 .wrap,header{position:relative;z-index:1}
@@ -221,8 +259,8 @@ h2.brush{font:400 40px/1.15 Brush,'Segoe Script',cursive;letter-spacing:.01em;pa
 .split{display:grid;grid-template-columns:1.6fr 1fr;gap:18px}@media(max-width:900px){.split{grid-template-columns:1fr}}
 .feed{list-style:none;margin:0;padding:0}.feed li{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}.feed li .i{width:26px;text-align:center}.feed li .w{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap}
 </style></head><body>
-<header><img class="logo" src="/logo.png" alt=""><h1>剣聖 <span>KENSEI</span></h1>${sess ? '<span class="live" title="Mis à jour en direct"><i></i>Bot en ligne <svg class="pulse" viewBox="0 0 26 12"><path d="M0 6h7l2-5 3 10 3-8 2 3h9"/></svg></span>' : ''}${sess ? (() => { const k = alertCount(); return `<a class="bell" href="/alertes" title="Centre d'alertes">🔔${k ? `<i>${k}</i>` : ''}</a>`; })() : ''}${sess && BADGE ? `<span class="server">${BADGE.icon ? `<img src="${esc(BADGE.icon)}" alt="">` : ''}${esc(BADGE.name)}</span>` : ''}<div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
-<div class="wrap">${sess ? `<nav><a class="brand" href="/" title="Accueil"><img src="/assets/logo-kensei.jpg" alt="Kensei · Les Ronins"></a>${NAV.map(([href, label]) => (href === '#' ? `<div class="sec">${label}</div>` : `<a href="${href}" class="${href === path ? 'on' : ''}">${label}</a>`)).join('')}</nav>` : ''}
+<header><img class="logo" src="/logo.png" alt=""><h1>剣聖 <span>KENSEI</span></h1>${sess ? '<span class="live" title="Mis à jour en direct"><i></i>Bot en ligne <svg class="pulse" viewBox="0 0 26 12"><path d="M0 6h7l2-5 3 10 3-8 2 3h9"/></svg></span>' : ''}${sess ? (() => { const k = alertCount(); return `<a class="bell" href="/alertes" title="Centre d'alertes">🔔${k ? `<i>${k}</i>` : ''}</a>`; })() : ''}${sess && BADGE ? `<span class="server">${BADGE.icon ? `<img src="${esc(BADGE.icon)}" alt="">` : ''}${esc(BADGE.name)}</span>` : ''}${sess ? '<label class="menu-btn" for="menu">☰ Menu</label>' : ''}<div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
+${sess ? '<input type="checkbox" id="menu" aria-hidden="true">' : ''}<div class="wrap">${sess ? `<nav><a class="brand" href="/" title="Accueil"><img src="/assets/logo-kensei.jpg" alt="Kensei · Les Ronins"></a>${NAV.map(([href, label]) => (href === '#' ? `<div class="sec">${label}</div>` : `<a href="${href}" class="${href === path ? 'on' : ''}">${label}</a>`)).join('')}<a class="mobile-only" href="/logout">🚪 Déconnexion (${esc(sess.username ?? '')})</a></nav>` : ''}
 <main>${flash ? `<div class="flash${flash.startsWith('❌') ? ' err' : ''}">${esc(flash)}</div>` : ''}${SUBTITLES[path] ? `<h2 class="brush">${esc(title)}</h2><p class="subtitle">${esc(SUBTITLES[path])}</p>` : `<h2>${esc(title)}</h2>`}${body}</main></div>${nonce && script ? `<script nonce="${nonce}">${script}</script>` : ''}</body></html>`;
 }
 
@@ -647,13 +685,17 @@ function start(client, guildId) {
       }
       if (url.pathname === '/login') {
         const state = rand();
+        if (oauthStates.size > 2000) oauthStates.clear(); // protection contre le remplissage
         oauthStates.set(state, Date.now() + 600_000);
         const q = new URLSearchParams({ client_id: clientId, response_type: 'code', scope: 'identify', redirect_uri: `${BASE}/callback`, state });
-        return redirect(res, `https://discord.com/oauth2/authorize?${q}`);
+        // L'état est aussi gardé dans un cookie : la connexion doit se terminer dans le navigateur qui l'a commencée
+        return redirect(res, `https://discord.com/oauth2/authorize?${q}`, { 'Set-Cookie': `${STATE_COOKIE}=${state}; HttpOnly; SameSite=Lax; Path=/callback; Max-Age=600${SECURE ? '; Secure' : ''}` });
       }
       if (url.pathname === '/callback') {
         const state = url.searchParams.get('state');
-        if (!state || !(oauthStates.get(state) > Date.now())) return send(res, 400, page(null, '', 'Lien expiré', '<a class="btn" href="/login">Réessayer</a>'));
+        if (!state || !(oauthStates.get(state) > Date.now()) || !sameToken(state, readCookie(req, STATE_COOKIE)) || !url.searchParams.get('code')) {
+          return send(res, 400, page(null, '', 'Lien expiré', '<a class="btn" href="/login">Réessayer</a>'));
+        }
         oauthStates.delete(state);
         const user = await exchangeCode(url.searchParams.get('code'), clientId);
         const member = await guild?.members.fetch(user.id).catch(() => null);
@@ -663,7 +705,7 @@ function start(client, guildId) {
         sessions.set(newSid, { userId: user.id, username: user.global_name || user.username, avatar: user.avatar, csrf: rand(), expires: Date.now() + SESSION_MS, lastSeen: Date.now(), ip });
         require('./audit').record({ userId: user.id, user: user.username, source: 'web', action: 'connexion', details: `IP ${ip}` });
         console.log(`🌐 Connexion au tableau de bord : ${user.username}`);
-        return redirect(res, '/', { 'Set-Cookie': `${COOKIE}=${newSid}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_MS / 1000}${SECURE ? '; Secure' : ''}` });
+        return redirect(res, '/', { 'Set-Cookie': [`${COOKIE}=${newSid}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_MS / 1000}${SECURE ? '; Secure' : ''}`, `${STATE_COOKIE}=; HttpOnly; Path=/callback; Max-Age=0${SECURE ? '; Secure' : ''}`] });
       }
       if (url.pathname === '/logout') {
         if (sid) sessions.delete(sid);
@@ -688,7 +730,7 @@ function start(client, guildId) {
       }
       if (req.method === 'POST') {
         const body = await readBody(req);
-        if (body.get('csrf') !== sess.csrf) return send(res, 403, page(sess, '', 'Requête refusée', '<p>Jeton de sécurité invalide, recharge la page.</p>'));
+        if (!sameToken(body.get('csrf'), sess.csrf)) return send(res, 403, page(sess, '', 'Requête refusée', '<p>Jeton de sécurité invalide, recharge la page.</p>'));
         const handler = pages[`POST ${url.pathname}`];
         if (!handler) return send(res, 404, page(sess, '', 'Introuvable', ''));
         const flash = await handler(guild, sess, body).catch((e) => `❌ ${e.message}`);
@@ -707,16 +749,22 @@ function start(client, guildId) {
       return send(res, 200, page(sess, url.pathname, title, body, flash, refresh, nonce, script), {}, nonce);
     } catch (err) {
       console.error('Tableau de bord :', err);
-      send(res, 500, page(null, '', 'Erreur', `<p>${esc(err.message)}</p><a class="btn" href="/">Accueil</a>`));
+      // Aucun détail technique montré au visiteur (il est dans le journal d'erreurs)
+      send(res, 500, page(null, '', 'Erreur', '<p>Une erreur est survenue. Elle a été enregistrée dans le journal du bot.</p><a class="btn" href="/">Accueil</a>'));
     }
   });
 
+  // Coupe les connexions trop lentes (attaque « slowloris »)
+  server.headersTimeout = 15_000;
+  server.requestTimeout = 30_000;
+  server.keepAliveTimeout = 5_000;
   server.on('error', (err) => console.error(`❌ Tableau de bord (port ${PORT}) :`, err.message));
   server.listen(PORT, HOST, () => console.log(`🌐 Tableau de bord : ${BASE} (écoute sur ${HOST}:${PORT})`));
   setInterval(() => {
     const now = Date.now();
     for (const [k, s] of sessions) if (s.expires < now) sessions.delete(k);
     for (const [k, e] of oauthStates) if (e < now) oauthStates.delete(k);
+    for (const [k, h] of hits) if (h.reset < now) hits.delete(k);
   }, 3600_000).unref();
 }
 
