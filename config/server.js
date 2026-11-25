@@ -125,6 +125,7 @@ module.exports = {
         { key: 'lfg', name: '🎮┃recherche-joueurs', type: 'text', access: 'members-readonly', topic: 'Cherche des coéquipiers : /recherche jeu: plateforme: — ton profil joueur : /joueur profil' },
         { key: 'tournaments', name: '🏆┃tournois', type: 'text', access: 'members-readonly', topic: 'Inscriptions, tableaux et résultats des tournois de la commu.' },
         { key: 'nights', name: '🌙┃soirées-gaming', type: 'text', access: 'members-readonly', topic: 'Les soirées gaming : réserve ta place avec le bouton. /calendrier pour tout voir.' },
+        { key: 'game_server', name: '⛏️┃serveur-minecraft', type: 'text', access: 'members-readonly', topic: 'Adresse, état et joueurs connectés du serveur Minecraft de la commu (/minecraft).' },
       ],
     },
     {

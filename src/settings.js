@@ -139,6 +139,7 @@ const MODULES = [
   ['gaming', '🎮 Profils joueurs, recherche et équipes', 'modules.gaming', 'Gaming'],
   ['tournaments', '🏆 Tournois', 'modules.tournaments', 'Gaming'],
   ['nights', '🌙 Soirées gaming et réservations', 'modules.nights', 'Gaming'],
+  ['gameServer', '⛏️ Serveur Minecraft (état dans Discord)', 'modules.gameServer', 'Gaming'],
   ['reminders', '⏰ Rappels des événements en MP', 'modules.reminders', 'Gaming'],
   ['reputation', '🙏 Réputation (/merci)', 'modules.reputation', 'Communauté'],
   ['referrals', '🤝 Parrainage', 'modules.referrals', 'Communauté'],

@@ -272,6 +272,12 @@ async function checkSchedule(guild) {
   const now = Date.now();
   const segments = (schedule?.segments ?? []).filter((s) => !s.canceled_until && new Date(s.start_time).getTime() > now - 3600_000);
 
+  // Prochains lives, pour la page vitrine du site
+  (db.twitchSchedule ??= { events: {} }).upcoming = segments
+    .slice(0, 8)
+    .map((s) => ({ start: new Date(s.start_time).getTime(), title: String(s.title || 'Stream').slice(0, 140), game: s.category?.name ?? null }));
+  save();
+
   // 1) Message de planning dans 🗓️┃planning
   const channel = findChannel(guild, 'schedule');
   if (channel) {

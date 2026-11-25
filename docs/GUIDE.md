@@ -42,6 +42,8 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 
 **🏆 Tournois & soirées** — inscris-toi dans #tournois (`/tournoi equipe` pour une équipe) et réserve ta place aux soirées de #soirées-gaming. `/calendrier` montre tout ce qui arrive, `/classement-jeu` le classement de chaque jeu.
 
+**⛏️ Serveur Minecraft** — `/minecraft inscrire pseudo:` t'ajoute à la liste blanche, puis connecte-toi sur l'adresse affichée dans #serveur-minecraft (`/minecraft etat` pour voir qui joue).
+
 **🎯 Défis collectifs** — `/defis` : toute la commu avance vers un même objectif, chaque participant gagne des ryō.
 
 **🙏 Entraide** — `/merci @membre` pour remercier quelqu'un qui t'a aidé, `/rep` pour la réputation. `/parrainage lien` pour inviter tes amis et gagner des ryō.
@@ -123,6 +125,7 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/joueur profil` | Créer ou modifier ton profil joueur |
 | `/joueur voir [membre:]` | Voir le profil joueur d'un membre |
 | `/recherche jeu: places: [plateforme:] [message:]` | Chercher des coéquipiers (posté dans 🎮┃recherche-joueurs) |
+| `/minecraft etat` · `/minecraft inscrire pseudo:` · `/minecraft desinscrire` | Serveur Minecraft : état, liste blanche |
 | `/joueurs jeu: [plateforme:] [dispo:]` | Trouver des membres qui jouent à un jeu |
 | `/equipes taille: [jeu:] [joueurs:]` | Faire des équipes équilibrées avec les joueurs de ton vocal |
 | `/classement-jeu jeu:` | Le classement compétitif (Elo) d'un jeu |
