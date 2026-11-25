@@ -280,6 +280,7 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 
 | Commande | Ce qu'elle fait |
 |---|---|
+| `/emoji ajouter image: [nom:]` · `/emoji supprimer nom:` · `/emoji liste` | Émojis personnalisés du serveur (statiques ou GIF animés) |
 | `/backup creer [nom:]` | Créer une sauvegarde |
 | `/backup liste` | Voir les sauvegardes |
 | `/backup copie-base` | Envoyer maintenant une copie de la base dans 💾┃sauvegardes |

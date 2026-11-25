@@ -124,4 +124,4 @@ async function renderRankCard(d) {
   return new Resvg(svg, { font: resvgFont(), fitTo: { mode: 'original' } }).render().asPng();
 }
 
-module.exports = { renderRankCard };
+module.exports = { renderRankCard, avatarDataUri };

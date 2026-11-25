@@ -427,6 +427,18 @@ Le staff (permission « Gérer les messages ») n'est pas concerné par l'anti-s
 
 `assets/icon.png` (logo officiel Les Ronins : icône du serveur appliquée par `/setup`, avatar du bot mis à jour automatiquement quand l'image change) et `assets/banner.png` (bannière, appliquée si le serveur a le niveau de boost 2 ; sinon utilisable pour Twitch, YouTube, X…).
 
+## ▶️ Alertes YouTube
+
+Mets ta chaîne sur le tableau de bord (*📡 Twitch, TikTok & YouTube* : `@pseudo`, lien de la chaîne ou ID `UC…`) ou `YOUTUBE_CHANNEL` dans `.env`. Toutes les 10 minutes, le bot lit le flux public de la chaîne (gratuit, sans clé) : chaque **nouvelle vidéo ou Short** est postée dans ▶️┃youtube avec mention de ▶️ Notif YouTube. Les vidéos déjà en ligne ne sont pas annoncées.
+
+## 😀 Émojis personnalisés
+
+Tableau de bord → *😀 Émojis* (choisis l'image, le nom se remplit tout seul) ou `/emoji ajouter image: [nom:]`, `/emoji supprimer`, `/emoji liste`. PNG, JPEG, WebP ou **GIF animé**, 256 Ko max. Le bot a besoin de la permission *Gérer les expressions* : ouvre une fois le nouveau lien de `npm run invite`.
+
+## 🏮 Bannière de bienvenue
+
+Chaque arrivée est accueillie par une bannière en image (décor Kensei, avatar, pseudo, « Ronin n°… ») sous le message de bienvenue. Désactivable sur *🏮 Bienvenue & départ*.
+
 ## 📱 Alertes TikTok
 
 Remplis `TIKTOK_USERNAME` dans `.env` (pseudo sans @) puis redémarre le bot. Il vérifie ton profil toutes les 2 minutes :

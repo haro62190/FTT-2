@@ -95,12 +95,12 @@ function send(res, status, body, headers = {}, nonce = null) {
 }
 const redirect = (res, to, headers = {}) => send(res, 302, '', { Location: to, ...headers });
 
-function readBody(req) {
+function readBody(req, max = 200_000) {
   return new Promise((resolve, reject) => {
     let data = '';
     req.on('data', (c) => {
       data += c;
-      if (data.length > 200_000) {
+      if (data.length > max) {
         reject(new Error('Requête trop grande'));
         req.destroy();
       }
@@ -134,6 +134,7 @@ const NAV = [
   ['/suggestions', '💡 Suggestions'],
   ['/commandes', '⌨️ Commandes perso'],
   ['/menus-roles', '🎭 Menus de rôles'],
+  ['/emojis', '😀 Émojis'],
   ['/editeur', '✉️ Éditeur de messages'],
   ['/communaute', '🏯 Hall of Fame & vocal'],
   ['#', 'Gaming'],
@@ -141,7 +142,7 @@ const NAV = [
   ['/soirees', '🌙 Soirées, défis & calendrier'],
   ['/equipes', '👥 Équipes & inscriptions'],
   ['#', 'Stream'],
-  ['/notifications', '📡 Twitch & TikTok'],
+  ['/notifications', '📡 Twitch, TikTok & YouTube'],
   ['/lives', '📺 Lives & statistiques'],
   ['/stats-reunies', '📊 Stats Twitch + Discord'],
   ['/clips', '🎬 Galerie de clips'],
@@ -368,7 +369,7 @@ const pages = {
     return {
       title: '🏮 Bienvenue & départ',
       body: `<form method="post" class="card">${csrf(sess)}
-      <h3>Message de bienvenue</h3>${checkbox('welcome_enabled', w.enabled, 'Activé')}
+      <h3>Message de bienvenue</h3>${checkbox('welcome_enabled', w.enabled, 'Activé')}${checkbox('welcome_banner', w.banner !== false, 'Avec la bannière en image (avatar, pseudo, numéro de membre)')}
       <label>Message — variables : <code>{user}</code> <code>{username}</code> <code>{server}</code> <code>{count}</code> <code>{rules}</code></label>
       <textarea name="welcome_message" maxlength="1500">${esc(w.message)}</textarea>
       <h3 style="margin-top:18px">Message de départ</h3>${checkbox('goodbye_enabled', g.enabled, 'Activé')}
@@ -379,6 +380,7 @@ const pages = {
   },
   async 'POST /bienvenue'(guild, sess, body) {
     settings.set('welcome.enabled', body.has('welcome_enabled'));
+    settings.set('welcome.banner', body.has('welcome_banner'));
     settings.set('goodbye.enabled', body.has('goodbye_enabled'));
     for (const k of ['welcome', 'goodbye']) {
       const msg = (body.get(`${k}_message`) ?? '').trim().slice(0, 1500);
@@ -738,7 +740,7 @@ function start(client, guildId) {
         return res.end(JSON.stringify(liveStats(guild)));
       }
       if (req.method === 'POST') {
-        const body = await readBody(req);
+        const body = await readBody(req, url.pathname === '/emojis' ? 600_000 : 200_000); // envoi d'image (émojis)
         if (!sameToken(body.get('csrf'), sess.csrf)) return send(res, 403, page(sess, '', 'Requête refusée', '<p>Jeton de sécurité invalide, recharge la page.</p>'));
         const handler = pages[`POST ${url.pathname}`];
         if (!handler) return send(res, 404, page(sess, '', 'Introuvable', ''));

@@ -23,6 +23,7 @@ function fakeGuild() {
     id: 'G', name: 'Les Ronins', memberCount: 128, ownerId: 'owner', client,
     members: { me: { nickname: '剣聖 ・ Kensei', permissions: perms, roles: { highest: { name: 'Kensei', position: 50 } } }, cache: new Collection(), fetch: async () => new Collection() },
     channels: { cache: new Collection([['c1', text]]), fetch: async () => {} },
+    emojis: { cache: new Collection([['e1', { id: 'e1', name: '<katana>', animated: false }]]), fetch: async () => {} },
     roles: { cache: new Collection([['G', { id: 'G', name: '@everyone' }], ['r1', role]]), fetch: async () => {} },
     scheduledEvents: { fetch: async () => new Collection() },
     autoModerationRules: { fetch: async () => new Collection() },

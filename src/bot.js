@@ -5,7 +5,7 @@
  */
 require('dotenv').config();
 require('./logger').install();
-const { Client, GatewayIntentBits, Partials, EmbedBuilder, Events, MessageFlags } = require('discord.js');
+const { AttachmentBuilder, Client, GatewayIntentBits, Partials, EmbedBuilder, Events, MessageFlags } = require('discord.js');
 const { TwitchClient } = require('./twitch');
 const commands = require('./commands');
 const levels = require('./levels');
@@ -106,18 +106,20 @@ client.on(Events.GuildMemberAdd, async (member) => {
   const rules = findChannel(member.guild, 'rules');
   if (welcome && settings.get('welcome.enabled')) {
     const text = fillTemplate(settings.get('welcome.message'), member, rules);
-    await welcome
-      .send({
-        embeds: [
-          new EmbedBuilder()
-            .setColor(BRAND_COLOR)
-            .setDescription(text)
-            .setThumbnail(member.user.displayAvatarURL())
-            .setFooter({ text: `Membre n°${member.guild.memberCount}` }),
-        ],
-        allowedMentions: { users: [member.id] },
-      })
-      .catch(console.error);
+    const embed = new EmbedBuilder().setColor(BRAND_COLOR).setDescription(text).setFooter({ text: `Membre n°${member.guild.memberCount}` });
+    let files = [];
+    const card = require('./welcomecard');
+    if (settings.get('welcome.banner') !== false && card.available()) {
+      try {
+        const png = await card.renderWelcome({ username: member.displayName ?? member.user.username, avatarUrl: member.user.displayAvatarURL({ extension: 'png', size: 256 }), count: member.guild.memberCount });
+        files = [new AttachmentBuilder(png, { name: 'bienvenue.png' })];
+        embed.setImage('attachment://bienvenue.png');
+      } catch (err) {
+        console.error('Bannière de bienvenue :', err.message);
+      }
+    }
+    if (!files.length) embed.setThumbnail(member.user.displayAvatarURL());
+    await welcome.send({ embeds: [embed], files, allowedMentions: { users: [member.id] } }).catch(console.error);
   }
   await sendLog(
     member.guild,
@@ -348,6 +350,7 @@ client.once(Events.ClientReady, async () => {
   require('./insights').start(guild);
   giveaway.start(client);
   startTikTokWatcher(guild);
+  require('./youtube').start(guild);
   require('./stats').start(guild, twitch).catch((e) => console.error('Stats :', e.message));
 
   require('./dashboard').start(client, GUILD_ID);

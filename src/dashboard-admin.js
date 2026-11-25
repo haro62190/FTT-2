@@ -195,10 +195,15 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
       const n = settings.get('notifications');
       const twitchOk = !!(process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET);
       return {
-        title: '📡 Twitch & TikTok',
+        title: '📡 Twitch, TikTok & YouTube',
         body: `<form method="post" class="card">${csrf(sess)}${hidden('action', 'accounts')}<h3>Comptes</h3>
         <div class="row"><div><label>Chaîne Twitch (sans https://twitch.tv/)</label><input type="text" name="twitch" value="${esc(twitchLogin())}" maxlength="40" placeholder="haro62190"></div>
         <div><label>Compte TikTok (sans @)</label><input type="text" name="tiktok" value="${esc(tiktokUser())}" maxlength="40" placeholder="haro621900"></div></div>
+        <label>Chaîne YouTube (@pseudo, lien de la chaîne ou ID UC…)</label><input type="text" name="youtube" value="${esc(require('./youtube').source())}" maxlength="120" placeholder="@haro62190">
+        ${(() => {
+          const y = db.youtube ?? {};
+          return y.error ? `<p class="muted">▶️ YouTube : <span class="badge bad">${esc(y.error)}</span></p>` : y.channelId ? `<p class="muted">▶️ YouTube : chaîne <code>${esc(y.channelId)}</code>${y.lastCheck ? ` · vérifiée ${fmtDate(y.lastCheck)}` : ''}</p>` : '';
+        })()}
         <p class="muted">Identifiants de l'API Twitch : ${twitchOk ? '<span class="badge ok">présents dans .env</span>' : '<span class="badge bad">absents — TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET dans .env</span>'} (secrets : jamais modifiables ni affichés ici).</p>
         <button>Enregistrer</button> <button class="ghost" name="test" value="1">Enregistrer et tester</button></form>
         <form method="post" class="card">${csrf(sess)}${hidden('action', 'toggles')}<h3>Alertes</h3>
@@ -206,6 +211,7 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
         ${checkbox('clips', n.clips, 'Nouveaux clips Twitch dans 🎬┃clips')}
         ${checkbox('schedule', n.schedule, 'Planning Twitch dans 🗓️┃planning + événements Discord')}
         ${checkbox('tiktok', n.tiktok, 'TikTok : nouvelles vidéos et lives')}
+        ${checkbox('youtube', n.youtube !== false, 'YouTube : nouvelles vidéos et Shorts dans ▶️┃youtube')}
         ${checkbox('milestones', settings.on('milestones'), 'Paliers d\'abonnés annoncés (100, 500, 1000…)')}
         <button>Enregistrer</button></form>
         <form method="post" class="card">${csrf(sess)}${hidden('action', 'sync')}<h3>🗓️ Planning</h3><p class="muted">Synchronisé toutes les 30 minutes.</p><button class="ghost">Synchroniser maintenant</button></form>
@@ -219,15 +225,26 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
         return '🗓️ Planning synchronisé.';
       }
       if (action === 'toggles') {
-        for (const k of ['twitch', 'clips', 'schedule', 'tiktok']) settings.set(`notifications.${k}`, body.has(k));
+        for (const k of ['twitch', 'clips', 'schedule', 'tiktok', 'youtube']) settings.set(`notifications.${k}`, body.has(k));
         settings.set('modules.milestones', body.has('milestones'));
         return '✅ Alertes enregistrées.';
       }
       const clean = (v) => String(v ?? '').trim().replace(/^https?:\/\/(www\.)?(twitch\.tv|tiktok\.com)\/@?/i, '').replace(/^@/, '').replace(/[^\w.]/g, '').slice(0, 40);
       settings.set('stream.twitchChannel', clean(body.get('twitch')).toLowerCase());
       settings.set('stream.tiktokUsername', clean(body.get('tiktok')));
+      const yt = String(body.get('youtube') ?? '').trim().slice(0, 120);
+      if (yt && !require('./youtube').normalize(yt)) return '❌ Chaîne YouTube invalide : mets @pseudo, le lien de la chaîne ou son ID UC….';
+      settings.set('stream.youtubeChannel', yt);
       if (!body.get('test')) return '✅ Comptes enregistrés.';
       const out = [];
+      if (yt) {
+        try {
+          const id = await require('./youtube').channelId();
+          out.push(`▶️ YouTube : chaîne ${id} trouvée ✅`);
+        } catch (e) {
+          out.push(`▶️ YouTube : ${e.message.slice(0, 120)} ❌`);
+        }
+      }
       if (twitchLogin() && process.env.TWITCH_CLIENT_ID) {
         try {
           const { TwitchClient } = require('./twitch');

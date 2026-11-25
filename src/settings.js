@@ -8,6 +8,7 @@ const { db, save } = require('./store');
 const DEFAULTS = {
   welcome: {
     enabled: true,
+    banner: true, // bannière en image (avatar, pseudo, numéro de membre)
     message: config.welcomeMessage,
   },
   goodbye: {
@@ -61,6 +62,7 @@ const DEFAULTS = {
   notifications: {
     twitch: true,
     tiktok: true,
+    youtube: true,
     clips: true,
     schedule: true,
   },
@@ -158,6 +160,7 @@ const MODULES = [
   ['clips', '🎬 Clips Twitch', 'notifications.clips', 'Stream'],
   ['schedule', '🗓️ Planning Twitch → événements', 'notifications.schedule', 'Stream'],
   ['tiktok', '📱 Alertes TikTok', 'notifications.tiktok', 'Stream'],
+  ['youtube', '▶️ Alertes YouTube', 'notifications.youtube', 'Stream'],
   ['milestones', '🎉 Paliers d\'abonnés', 'modules.milestones', 'Stream'],
   ['highlights', '💥 Moments forts (lecture du chat Twitch)', 'modules.highlights', 'Stream'],
   ['liveGames', '🎲 Quiz, pronostics et votes du live', 'modules.liveGames', 'Stream'],

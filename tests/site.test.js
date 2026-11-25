@@ -31,3 +31,68 @@ test('vitrine : page complète, contenu échappé, lecteur Twitch pendant le liv
   assert.ok(html.includes('>42<'));
   db.twitchLive = null;
 });
+
+test('émojis : format vérifié par le contenu, taille, nom, places restantes', async () => {
+  const { Collection } = require('discord.js');
+  const em = require('../src/emojis');
+  const created = [];
+  const cache = new Collection();
+  const guild = {
+    premiumTier: 0,
+    emojis: { cache, fetch: async () => cache, create: async ({ name, attachment }) => (created.push({ name, size: attachment.length }), { name, id: '9' }) },
+  };
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(40)]);
+  const gif = Buffer.concat([Buffer.from('GIF89a'), Buffer.alloc(40)]);
+  assert.equal(em.sniff(png), 'image/png');
+  assert.equal(em.sniff(gif), 'image/gif');
+  assert.equal(em.sniff(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg">')), null);
+  assert.equal(em.nameFrom('Mon Logo!.gif'), 'Mon_Logo');
+  await em.add(guild, { name: 'katana', data: png });
+  await assert.rejects(em.add(guild, { name: 'a b', data: png }), /Nom invalide/);
+  await assert.rejects(em.add(guild, { name: 'faux', data: Buffer.from('pas une image du tout') }), /Format refusé/);
+  await assert.rejects(em.add(guild, { name: 'gros', data: Buffer.concat([png, Buffer.alloc(300 * 1024)]) }), /trop lourde/);
+  cache.set('1', { id: '1', name: 'katana', animated: false });
+  await assert.rejects(em.add(guild, { name: 'katana', data: png }), /existe déjà/);
+  for (let k = 0; k < 50; k++) cache.set(`a${k}`, { id: `a${k}`, name: `anim${k}`, animated: true });
+  await assert.rejects(em.add(guild, { name: 'danse', data: gif }), /Plus de place pour les émojis animés/);
+  assert.deepEqual(created.map((c) => c.name), ['katana']);
+});
+
+test('youtube : formats de chaîne acceptés', () => {
+  const { normalize } = require('../src/youtube');
+  assert.deepEqual(normalize('@haro62190'), { handle: 'haro62190' });
+  assert.deepEqual(normalize('https://www.youtube.com/@haro62190/videos'), { handle: 'haro62190' });
+  assert.deepEqual(normalize('https://youtube.com/channel/UCabcdefghijklmnopqrstuv'), { id: 'UCabcdefghijklmnopqrstuv' });
+  assert.equal(normalize('<script>'), null);
+});
+
+test('youtube : flux lu, Shorts reconnus, rien annoncé au 1er passage puis seulement le nouveau', async () => {
+  const yt = require('../src/youtube');
+  const settings = require('../src/settings');
+  const entry = (id, title, short, ageH) =>
+    `<entry><yt:videoId>${id}</yt:videoId><title>${title}</title><link rel="alternate" href="https://www.youtube.com/${short ? `shorts/${id}` : `watch?v=${id}`}"/><published>${new Date(Date.now() - ageH * 3600_000).toISOString()}</published></entry>`;
+  let feed = `<feed><author><name>Haro &amp; co</name></author>${entry('old11111111', 'Ancienne', false, 100)}</feed>`;
+  const realFetch = global.fetch;
+  global.fetch = async () => ({ ok: true, text: async () => feed });
+  settings.set('stream.youtubeChannel', 'UCabcdefghijklmnopqrstuv');
+  db.youtube = undefined;
+  const sent = [];
+  const channel = { name: '▶️┃youtube', send: async (m) => sent.push(m) };
+  const guild = { channels: { cache: { find: (f) => [channel].find(f), get: () => undefined } }, roles: { cache: { find: () => undefined } } };
+  try {
+    assert.equal(yt.parseFeed(feed)[0].author, 'Haro & co');
+    await yt.check(guild); // 1er passage : mémorise sans annoncer
+    assert.equal(sent.length, 0);
+    feed = `<feed>${entry('new22222222', 'Clip &lt;fou&gt;', true, 1)}${entry('old11111111', 'Ancienne', false, 100)}</feed>`;
+    await yt.check(guild);
+    assert.equal(sent.length, 1);
+    assert.match(sent[0].content, /Nouveau Short/);
+    assert.equal(sent[0].embeds[0].data.title, 'Clip <fou>');
+    assert.equal(sent[0].embeds[0].data.url, 'https://www.youtube.com/shorts/new22222222');
+    await yt.check(guild); // déjà vue : pas de doublon
+    assert.equal(sent.length, 1);
+  } finally {
+    global.fetch = realFetch;
+    settings.set('stream.youtubeChannel', '');
+  }
+});
