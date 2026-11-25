@@ -234,6 +234,7 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
       settings.set('stream.tiktokUsername', clean(body.get('tiktok')));
       const yt = String(body.get('youtube') ?? '').trim().slice(0, 120);
       if (yt && !require('./youtube').normalize(yt)) return '❌ Chaîne YouTube invalide : mets @pseudo, le lien de la chaîne ou son ID UC….';
+      if (yt !== require('./youtube').source() && db.youtube) db.youtube.error = null; // ancienne erreur = ancienne chaîne
       settings.set('stream.youtubeChannel', yt);
       if (!body.get('test')) return '✅ Comptes enregistrés.';
       const out = [];
