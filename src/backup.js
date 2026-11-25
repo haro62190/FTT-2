@@ -9,6 +9,7 @@ const { BRAND_COLOR } = require('./shared');
 const { db, sql, save } = require('./store');
 const settings = require('./settings');
 const { confirm, progress } = require('./confirm');
+const { grantable } = require('./permissions');
 
 const AUTO_KEEP = 7; // sauvegardes automatiques conservées
 
@@ -150,12 +151,16 @@ async function restore(guild, data, log = console.log) {
   log('👥 Rôles');
   for (const r of [...data.roles].sort((a, b) => a.position - b.position)) {
     let role = guild.roles.cache.get(r.id) ?? guild.roles.cache.find((x) => x.name === r.name && !x.managed);
-    const fields = { name: r.name, color: r.color, hoist: r.hoist, mentionable: r.mentionable, permissions: BigInt(r.permissions) };
+    // Sans Administrateur, Discord refuse de créer un rôle ayant une permission que le bot n'a pas :
+    // on crée quand même le rôle (sans ces permissions) au lieu de le perdre, et on le signale.
+    const { bits, dropped } = grantable(guild, BigInt(r.permissions), role?.permissions.bitfield ?? 0n);
+    const fields = { name: r.name, color: r.color, hoist: r.hoist, mentionable: r.mentionable, permissions: bits };
+    if (dropped.length) log(`  ⚠ ${r.name} : permissions non recopiées (le bot ne les a pas) : ${dropped.join(', ')}`);
     if (!role) {
       role = await guild.roles.create({ ...fields, reason: 'Restauration de sauvegarde' }).catch((e) => log(`  ⚠ ${r.name} : ${e.message}`));
       if (role) log(`  ＋ ${r.name}`);
     } else if (role.editable) {
-      await role.edit(fields).catch(() => {});
+      await role.edit(fields).catch((e) => log(`  ⚠ ${r.name} : ${e.message}`));
     }
     if (role) roleMap.set(r.id, role.id);
   }
