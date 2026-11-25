@@ -92,6 +92,7 @@ module.exports = {
         { key: 'stat_discord', name: '👥 Membres : …', type: 'voice', access: 'stats', stat: 'discord' },
         { key: 'stat_twitch', name: '🟣 Twitch : …', type: 'voice', access: 'stats', stat: 'twitch' },
         { key: 'stat_tiktok', name: '📱 TikTok : …', type: 'voice', access: 'stats', stat: 'tiktok' },
+        { key: 'stat_youtube', name: '▶️ YouTube : …', type: 'voice', access: 'stats', stat: 'youtube' },
       ],
     },
     {

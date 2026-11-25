@@ -125,6 +125,7 @@ ${liveBlock}
 <div class="kpi"><b>${n(guild?.memberCount ?? stats.discord)}</b><span>membres Discord</span></div>
 ${stats.twitch != null ? `<div class="kpi"><b>${n(stats.twitch)}</b><span>followers Twitch</span></div>` : ''}
 ${stats.tiktok != null ? `<div class="kpi"><b>${n(stats.tiktok)}</b><span>abonnés TikTok</span></div>` : ''}
+${stats.youtube != null ? `<div class="kpi"><b>${n(stats.youtube)}</b><span>abonnés YouTube</span></div>` : ''}
 <div class="kpi"><b>${live ? '🔴' : '⚫'}</b><span>${live ? 'en live maintenant' : 'hors ligne'}</span></div>
 </div></section>
 ${

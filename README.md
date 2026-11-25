@@ -431,6 +431,8 @@ Le staff (permission « Gérer les messages ») n'est pas concerné par l'anti-s
 
 Mets ta chaîne sur le tableau de bord (*📡 Twitch, TikTok & YouTube* : `@pseudo`, lien de la chaîne ou ID `UC…`) ou `YOUTUBE_CHANNEL` dans `.env`. Toutes les 10 minutes, le bot lit le flux public de la chaîne (gratuit, sans clé) : chaque **nouvelle vidéo ou Short** est postée dans ▶️┃youtube avec mention de ▶️ Notif YouTube. Les vidéos déjà en ligne ne sont pas annoncées.
 
+Le salon compteur **▶️ YouTube : …** (catégorie 📊 STATS, créé par `/setup`) affiche le nombre d'abonnés, mis à jour toutes les 10 minutes. YouTube n'affiche publiquement qu'un nombre arrondi (ex. 1,23 k) ; valeur de secours possible avec `/stats youtube` ou sur *📊 Compteurs*.
+
 ## 😀 Émojis personnalisés
 
 Tableau de bord → *😀 Émojis* (choisis l'image, le nom se remplit tout seul) ou `/emoji ajouter image: [nom:]`, `/emoji supprimer`, `/emoji liste`. PNG, JPEG, WebP ou **GIF animé**, 256 Ko max. Le bot a besoin de la permission *Gérer les expressions* : ouvre une fois le nouveau lien de `npm run invite`.

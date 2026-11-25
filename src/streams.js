@@ -58,6 +58,7 @@ function milestoneOf(n) {
 const PLATFORM = {
   twitch: { label: 'followers sur Twitch', emoji: '🟣', url: () => `https://twitch.tv/${require('./shared').twitchLogin()}` },
   tiktok: { label: 'abonnés sur TikTok', emoji: '📱', url: () => `https://www.tiktok.com/@${require('./shared').tiktokUser()}` },
+  youtube: { label: 'abonnés sur YouTube', emoji: '▶️', url: () => (db.youtube?.channelId ? `https://www.youtube.com/channel/${db.youtube.channelId}` : null) },
   discord: { label: 'membres sur le Discord', emoji: '👥', url: () => null },
 };
 
