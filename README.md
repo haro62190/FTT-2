@@ -382,6 +382,7 @@ pm2 save && pm2 startup        # redémarrage automatique si le VPS redémarre
 | --- | --- |
 | `bash /root/bot/scripts/site-install.sh` | Publie la vitrine sur `https://haro62190.tech` (+ www), garde le tableau de bord sur `bot.`, prépare `status.` ; HTTPS automatique (Caddy) |
 | `bash /root/bot/scripts/minecraft-install.sh` | Serveur Minecraft Java officiel (dernière version), liste blanche, RCON local, service qui redémarre seul, pare-feu ; remplit le `.env` |
+| `bash /root/bot/scripts/modpack-install.sh <server-pack.zip> 25 6G` | **À la place** du Minecraft normal : un modpack (ex. FTB Evolution 2) depuis son « Server Pack » officiel ; l'ancien serveur est sauvegardé dans `/opt/minecraft-sauvegarde-<date>` |
 | `bash /root/bot/scripts/uptime-kuma-install.sh` | Uptime Kuma sur `https://status.haro62190.tech` (crée ton compte admin tout de suite) |
 
 - **Vitrine** : présentation, live Twitch intégré pendant les lives, prochains lives, meilleurs clips, compteurs, état Minecraft, bouton « Rejoindre le Discord » (invitation créée par le bot). Textes et liens : tableau de bord → *🌐 Page vitrine*.
