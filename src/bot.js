@@ -132,6 +132,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
 client.on(Events.GuildMemberRemove, async (member) => {
   if (member.guild.id === GUILD_ID) require('./history').bump('leaves');
   if (member.guild.id !== GUILD_ID) return;
+  require('./gameserver').unwhitelist(member.id).catch(() => {}); // plus membre = plus d'accès au serveur Minecraft
   const channel = findChannel(member.guild, 'welcome');
   if (channel && settings.get('goodbye.enabled') && !security.lockdown.active) {
     await channel
@@ -342,6 +343,7 @@ client.once(Events.ClientReady, async () => {
   require('./seasons').start(guild);
   require('./quests').init(guild);
   require('./nights').start(client, guild);
+  require('./gameserver').start(guild);
   require('./livegames').start(client);
   require('./social').start(guild);
   require('./challenges').start(client, guild);

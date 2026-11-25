@@ -140,11 +140,13 @@ const NAV = [
   ['/tournois', '🏆 Tournois'],
   ['/soirees', '🌙 Soirées, défis & calendrier'],
   ['/equipes', '👥 Équipes & inscriptions'],
+  ['/minecraft', '⛏️ Serveur Minecraft'],
   ['#', 'Stream'],
   ['/notifications', '📡 Twitch & TikTok'],
   ['/lives', '📺 Lives & statistiques'],
   ['/stats-reunies', '📊 Stats Twitch + Discord'],
   ['/clips', '🎬 Galerie de clips'],
+  ['/page-vitrine', '🌐 Page vitrine'],
   ['/stats', '📊 Compteurs'],
   ['/annonce', '📢 Annonce & embed'],
   ['/musique', '🎵 Musique'],
@@ -606,6 +608,7 @@ Object.assign(pages, require('./dashboard-pages')({ esc, csrf, checkbox, fetchMe
 Object.assign(pages, require('./dashboard-admin')({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }));
 Object.assign(pages, require('./dashboard-community')({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }));
 Object.assign(pages, require('./dashboard-ops')({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }));
+Object.assign(pages, require('./dashboard-site')({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }));
 
 // ───────────────────────── Connexion Discord ─────────────────────────
 
@@ -683,6 +686,13 @@ function start(client, guildId) {
           err ? send(res, 404, '') : res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' }).end(data),
         );
       }
+      // 🌐 Page vitrine publique : sur son propre domaine (PUBLIC_HOST), rien d'autre n'est servi
+      const vitrine = require('./vitrine');
+      if (vitrine.isPublicHost(req.headers.host)) {
+        if (req.method !== 'GET' || url.pathname !== '/') return send(res, 404, 'Page introuvable');
+        return vitrine.serve(res, guild, req.headers.host);
+      }
+      if (url.pathname === '/vitrine' && req.method === 'GET') return vitrine.serve(res, guild, req.headers.host);
       if (url.pathname === '/login') {
         const state = rand();
         if (oauthStates.size > 2000) oauthStates.clear(); // protection contre le remplissage

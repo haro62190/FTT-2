@@ -444,6 +444,7 @@ commands.push(
   ...require('./applications').commands,
   ...require('./reports').commands,
   ...require('./rescue').commands,
+  ...require('./gameserver').commands,
 );
 
 // /help = /aide
