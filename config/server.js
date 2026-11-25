@@ -71,7 +71,7 @@ module.exports = {
     { key: 'rank_samurai', name: '⚔️ Samouraï', color: 0x991f1f, hoist: true, levelReward: 15 },
     { key: 'rank_ashigaru', name: '🗡️ Ashigaru', color: 0x808080, hoist: true, levelReward: 5 },
     // Rôle donné en acceptant le règlement
-    { key: 'member', name: '⚔️ Ronin', formerNames: ['🎮 Membre'], color: 0x5c5c5c, hoist: true },
+    { key: 'member', name: '⚔️ Ronin', formerNames: ['🎮 Membre'], color: 0x5c5c5c, hoist: false },
     // Rôles que les membres peuvent s'attribuer eux-mêmes dans #rôles
     // Donné par /quarantaine et l'anti-raid : ne voit plus que 🏚️┃cachot (rôles rendus à la sortie)
     { key: 'quarantine', name: '⛓️ Quarantaine', color: 0x3b3b3b },
