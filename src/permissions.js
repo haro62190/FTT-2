@@ -60,8 +60,10 @@ function clientIdFromToken(token) {
   }
 }
 
-function inviteUrl(clientId) {
-  return `https://discord.com/oauth2/authorize?client_id=${clientId}&scope=bot%20applications.commands&permissions=${bitfield()}`;
+/** Lien d'invitation. `rescue` : version serveur de secours (+ gérer les émojis pour les recopier). */
+function inviteUrl(clientId, { rescue = false } = {}) {
+  const bits = rescue ? bitfield() | P.ManageGuildExpressions : bitfield();
+  return `https://discord.com/oauth2/authorize?client_id=${clientId}&scope=bot%20applications.commands&permissions=${bits}`;
 }
 
 /**
