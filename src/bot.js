@@ -93,6 +93,7 @@ function fillTemplate(text, member, rules) {
 }
 
 client.on(Events.GuildMemberAdd, async (member) => {
+  if (isRescue(member.guild.id)) return require('./rescue').onMemberJoin(member).catch(() => {});
   if (member.guild.id === GUILD_ID) {
     require('./history').bump('joins');
     require('./challenges').progress('members', member.id);
@@ -209,7 +210,12 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
 const INTERACTIVE = ['./gaming', './tournaments', './nights', './livegames', './applications', './reports'];
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.inGuild() || interaction.guildId !== GUILD_ID) return;
+  if (!interaction.inGuild()) return;
+  // Sur le serveur de secours, seule /secours est disponible
+  if (interaction.guildId !== GUILD_ID) {
+    if (isRescue(interaction.guildId) && interaction.isChatInputCommand() && interaction.commandName === 'secours') return commands.handle(interaction, ctx);
+    return;
+  }
   if (interaction.isAutocomplete()) return commands.autocomplete(interaction);
   if (interaction.isChatInputCommand()) return commands.handle(interaction, ctx);
   if (interaction.isButton() || interaction.isUserSelectMenu() || interaction.isStringSelectMenu() || interaction.isModalSubmit()) {
@@ -291,7 +297,12 @@ async function leaveForeignGuild(other) {
     ?.send(`🚫 Quelqu'un a ajouté le bot sur un autre serveur (**${other.name}**, ${other.memberCount} membres, propriétaire <@${other.ownerId}>). Je l'ai quitté automatiquement. Pense à décocher « Public Bot » dans le portail développeur.`)
     .catch(() => {});
 }
-client.on(Events.GuildCreate, (g) => g.id !== GUILD_ID && leaveForeignGuild(g));
+const isRescue = (id) => id === require('./rescue').rescueGuildId();
+client.on(Events.GuildCreate, (g) => {
+  if (g.id === GUILD_ID) return;
+  if (isRescue(g.id)) return require('./rescue').command && g.commands.set([require('./rescue').command.data.toJSON()]).catch(() => {});
+  leaveForeignGuild(g);
+});
 
 // ───────────────────────── Démarrage ─────────────────────────
 
@@ -305,7 +316,12 @@ client.once(Events.ClientReady, async () => {
   await guild.roles.fetch();
   console.log(`✅ Connecté en tant que ${client.user.tag} sur "${guild.name}"`);
   // Bot privé : il quitte tout autre serveur où il aurait été ajouté
-  for (const other of client.guilds.cache.values()) if (other.id !== GUILD_ID) await leaveForeignGuild(other);
+  for (const other of client.guilds.cache.values()) {
+    if (other.id === GUILD_ID) continue;
+    // Serveur de secours : le bot y reste, avec seulement la commande /secours
+    if (isRescue(other.id)) await other.commands.set([require('./rescue').command.data.toJSON()]).catch(() => {});
+    else await leaveForeignGuild(other);
+  }
   client.user.setActivity('Les Ronins de haro62190 ⚔️', { type: 3 /* Watching */ });
   await tempVoice.cleanup(guild).catch((err) => console.error('Nettoyage des vocaux temporaires :', err.message));
   await commands.register(guild).catch((err) => console.error('❌ Enregistrement des commandes / :', err.message));
@@ -340,7 +356,7 @@ client.once(Events.ClientReady, async () => {
 
   // Sauvegarde automatique quotidienne du serveur
   const backup = require('./backup');
-  const auto = () => guild.channels.fetch().then(() => { backup.autoBackup(guild); require('./dbbackup').daily(); return backup.offsiteBackup(guild); }).catch((e) => console.error('Sauvegarde auto :', e.message));
+  const auto = () => guild.channels.fetch().then(() => { backup.autoBackup(guild); require('./dbbackup').daily(); require('./rescue').daily(guild).catch((e) => console.error('Copie de secours :', e.message)); return backup.offsiteBackup(guild); }).catch((e) => console.error('Sauvegarde auto :', e.message));
   auto();
   setInterval(auto, 6 * 3600_000);
 });

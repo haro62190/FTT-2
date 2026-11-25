@@ -157,6 +157,7 @@ const NAV = [
   ['/tickets', '🎫 Tickets'],
   ['/sauvegardes', '💾 Sauvegardes du serveur'],
   ['/copies-base', '🗄️ Copies de la base'],
+  ['/secours', '🛟 Serveur de secours'],
   ['/journal', '📜 Journal d\'admin'],
   ['/diagnostic', '🩺 Diagnostic'],
 ];
@@ -219,7 +220,29 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:10px 8px;
 .flash.err{background:#2a0f0f;border-color:#5a1f1f;color:#f3bfbf}.muted{color:var(--muted)}.row{display:flex;gap:14px;flex-wrap:wrap}.row>*{flex:1;min-width:150px}
 code{background:#1c1c22;padding:1px 6px;border-radius:5px;font-size:.92em}pre{background:#0b0b0e;border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font-size:12.5px}
 .legend{display:flex;gap:16px;margin:0 0 6px;font-size:13px;color:#c3c2b7}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}details{margin-top:8px}details table{font-size:13px}form.inline{display:inline}
-@media(max-width:820px){nav .sec{display:none}.wrap{flex-direction:column}nav{position:static;height:auto;width:auto;border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;gap:4px;padding:8px}nav a{white-space:nowrap}main{padding:18px 16px}header .live{display:none}}
+/* ── Téléphone : menu repliable (sans JavaScript), tableaux défilants, tailles adaptées ── */
+.menu-btn,#menu,nav .mobile-only{display:none}
+@media(max-width:820px){
+header{padding:10px 14px;gap:10px}header h1{font-size:16px;white-space:nowrap}header .live,header .server,header .who{display:none!important}header .logo{width:32px;height:32px}nav .mobile-only{display:block!important}
+.menu-btn{display:inline-flex;align-items:center;gap:6px;margin-left:auto;padding:7px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);font-weight:600;font-size:14px;cursor:pointer}
+header .who{margin-left:0}
+.wrap{flex-direction:column}
+nav{display:none;position:static;width:auto;height:auto;max-height:none;border-right:0;border-bottom:1px solid var(--line);padding:8px 10px 14px}
+#menu:checked~.wrap nav{display:block}
+nav a{padding:11px 12px;font-size:15px}nav .sec{margin:14px 12px 4px}
+main{padding:16px 14px;max-width:100%}
+h2{font-size:21px}h2.brush{font-size:32px}.subtitle{margin-bottom:16px}
+.grid{grid-template-columns:1fr 1fr;gap:10px}.grid.mini{grid-template-columns:1fr 1fr}
+.kpi{min-height:0;padding:12px 14px}.kpi b{font-size:24px}.stat{padding:12px}.stat b{font-size:21px}
+.card{padding:14px;border-radius:12px}
+.card table,main>table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}
+td,th{padding:8px 6px}
+.row>*{min-width:100%}
+input[type=text],input[type=number],input[type=url],input[type=datetime-local],textarea,select{font-size:16px}
+button,.btn{padding:11px 16px}
+.split,.split2{grid-template-columns:1fr!important}
+}
+@media(max-width:380px){.grid,.grid.mini{grid-template-columns:1fr}}
 body:before{content:"";position:fixed;right:0;bottom:0;width:min(46vw,620px);height:min(62vh,640px);background:url(/assets/pagoda.jpg) right bottom/cover no-repeat;opacity:.22;pointer-events:none;z-index:0;-webkit-mask-image:radial-gradient(circle at 100% 100%,#000 25%,transparent 72%);mask-image:radial-gradient(circle at 100% 100%,#000 25%,transparent 72%)}
 body:after{content:"剣聖";position:fixed;right:26px;top:96px;writing-mode:vertical-rl;font:72px/1 Kanji,serif;color:var(--gold);opacity:.16;pointer-events:none;z-index:0}
 .wrap,header{position:relative;z-index:1}
@@ -236,8 +259,8 @@ h2.brush{font:400 40px/1.15 Brush,'Segoe Script',cursive;letter-spacing:.01em;pa
 .split{display:grid;grid-template-columns:1.6fr 1fr;gap:18px}@media(max-width:900px){.split{grid-template-columns:1fr}}
 .feed{list-style:none;margin:0;padding:0}.feed li{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}.feed li .i{width:26px;text-align:center}.feed li .w{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap}
 </style></head><body>
-<header><img class="logo" src="/logo.png" alt=""><h1>剣聖 <span>KENSEI</span></h1>${sess ? '<span class="live" title="Mis à jour en direct"><i></i>Bot en ligne <svg class="pulse" viewBox="0 0 26 12"><path d="M0 6h7l2-5 3 10 3-8 2 3h9"/></svg></span>' : ''}${sess ? (() => { const k = alertCount(); return `<a class="bell" href="/alertes" title="Centre d'alertes">🔔${k ? `<i>${k}</i>` : ''}</a>`; })() : ''}${sess && BADGE ? `<span class="server">${BADGE.icon ? `<img src="${esc(BADGE.icon)}" alt="">` : ''}${esc(BADGE.name)}</span>` : ''}<div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
-<div class="wrap">${sess ? `<nav><a class="brand" href="/" title="Accueil"><img src="/assets/logo-kensei.jpg" alt="Kensei · Les Ronins"></a>${NAV.map(([href, label]) => (href === '#' ? `<div class="sec">${label}</div>` : `<a href="${href}" class="${href === path ? 'on' : ''}">${label}</a>`)).join('')}</nav>` : ''}
+<header><img class="logo" src="/logo.png" alt=""><h1>剣聖 <span>KENSEI</span></h1>${sess ? '<span class="live" title="Mis à jour en direct"><i></i>Bot en ligne <svg class="pulse" viewBox="0 0 26 12"><path d="M0 6h7l2-5 3 10 3-8 2 3h9"/></svg></span>' : ''}${sess ? (() => { const k = alertCount(); return `<a class="bell" href="/alertes" title="Centre d'alertes">🔔${k ? `<i>${k}</i>` : ''}</a>`; })() : ''}${sess && BADGE ? `<span class="server">${BADGE.icon ? `<img src="${esc(BADGE.icon)}" alt="">` : ''}${esc(BADGE.name)}</span>` : ''}${sess ? '<label class="menu-btn" for="menu">☰ Menu</label>' : ''}<div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
+${sess ? '<input type="checkbox" id="menu" aria-hidden="true">' : ''}<div class="wrap">${sess ? `<nav><a class="brand" href="/" title="Accueil"><img src="/assets/logo-kensei.jpg" alt="Kensei · Les Ronins"></a>${NAV.map(([href, label]) => (href === '#' ? `<div class="sec">${label}</div>` : `<a href="${href}" class="${href === path ? 'on' : ''}">${label}</a>`)).join('')}<a class="mobile-only" href="/logout">🚪 Déconnexion (${esc(sess.username ?? '')})</a></nav>` : ''}
 <main>${flash ? `<div class="flash${flash.startsWith('❌') ? ' err' : ''}">${esc(flash)}</div>` : ''}${SUBTITLES[path] ? `<h2 class="brush">${esc(title)}</h2><p class="subtitle">${esc(SUBTITLES[path])}</p>` : `<h2>${esc(title)}</h2>`}${body}</main></div>${nonce && script ? `<script nonce="${nonce}">${script}</script>` : ''}</body></html>`;
 }
 
