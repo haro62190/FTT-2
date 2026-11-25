@@ -1,7 +1,6 @@
 require('./setup');
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const net = require('net');
 const { db } = require('../src/store');
 
 test('vitrine : domaine public reconnu (avec www et port), autres refusés', () => {
@@ -31,51 +30,4 @@ test('vitrine : page complète, contenu échappé, lecteur Twitch pendant le liv
   assert.ok(!html.includes('javascript:'));
   assert.ok(html.includes('>42<'));
   db.twitchLive = null;
-});
-
-test('minecraft : liste blanche par RCON, pseudos invalides refusés', async () => {
-  const sent = [];
-  const srv = net.createServer((sock) => {
-    let buf = Buffer.alloc(0);
-    sock.on('data', (c) => {
-      buf = Buffer.concat([buf, c]);
-      while (buf.length >= 4 && buf.length >= 4 + buf.readInt32LE(0)) {
-        const len = buf.readInt32LE(0);
-        const id = buf.readInt32LE(4);
-        const type = buf.readInt32LE(8);
-        const body = buf.subarray(12, 4 + len - 2).toString();
-        buf = buf.subarray(4 + len);
-        const reply = (rid, text) => {
-          const b = Buffer.from(text);
-          const out = Buffer.alloc(14 + b.length);
-          out.writeInt32LE(10 + b.length, 0);
-          out.writeInt32LE(rid, 4);
-          out.writeInt32LE(0, 8);
-          b.copy(out, 12);
-          sock.write(out);
-        };
-        if (type === 3) reply(body === 'secret' ? id : -1, '');
-        else {
-          sent.push(body);
-          reply(id, `ok ${body}`);
-        }
-      }
-    });
-  });
-  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
-  process.env.MINECRAFT_HOST = '127.0.0.1';
-  process.env.MINECRAFT_RCON_PORT = String(srv.address().port);
-  process.env.MINECRAFT_RCON_PASSWORD = 'secret';
-  const gs = require('../src/gameserver');
-  db.mcWhitelist = {};
-  await gs.whitelist('u1', 'Haro_62');
-  await gs.whitelist('u1', 'Haro2'); // changement de pseudo : l'ancien est retiré
-  await assert.rejects(gs.whitelist('u2', 'haro2'), /déjà inscrit/);
-  await assert.rejects(gs.whitelist('u3', 'x; op moi'), /Pseudo invalide/);
-  assert.equal(await gs.unwhitelist('u1'), 'Haro2');
-  assert.deepEqual(sent, ['whitelist add Haro_62', 'whitelist remove Haro_62', 'whitelist add Haro2', 'whitelist remove Haro2']);
-  process.env.MINECRAFT_RCON_PASSWORD = 'faux';
-  await assert.rejects(gs.rcon('list'), /refusé/);
-  srv.close();
-  delete process.env.MINECRAFT_RCON_PASSWORD;
 });

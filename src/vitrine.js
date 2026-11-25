@@ -1,6 +1,6 @@
 /**
  * 🌐 Page vitrine publique (haro62190.tech) : présentation, live en direct, planning, clips,
- * compteurs, serveur Minecraft et lien d'invitation Discord. Aucune connexion, aucune donnée privée.
+ * compteurs et lien d'invitation Discord. Aucune connexion, aucune donnée privée.
  *
  * .env : PUBLIC_HOST=haro62190.tech (le site répond aussi sur www.). Les textes se règlent sur le
  * tableau de bord (🌐 Page vitrine).
@@ -31,7 +31,7 @@ const isPublicHost = (host) => publicHosts().includes(String(host ?? '').toLower
 const DEFAULTS = {
   tagline: 'Gaming, lives et bonne humeur : rejoins le dojo.',
   about:
-    'Bienvenue chez les Ronins ! Une communauté de joueurs autour des lives Twitch de haro62190 : soirées gaming, tournois, quiz pendant les lives, serveur Minecraft et un Discord où chacun trouve sa place.',
+    'Bienvenue chez les Ronins ! Une communauté de joueurs autour des lives Twitch de haro62190 : soirées gaming, tournois, quiz pendant les lives et un Discord où chacun trouve sa place.',
 };
 const text = (key) => String(settings.get(`vitrine.${key}`) ?? DEFAULTS[key] ?? '');
 const links = () => {
@@ -65,8 +65,6 @@ async function render(guild, host) {
   const stats = db.stats ?? {};
   const upcoming = (db.twitchSchedule?.upcoming ?? []).filter((s) => s.start > Date.now() - 3600_000).slice(0, 5);
   const clips = require('./twitchlive').bestClips(30, 6);
-  const gs = require('./gameserver');
-  const mc = gs.configured() && settings.get('modules.gameServer') !== false ? gs.state() : null;
   const inviteUrl = guild ? await invite(guild).catch(() => db.vitrine?.invite ?? null) : null;
   const name = guild?.name ?? BRAND.community;
   const parent = isPublicHost(host) ? String(host).toLowerCase().replace(/:\d+$/, '') : null;
@@ -107,7 +105,6 @@ main{padding:28px 0 40px;display:grid;gap:18px}
 ul.plan{list-style:none;margin:0;padding:0}ul.plan li{padding:10px 0;border-bottom:1px solid var(--line)}ul.plan li:last-child{border:0}ul.plan small{color:var(--muted)}
 .clips{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}.clip{display:block;text-decoration:none;color:var(--text)}
 .clip img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;display:block;background:#191920}.clip span{display:block;font-size:14px;margin-top:6px}.clip small{color:var(--muted)}
-.mc code{background:#191920;padding:4px 8px;border-radius:6px;font-size:17px}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
 footer{color:var(--muted);text-align:center;padding:24px 16px 40px;font-size:14px}
 @media(max-width:600px){.hero{padding:48px 0 40px}.btn{display:block;margin:8px auto;max-width:320px}}
 </style></head><body>
@@ -146,14 +143,6 @@ ${
           return url ? `<a class="clip" href="${esc(url)}" target="_blank" rel="noopener">${thumb ? `<img src="${esc(thumb)}" alt="" loading="lazy">` : ''}<span>${esc(cl.title)}</span><small>👁️ ${n(cl.views)} vues · par ${esc(cl.creator)}</small></a>` : '';
         })
         .join('')}</div></section>`
-    : ''
-}
-${
-  mc
-    ? `<section class="card mc"><h2>⛏️ Serveur Minecraft</h2>
-  <p><span class="dot" style="background:${mc.online ? c.success : '#555'}"></span><b>${mc.online ? 'En ligne' : 'Hors ligne'}</b>${mc.online ? ` · ${n(mc.players)} / ${n(mc.max)} joueurs` : ''}${mc.version ? ` · version ${esc(mc.version)} (Java)` : ''}</p>
-  ${gs.address() ? `<p>Adresse : <code>${esc(gs.address())}</code></p>` : ''}
-  <p style="color:var(--muted);margin:0">Pour jouer : rejoins le Discord et tape <code>/minecraft inscrire</code> avec ton pseudo Minecraft.</p></section>`
     : ''
 }
 </main>

@@ -140,7 +140,6 @@ const NAV = [
   ['/tournois', '🏆 Tournois'],
   ['/soirees', '🌙 Soirées, défis & calendrier'],
   ['/equipes', '👥 Équipes & inscriptions'],
-  ['/minecraft', '⛏️ Serveur Minecraft'],
   ['#', 'Stream'],
   ['/notifications', '📡 Twitch & TikTok'],
   ['/lives', '📺 Lives & statistiques'],
