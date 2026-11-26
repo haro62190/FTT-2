@@ -69,6 +69,71 @@ const getBackup = (id) => {
   const row = sql.prepare('SELECT * FROM backups WHERE id = ?').get(id);
   return row ? { ...row, data: JSON.parse(row.data) } : null;
 };
+/**
+ * Compare deux sauvegardes (A = la plus ancienne, B = la plus récente) : rôles, salons et réglages
+ * ajoutés, supprimés ou modifiés. Lecture seule.
+ */
+function compare(a, b) {
+  const { ChannelType: T } = require('discord.js');
+  const typeName = (t) => ({ [T.GuildCategory]: 'catégorie', [T.GuildVoice]: 'vocal', [T.GuildAnnouncement]: 'annonces', [T.GuildStageVoice]: 'scène', [T.GuildForum]: 'forum' })[t] ?? 'texte';
+  const pair = (listA, listB, keyName) => {
+    const byIdB = new Map(listB.map((x) => [x.id, x]));
+    const used = new Set();
+    const matches = [];
+    const removed = [];
+    for (const x of listA) {
+      const y = byIdB.get(x.id) ?? listB.find((z) => !used.has(z.id) && keyName(z) === keyName(x));
+      if (y && !used.has(y.id)) {
+        used.add(y.id);
+        matches.push([x, y]);
+      } else removed.push(x);
+    }
+    return { matches, removed, added: listB.filter((y) => !used.has(y.id)) };
+  };
+  const roles = pair(a.roles ?? [], b.roles ?? [], (r) => r.name);
+  const roleChanges = roles.matches
+    .map(([x, y]) => {
+      const what = [];
+      if (x.name !== y.name) what.push(`nom « ${x.name} » → « ${y.name} »`);
+      if (x.color !== y.color) what.push('couleur');
+      if (x.permissions !== y.permissions) what.push('permissions');
+      if (x.hoist !== y.hoist) what.push(y.hoist ? 'affiché séparément' : 'plus affiché séparément');
+      if (x.mentionable !== y.mentionable) what.push(y.mentionable ? 'mentionnable' : 'plus mentionnable');
+      return what.length ? { name: y.name, what } : null;
+    })
+    .filter(Boolean);
+  const chName = (c) => `${c.name}|${c.type}`;
+  const chans = pair(a.channels ?? [], b.channels ?? [], chName);
+  const parentName = (list, id) => list.find((c) => c.id === id)?.name ?? null;
+  const chanChanges = chans.matches
+    .map(([x, y]) => {
+      const what = [];
+      if (x.name !== y.name) what.push(`nom « ${x.name} » → « ${y.name} »`);
+      const pa = parentName(a.channels, x.parentId);
+      const pb = parentName(b.channels, y.parentId);
+      if (pa !== pb) what.push(`déplacé de « ${pa ?? 'aucune catégorie'} » vers « ${pb ?? 'aucune catégorie'} »`);
+      if ((x.topic ?? '') !== (y.topic ?? '')) what.push('sujet');
+      if (JSON.stringify((x.overwrites ?? []).map((o) => [o.allow, o.deny]).sort()) !== JSON.stringify((y.overwrites ?? []).map((o) => [o.allow, o.deny]).sort())) what.push('permissions');
+      if ((x.rateLimitPerUser ?? 0) !== (y.rateLimitPerUser ?? 0)) what.push('mode lent');
+      if ((x.userLimit ?? 0) !== (y.userLimit ?? 0)) what.push('limite de places');
+      return what.length ? { name: y.name, type: typeName(y.type), what } : null;
+    })
+    .filter(Boolean);
+  const guildChanges = [];
+  for (const [k, label] of [['name', 'nom du serveur'], ['verificationLevel', 'niveau de vérification'], ['explicitContentFilter', 'filtre de contenu'], ['afkTimeout', 'délai AFK'], ['everyonePermissions', 'permissions de @everyone']]) {
+    if (String(a.guild?.[k]) !== String(b.guild?.[k])) guildChanges.push(label);
+  }
+  const settingsChanges = require('./settings').diffSettings(a.settings ?? {}, b.settings ?? {});
+  const total = roles.added.length + roles.removed.length + roleChanges.length + chans.added.length + chans.removed.length + chanChanges.length + guildChanges.length + settingsChanges.length;
+  return {
+    total,
+    roles: { added: roles.added.map((r) => r.name), removed: roles.removed.map((r) => r.name), changed: roleChanges },
+    channels: { added: chans.added.map((c) => `${c.name} (${typeName(c.type)})`), removed: chans.removed.map((c) => `${c.name} (${typeName(c.type)})`), changed: chanChanges },
+    guild: guildChanges,
+    settings: settingsChanges,
+  };
+}
+
 /** Vérifie qu'une sauvegarde (base ou fichier importé) a toutes les parties attendues. */
 function isValidBackup(d) {
   const obj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -321,4 +386,4 @@ const commands = [
   },
 ];
 
-module.exports = { offsiteBackup, isValidBackup, snapshot, createBackup, listBackups, getBackup, deleteBackup, restore, plan, autoBackup, commands };
+module.exports = { offsiteBackup, compare, isValidBackup, snapshot, createBackup, listBackups, getBackup, deleteBackup, restore, plan, autoBackup, commands };

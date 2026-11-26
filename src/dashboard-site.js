@@ -44,6 +44,40 @@ module.exports = ({ esc, csrf, fetchMembers, memberName, fmtDate }) => {
       return '✅ Page vitrine mise à jour.';
     },
 
+    // ───────────────────────── Santé générale (vue d'ensemble) ─────────────────────────
+    '/sante'(guild, sess) {
+      const g = require('./guardian');
+      const h = require('./health').status(guild.client);
+      const checks = g.runChecks(guild.client, guild);
+      const errors = checks.filter((c) => c.status === 'error');
+      const warns = checks.filter((c) => c.status === 'warn');
+      const open = g.incidents().filter((x) => !x.resolvedAt);
+      const m = settings.maintenance();
+      const drill = db.lastRestoreDrill;
+      const up = (ms) => {
+        const mn = Math.floor(ms / 60_000);
+        return mn >= 1440 ? `${Math.floor(mn / 1440)} j ${Math.floor((mn % 1440) / 60)} h` : `${Math.floor(mn / 60)} h ${String(mn % 60).padStart(2, '0')}`;
+      };
+      const verdict = errors.length ? ['🔴', 'Problème à régler', 'bad'] : warns.length ? ['🟠', 'À surveiller', ''] : ['🟢', 'Tout va bien', 'ok'];
+      const tile = (v, label) => `<div class="stat"><b>${v}</b><span>${esc(label)}</span></div>`;
+      const row = (label, value, ok = true) => `<tr><td>${ok ? '🟢' : '🟠'} ${esc(label)}</td><td>${value}</td></tr>`;
+      return {
+        title: '❤️ Santé générale',
+        refresh: 60,
+        body: `<div class="card" style="text-align:center"><div style="font-size:44px">${verdict[0]}</div><h3 style="margin:6px 0">${verdict[1]}</h3>
+        <p class="muted" style="margin:0">${errors.length} problème(s) · ${warns.length} point(s) à surveiller · ${open.length} incident(s) ouvert(s)${m ? ' · 🛠️ maintenance en cours' : ''}</p></div>
+        <div class="grid">${tile(h.ok ? 'En ligne' : 'Hors ligne', 'Bot Discord')}${tile(`${h.ping} ms`, 'Latence')}${tile(up(h.uptime), 'Sans redémarrage')}${tile(`${h.memoryMb} Mo`, 'Mémoire')}${tile(esc(h.version.sha), 'Version')}</div>
+        ${[...errors, ...warns].length ? `<div class="card"><h3>À regarder</h3><table>${[...errors, ...warns].map((c) => `<tr><td>${g.ICON[c.status]} <b>${esc(c.label)}</b><br><span class="muted">${esc(c.detail ?? '')}</span></td><td>💡 ${esc(c.fix ?? '')}</td></tr>`).join('')}</table></div>` : ''}
+        <div class="card"><h3>💾 Sauvegardes</h3><table>
+          ${row('Copie de la base', h.lastFileBackup ? `${fmtDate(h.lastFileBackup.at)} ${h.lastFileBackup.verified ? '· vérifiée' : '· <b>non vérifiée</b>'}` : 'jamais', !!h.lastFileBackup?.verified)}
+          ${row('Exercice de restauration', drill ? `${fmtDate(drill.at)} · ${drill.ok ? 'réussi' : `<b>raté</b> : ${esc(drill.error ?? '')}`}` : 'pas encore (après la copie de nuit)', !drill || drill.ok)}
+          ${row('Sauvegarde du serveur', h.lastBackup ? fmtDate(h.lastBackup) : 'jamais', !!h.lastBackup)}
+          ${row('Copie dans 💾┃sauvegardes', h.lastOffsite ? fmtDate(h.lastOffsite) : 'jamais', !!h.lastOffsite)}
+        </table></div>
+        <div class="card"><h3>Détails</h3><a class="btn ghost" href="/guardian">🛡️ Tous les contrôles</a> <a class="btn ghost" href="/incidents">📜 Incidents</a> <a class="btn ghost" href="/statut">💓 État technique</a> <a class="btn ghost" href="/historique-config">🕓 Réglages modifiés</a> <a class="btn ghost" href="/maintenance">🛠️ Maintenance</a></div>`,
+      };
+    },
+
     // ───────────────────────── Kensei Guardian ─────────────────────────
     '/guardian'(guild, sess) {
       const g = require('./guardian');
@@ -95,6 +129,70 @@ module.exports = ({ esc, csrf, fetchMembers, memberName, fmtDate }) => {
       const checks = await require('./guardian').run();
       const bad = checks.filter((c) => c.status === 'warn' || c.status === 'error').length;
       return bad ? `🛡️ ${bad} point(s) à regarder.` : '🛡️ Tout va bien.';
+    },
+
+    // ───────────────────────── Mode maintenance ─────────────────────────
+    '/maintenance'(guild, sess) {
+      const m = settings.maintenance();
+      const saved = settings.raw('maintenance') ?? {};
+      const groups = new Map();
+      for (const [key, label, , group] of settings.MODULES) {
+        if (group === 'Sécurité') continue; // les protections restent toujours actives
+        if (!groups.has(group)) groups.set(group, []);
+        groups.get(group).push(`<label class="check" style="display:block"><input type="checkbox" name="mod" value="${esc(key)}" ${(saved.modules ?? []).includes(key) ? 'checked' : ''}> ${esc(label)}</label>`);
+      }
+      return {
+        title: '🛠️ Mode maintenance',
+        body: `<div class="card"><p>Coupe <b>temporairement</b> certaines fonctions (par exemple pendant une réorganisation du serveur), sans toucher à leurs réglages : à la fin de la maintenance, tout revient exactement comme avant. Les protections (anti-raid, anti-spam, anti-nuke, AutoMod) ne sont jamais coupées.</p>
+        <p>${m ? `<span class="badge bad">Actif</span> depuis ${fmtDate(m.since)} par ${esc(m.by ?? '?')}${m.until ? ` · fin automatique ${fmtDate(m.until)}` : ' · <b>sans fin automatique</b> (le gardien te le rappellera après 2 h)'}` : '<span class="badge ok">Inactif</span>'}</p></div>
+        <form method="post" class="card">${csrf(sess)}${hidden('action', 'on')}<h3>${m ? 'Modifier la maintenance' : 'Activer la maintenance'}</h3>
+          <label>Raison (affichée aux membres si les commandes sont réservées au staff)</label><input name="reason" maxlength="150" value="${esc(saved.reason ?? '')}" placeholder="Réorganisation des salons">
+          <label>Durée</label><select name="duration">${[['30', '30 min'], ['60', '1 h'], ['120', '2 h'], ['360', '6 h'], ['1440', '24 h'], ['0', 'Sans limite (je l\'arrêterai moi-même)']].map(([v, l]) => `<option value="${v}" ${v === '120' ? 'selected' : ''}>${l}</option>`).join('')}</select>
+          <label class="check" style="margin-top:10px"><input type="checkbox" name="staffOnly" ${saved.staffOnly ? 'checked' : ''}> Réserver toutes les commandes au staff</label>
+          <h3 style="margin-top:14px">Fonctions à couper</h3>
+          <div class="grid">${[...groups.entries()].map(([g, items]) => `<div><b>${esc(g)}</b>${items.join('')}</div>`).join('')}</div>
+          <button>${m ? 'Mettre à jour' : 'Activer la maintenance'}</button></form>
+        ${m ? `<form method="post" class="card">${csrf(sess)}${hidden('action', 'off')}<button>✅ Terminer la maintenance (tout revient comme avant)</button></form>` : ''}`,
+      };
+    },
+    async 'POST /maintenance'(guild, sess, body) {
+      if (body.get('action') === 'off') {
+        settings.set('maintenance', { ...(settings.raw('maintenance') ?? {}), active: false, endedAt: Date.now() });
+        require('./feed').push('🛠️', `Fin de la maintenance (${sess.username})`);
+        return '✅ Maintenance terminée : toutes les fonctions sont revenues.';
+      }
+      const allowed = new Set(settings.MODULES.filter((x) => x[3] !== 'Sécurité').map((x) => x[0]));
+      const modules = body.getAll('mod').filter((k) => allowed.has(k));
+      const staffOnly = body.has('staffOnly');
+      if (!modules.length && !staffOnly) return '❌ Choisis au moins une fonction à couper, ou réserve les commandes au staff.';
+      const minutes = Math.max(0, Math.min(10_080, Number(body.get('duration')) || 0));
+      const prev = settings.maintenance();
+      settings.set('maintenance', { active: true, modules, staffOnly, reason: String(body.get('reason') ?? '').trim().slice(0, 150), since: prev?.since ?? Date.now(), until: minutes ? Date.now() + minutes * 60_000 : null, by: sess.username });
+      require('./feed').push('🛠️', `Maintenance activée par ${sess.username} : ${modules.length} fonction(s)${staffOnly ? ', commandes staff seulement' : ''}`);
+      return `🛠️ Maintenance active : ${modules.length} fonction(s) coupée(s)${staffOnly ? ', commandes réservées au staff' : ''}${minutes ? `, fin automatique dans ${minutes >= 60 ? `${minutes / 60} h` : `${minutes} min`}` : ''}.`;
+    },
+
+    // ───────────────────────── Historique de la configuration ─────────────────────────
+    '/historique-config'(guild, sess, q) {
+      const src = q?.get?.('s') ?? 'all';
+      const list = (db.configHistory ?? []).filter((e) => src === 'all' || e.source === src);
+      const tab = (f, label) => `<a class="btn ${src === f ? '' : 'ghost'}" href="/historique-config?s=${f}" style="margin:0 6px 6px 0">${label}</a>`;
+      const where = (e) => (e.source === 'web' ? '🌐 site' : e.source === 'discord' ? '💬 Discord' : '🤖 automatique');
+      return {
+        title: '🕓 Historique de la configuration',
+        body: `<div class="card"><p>Chaque réglage modifié, avec qui l'a changé, d'où, et la valeur <b>avant → après</b>. Les valeurs sensibles sont masquées. 500 dernières modifications gardées.</p>
+        <div>${tab('all', 'Tout')}${tab('web', '🌐 Site')}${tab('discord', '💬 Discord')}${tab('bot', '🤖 Automatique')}</div></div>
+        ${list
+          .slice(0, 80)
+          .map(
+            (e) => `<div class="card"><p style="margin:0 0 8px"><b>${esc(e.user)}</b> · ${where(e)}${e.page ? ` · <code>${esc(e.page)}</code>` : ''} · <span class="muted">${fmtDate(e.at)}</span></p>
+          <table>${e.changes
+            .slice(0, 30)
+            .map((c) => `<tr><td><code>${esc(c.path)}</code></td><td class="muted" style="text-decoration:line-through">${esc(c.before)}</td><td>→ <b>${esc(c.after)}</b></td></tr>`)
+            .join('')}${e.changes.length > 30 ? `<tr><td colspan="3" class="muted">… et ${e.changes.length - 30} autre(s)</td></tr>` : ''}</table></div>`,
+          )
+          .join('') || '<div class="card"><p class="muted">Aucune modification enregistrée pour l\'instant.</p></div>'}`,
+      };
     },
 
     // ───────────────────────── Émojis ─────────────────────────
