@@ -4,11 +4,18 @@
 #
 # Sécurités :
 #  - si npm ci / setup échoue, la mise à jour reste « en attente » et est retentée au passage suivant
+#  - les TESTS AUTOMATIQUES (npm test) passent AVANT tout redémarrage : s'ils échouent, retour immédiat à la
+#    version en place (le bot n'est même pas redémarré), version ignorée, staff prévenu par Kensei Guardian.
+#    (SKIP_TESTS=1 /root/bot/scripts/update.sh pour forcer, en connaissance de cause)
 #  - après le redémarrage, le bot doit donner signe de vie (data/heartbeat.json) dans les 2 minutes ;
 #    sinon RETOUR ARRIÈRE automatique sur la version précédente, et la version fautive est ignorée
 #    jusqu'à ce qu'une nouvelle version arrive sur GitHub. Le staff est prévenu sur Discord.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+# Un seul passage à la fois (les tests peuvent durer plus longtemps que l'intervalle de cron)
+exec 9>.update.lock
+flock -n 9 || exit 0
 
 BRANCH="${BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"
 PM2_NAME="${PM2_NAME:-bot-discord}"
@@ -43,6 +50,26 @@ if grep -qx deps "$PENDING"; then
   npm ci --omit=dev --no-audit --no-fund
   sed -i '/^deps$/d' "$PENDING"
 fi
+
+# ───── Tests avant d'appliquer quoi que ce soit au serveur ─────
+if grep -qx restart "$PENDING" && [ "${SKIP_TESTS:-0}" != "1" ]; then
+  if ! TEST_OUT=$(npm run --silent check 2>&1 && npm test --silent 2>&1); then
+    NEW=$(git rev-parse HEAD)
+    GOOD=$(cat "$PREV" 2>/dev/null || echo "$LOCAL")
+    log "❌ Tests en échec sur ${NEW:0:7} : la mise à jour n'est PAS appliquée, retour à ${GOOD:0:7}"
+    echo "$NEW" > "$BAD"
+    DEPS_CHANGED=$(git diff --name-only "$GOOD" "$NEW" | grep -cE '^package(-lock)?\.json$' || true)
+    git reset --hard --quiet "$GOOD"
+    [ "$DEPS_CHANGED" -gt 0 ] && npm ci --omit=dev --no-audit --no-fund
+    mkdir -p data
+    FAILS=$(grep -E '^not ok|❌' <<<"$TEST_OUT" | head -5 | sed 's/"/\\"/g' | tr '\n' '|' || true)
+    printf '{"bad":"%s","good":"%s","at":%s000,"failures":"%s"}\n' "$NEW" "$GOOD" "$(date +%s)" "$FAILS" > data/update-blocked.json
+    rm -f "$PENDING" "$PREV"
+    exit 1
+  fi
+  log "🧪 Tests OK"
+fi
+
 if grep -qx setup "$PENDING"; then
   npm run setup
   sed -i '/^setup$/d' "$PENDING"
@@ -66,7 +93,7 @@ for _ in $(seq 1 $((HEALTH_TIMEOUT / 5))); do
 done
 
 if [ "$ok" -eq 0 ]; then
-  rm -f "$PENDING" "$PREV" "$BAD"
+  rm -f "$PENDING" "$PREV" "$BAD" data/update-blocked.json
   log "✅ Bot mis à jour et redémarré ($(git rev-parse --short HEAD))"
   exit 0
 fi

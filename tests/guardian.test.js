@@ -42,3 +42,50 @@ test('guardian : problèmes détectés avec une correction proposée, sans rien 
   const embed = g.reportEmbed(checks).toJSON();
   assert.match(embed.title, /point\(s\) à regarder/);
 });
+
+test('guardian : erreurs de configuration détectées sans afficher de secret', () => {
+  const base = { DISCORD_TOKEN: 'secret-token-ne-pas-afficher', GUILD_ID: '123456789012345678', DISCORD_CLIENT_SECRET: 'zzz-secret' };
+  assert.deepEqual(g.configIssues(base), []);
+  const bad = g.configIssues({
+    ...base,
+    GUILD_ID: '12ab',
+    SECOURS_GUILD_ID: '12ab',
+    DASHBOARD_URL: 'http://bot.haro62190.tech',
+    PUBLIC_HOST: 'https://haro62190.tech/',
+    TRUST_PROXY: '1',
+    DASHBOARD_HOST: '0.0.0.0',
+  });
+  const ids = bad.map((x) => x.id);
+  for (const id of ['cfg:guild', 'cfg:rescue', 'cfg:https', 'cfg:proxy', 'cfg:public', 'cfg:host']) assert.ok(ids.includes(id), id);
+  assert.match(bad.find((x) => x.id === 'cfg:proxy').detail, /TRUST_PROXY/);
+  const text = JSON.stringify(bad);
+  assert.ok(!text.includes('secret-token') && !text.includes('zzz-secret'), 'aucun secret dans les messages');
+  for (const x of bad) assert.ok(x.fix);
+});
+
+test('exercice de restauration : la vraie copie est relue dans un dossier temporaire, la base réelle intacte', async () => {
+  const fs = require('fs');
+  const { db: realDb, DB_FILE } = require('../src/store');
+  const dbb = require('../src/dbbackup');
+  realDb.levels = { u1: { xp: 42 } };
+  const before = fs.statSync(DB_FILE).mtimeMs;
+  const e = dbb.create('manual');
+  assert.ok(e.verified);
+  const r = await dbb.drill(e.file);
+  assert.equal(r.ok, true, r.error);
+  assert.equal(r.levels, 1);
+  assert.ok(fs.statSync(DB_FILE).mtimeMs >= before);
+  assert.deepEqual(realDb.levels, { u1: { xp: 42 } });
+  const bad = await dbb.drill('/nexiste/pas.db');
+  assert.equal(bad.ok, false);
+});
+
+test('mise à jour : les tests passent AVANT la configuration du serveur et le redémarrage', () => {
+  const s = require('fs').readFileSync(require('path').join(__dirname, '..', 'scripts', 'update.sh'), 'utf8');
+  const tests = s.indexOf('npm test');
+  assert.ok(tests > 0);
+  assert.ok(tests < s.indexOf('npm run setup'), 'tests avant /setup');
+  assert.ok(tests < s.indexOf('pm2 restart'), 'tests avant redémarrage');
+  assert.match(s, /flock -n 9/);
+  assert.match(s, /update-blocked\.json/);
+});
