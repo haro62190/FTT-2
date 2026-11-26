@@ -104,10 +104,10 @@ test('erreurs : « Effacer » masque les anciennes, garde le fichier, affiche le
   const realError = console.error;
   console.error = () => {}; // pas de bruit dans la sortie des tests (le journal est quand même écrit)
   logger.install();
-  console.error('Ancienne erreur');
+  console.error('Ancienne erreur', new Error('avec une pile\nsur plusieurs lignes'));
   assert.ok(logger.tail(50).some((l) => l.includes('Ancienne erreur')));
   logger.clear();
-  assert.ok(!logger.tail(50).some((l) => l.includes('Ancienne erreur')), 'masquée sur le site');
+  assert.equal(logger.tail(50).length, 0, 'toute l\'erreur est masquée, pile d\'appels comprise');
   const file = require('path').join(require('../src/store').DIR, 'logs', 'erreurs.log');
   assert.ok(fs.readFileSync(file, 'utf8').includes('Ancienne erreur'), 'toujours dans le fichier');
   // Une erreur qui arrive après l'effacement s'affiche
