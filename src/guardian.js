@@ -74,6 +74,31 @@ function checkYtdlp() {
   execFile(require('./ytdlp').YTDLP, ['--version'], { timeout: 10_000 }, (err) => (ytdlpOk = !err));
 }
 
+/** Erreurs de configuration (.env, réglages) : [{ id, status, detail, fix }]. Aucune valeur secrète n'est affichée. */
+function configIssues(env = process.env) {
+  const out = [];
+  const add = (id, status, detail, fix) => out.push({ id: `cfg:${id}`, label: 'Configuration', status, detail, fix });
+  const snowflake = (v) => /^\d{17,20}$/.test(String(v ?? '').trim());
+  if (!env.DISCORD_TOKEN) add('token', 'error', 'DISCORD_TOKEN absent du fichier .env.', 'Ajouter le token du bot dans /root/bot/.env puis `pm2 restart bot-discord`.');
+  if (!snowflake(env.GUILD_ID)) add('guild', 'error', 'GUILD_ID n\'est pas un identifiant de serveur valide (17 à 20 chiffres).', 'Clic droit sur le serveur → Copier l\'identifiant, le coller dans GUILD_ID du .env.');
+  if (env.SECOURS_GUILD_ID && env.SECOURS_GUILD_ID === env.GUILD_ID) add('rescue', 'error', 'Le serveur de secours est le même que le serveur principal.', 'Mettre l\'identifiant d\'un AUTRE serveur dans SECOURS_GUILD_ID (ou le vider).');
+  if (env.SECOURS_GUILD_ID && !snowflake(env.SECOURS_GUILD_ID)) add('rescue-id', 'warn', 'SECOURS_GUILD_ID n\'est pas un identifiant valide.', 'Corriger ou vider SECOURS_GUILD_ID dans .env.');
+  if (env.DASHBOARD_ENABLED !== 'false') {
+    if (!env.DISCORD_CLIENT_SECRET) add('secret', 'warn', 'DISCORD_CLIENT_SECRET absent : le site est désactivé.', 'Discord Developer Portal → OAuth2 → Client Secret, à mettre dans .env.');
+    const url = String(env.DASHBOARD_URL ?? '');
+    if (env.PUBLIC_HOST || /^https:/.test(url)) {
+      if (url && !/^https:\/\//.test(url)) add('https', 'warn', 'DASHBOARD_URL n\'est pas en https:// alors que le site est en ligne.', 'Mettre DASHBOARD_URL=https://bot.haro62190.tech dans .env.');
+      if (env.DASHBOARD_TRUST_PROXY !== '1')
+        add('proxy', 'warn', `DASHBOARD_TRUST_PROXY n'est pas à 1 derrière Caddy : tous les visiteurs semblent venir de la même adresse (limites anti-abus faussées).${env.TRUST_PROXY ? ' Une variable TRUST_PROXY existe : elle n\'a pas le bon nom.' : ''}`, 'Mettre DASHBOARD_TRUST_PROXY=1 dans .env puis `pm2 restart bot-discord --update-env`.');
+    }
+    if (env.DASHBOARD_HOST && env.DASHBOARD_HOST !== '127.0.0.1' && env.DASHBOARD_HOST !== 'localhost' && env.PUBLIC_HOST)
+      add('host', 'warn', `Le site écoute sur ${env.DASHBOARD_HOST} : il est joignable sans passer par Caddy (sans HTTPS).`, 'Mettre DASHBOARD_HOST=127.0.0.1 dans .env (Caddy reste le seul point d\'entrée).');
+  }
+  if (env.PUBLIC_HOST && /[/:]/.test(env.PUBLIC_HOST)) add('public', 'warn', 'PUBLIC_HOST doit être un nom de domaine seul (sans https:// ni /).', 'Mettre PUBLIC_HOST=haro62190.tech dans .env.');
+  if (env.TWITCH_CLIENT_ID && !env.TWITCH_CLIENT_SECRET) add('twitch', 'warn', 'TWITCH_CLIENT_ID est rempli mais pas TWITCH_CLIENT_SECRET.', 'Ajouter TWITCH_CLIENT_SECRET (console des développeurs Twitch) dans .env.');
+  return out;
+}
+
 /** Tous les contrôles : [{ id, label, status: ok|warn|error|off, detail, fix }] */
 function runChecks(client = clientRef, guild = guildRef) {
   const out = [];
@@ -140,6 +165,23 @@ function runChecks(client = clientRef, guild = guildRef) {
     if (ago(at) > 36 * 60) add('rescue', 'Serveur de secours', 'warn', `Dernière copie : ${at ? `il y a ${Math.round(ago(at) / 60)} h` : 'jamais'}.`, 'Page 🛟 Serveur de secours → « Faire une copie maintenant ».');
     else add('rescue', 'Serveur de secours', 'ok');
   }
+
+  // Exercice de restauration à blanc (chaque nuit, sur la dernière copie)
+  const drill = db.lastRestoreDrill;
+  if (drill && !drill.ok) add('drill', 'Exercice de restauration', 'error', `La copie ${drill.file} ne se restaure pas : ${drill.error}`, 'Faire une nouvelle copie depuis le site (💾 Copies de la base) ; si l\'exercice échoue encore, prévenir le développeur.');
+  else if (drill && ago(drill.at) > 50 * 60) add('drill', 'Exercice de restauration', 'warn', `Dernier exercice il y a ${Math.round(ago(drill.at) / 60)} h.`, 'Il se lance après la copie de nuit : vérifier que les copies se font.');
+  else if (drill) add('drill', 'Exercice de restauration', 'ok', `${drill.levels ?? 0} profils, ${drill.sections ?? 0} sections relues`);
+
+  // Mise à jour bloquée par les tests
+  try {
+    const blocked = JSON.parse(fs.readFileSync(require('path').join(require('./store').DIR, 'update-blocked.json'), 'utf8'));
+    add('update', 'Mise à jour', 'error', `La version ${String(blocked.bad).slice(0, 7)} a échoué aux tests : elle n'a pas été installée, le bot tourne toujours sur ${String(blocked.good).slice(0, 7)}.${blocked.failures ? ` (${String(blocked.failures).split('|').filter(Boolean).slice(0, 2).join(' · ')})` : ''}`, 'Rien à faire côté serveur : la correction doit venir du code (GitHub). Elle s\'installera seule une fois les tests réparés.');
+  } catch {}
+
+  // Configuration
+  const cfg = configIssues();
+  if (cfg.length) out.push(...cfg);
+  else add('config', 'Configuration', 'ok');
 
   // Machine
   const rss = process.memoryUsage().rss / 1024 / 1024;
@@ -243,4 +285,4 @@ const commands = [
   },
 ];
 
-module.exports = { start, run, runChecks, repeatedErrors, recordLog, keyOf, fixFor, reportEmbed, ICON, commands };
+module.exports = { start, run, runChecks, configIssues, repeatedErrors, recordLog, keyOf, fixFor, reportEmbed, ICON, commands };

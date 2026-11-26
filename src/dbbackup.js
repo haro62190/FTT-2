@@ -112,12 +112,35 @@ function requestRestore(file) {
 }
 
 /** Copie automatique quotidienne. */
+/**
+ * Exercice de restauration à blanc : le vrai code de chargement du bot ouvre la copie dans un dossier
+ * temporaire (scripts/restore-drill.js). Les vraies données ne sont jamais touchées.
+ */
+function drill(file) {
+  const full = path.isAbsolute(file) ? file : path.join(BACKUP_DIR, file);
+  return new Promise((resolve) => {
+    require('child_process').execFile(process.execPath, [path.join(__dirname, '..', 'scripts', 'restore-drill.js'), full], { timeout: 60_000 }, (err, stdout) => {
+      let r;
+      try {
+        r = JSON.parse(stdout);
+      } catch {
+        r = { ok: false, error: err?.message?.slice(0, 200) ?? 'réponse illisible' };
+      }
+      db.lastRestoreDrill = { at: Date.now(), file: path.basename(full), ...r };
+      save();
+      if (!r.ok) console.error(`❌ Exercice de restauration raté (${path.basename(full)}) : ${r.error}`);
+      resolve(db.lastRestoreDrill);
+    });
+  });
+}
+
 function daily() {
   const last = db.lastFileBackup?.at ?? 0;
   if (Date.now() - last < 23 * 3600_000) return null;
   const e = create('auto');
   console.log(`💾 Copie de la base ${e.file} ${e.verified ? 'vérifiée ✅' : 'INVALIDE ❌'}`);
+  if (e.verified) drill(e.file).catch(() => {});
   return e;
 }
 
-module.exports = { create, verify, rotate, list, recheck, requestRestore, daily, KEEP };
+module.exports = { create, verify, drill, rotate, list, recheck, requestRestore, daily, KEEP };
