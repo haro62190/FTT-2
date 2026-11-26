@@ -446,6 +446,10 @@ async function handle(interaction, ctx) {
   if (required && interaction.user.id !== interaction.guild?.ownerId && !interaction.memberPermissions?.has(BigInt(required))) {
     return interaction.reply({ content: '⛔ Tu n\'as pas la permission d\'utiliser cette commande.', flags: MessageFlags.Ephemeral });
   }
+  const maint = require('./settings').maintenance();
+  if (maint?.staffOnly && !require('./shared').isStaffMember(interaction.member) && interaction.user.id !== interaction.guild?.ownerId) {
+    return interaction.reply({ content: `🛠️ Kensei est en maintenance${maint.reason ? ` : ${maint.reason}` : ''}. ${maint.until ? `Retour prévu <t:${Math.floor(maint.until / 1000)}:R>.` : 'Retour très bientôt !'}`, flags: MessageFlags.Ephemeral });
+  }
   if (cmd.module && !require('./settings').on(cmd.module)) {
     return interaction.reply({ content: '⛔ Cette fonction est désactivée pour le moment (tableau de bord → Modules).', flags: MessageFlags.Ephemeral });
   }
@@ -454,7 +458,7 @@ async function handle(interaction, ctx) {
     audit.record({ userId: interaction.user.id, user: interaction.user.username, source: 'discord', action: `/${interaction.commandName}`, details: audit.describeOptions(interaction) });
   }
   try {
-    await cmd.run(interaction, ctx);
+    await require('./settings').withActor({ user: interaction.user.username, userId: interaction.user.id, source: 'discord', page: `/${interaction.commandName}` }, () => cmd.run(interaction, ctx));
     require('./guardian').commandResult(interaction.commandName, true);
   } catch (err) {
     require('./guardian').commandResult(interaction.commandName, false, err?.message ?? err);

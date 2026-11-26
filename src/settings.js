@@ -92,32 +92,111 @@ const invalidate = () => {
   cache = null;
 };
 
-/** Lire un réglage : get('security.raidJoins') */
+// ───────── Mode maintenance ─────────
+/** Maintenance en cours (ou null) : { active, modules: [clés], staffOnly, reason, since, until, by } */
+function maintenance(now = Date.now()) {
+  const m = all().maintenance;
+  if (!m?.active) return null;
+  if (m.until && now > m.until) return null; // terminée toute seule
+  return m;
+}
+const maintenancePaths = () => {
+  const m = maintenance();
+  if (!m) return null;
+  const paths = new Set();
+  for (const key of m.modules ?? []) {
+    const mod = MODULES.find((x) => x[0] === key);
+    paths.add(mod ? mod[2] : `modules.${key}`);
+  }
+  return paths;
+};
+
+/** Lire un réglage : get('security.raidJoins') — un module en maintenance se lit comme coupé. */
 function get(path) {
+  const paths = path === 'maintenance' ? null : maintenancePaths();
+  if (paths?.has(path)) return false;
   return path.split('.').reduce((o, k) => o?.[k], all());
+}
+/** Valeur enregistrée, sans tenir compte de la maintenance (pour les pages de réglages). */
+const raw = (path) => path.split('.').reduce((o, k) => o?.[k], all());
+
+// ───────── Historique des modifications (qui, quand, avant → après) ─────────
+const { AsyncLocalStorage } = require('async_hooks');
+const actorStore = new AsyncLocalStorage();
+/** Exécute fn en notant l'auteur des réglages modifiés : withActor({ user, source: 'web' }, () => …) */
+const withActor = (actor, fn) => actorStore.run(actor, fn);
+const SENSITIVE = /secret|token|password|motdepasse|cookie/i;
+const preview = (path, v) => {
+  if (SENSITIVE.test(path)) return v === undefined || v === null || v === '' ? '(vide)' : '••••••';
+  if (v === undefined) return '(défaut)';
+  const s = typeof v === 'string' ? v : JSON.stringify(v);
+  return s.length > 160 ? `${s.slice(0, 159)}…` : s;
+};
+const KEEP_HISTORY = 500;
+function journal(changes) {
+  if (!changes.length) return;
+  const actor = actorStore.getStore() ?? { user: 'Kensei', source: 'bot' };
+  const list = (db.configHistory ??= []);
+  const at = Date.now();
+  // Plusieurs réglages du même formulaire = une seule entrée
+  const last = list[0];
+  if (last && last.user === actor.user && last.source === actor.source && at - last.at < 3000 && last.page === (actor.page ?? null)) {
+    for (const c of changes) {
+      const prev = last.changes.find((x) => x.path === c.path);
+      if (prev) prev.after = c.after;
+      else last.changes.push(c);
+    }
+    last.changes = last.changes.filter((x) => x.before !== x.after);
+  } else {
+    list.unshift({ at, user: String(actor.user ?? '?').slice(0, 64), source: actor.source ?? 'bot', page: actor.page ?? null, changes });
+  }
+  if (list.length > KEEP_HISTORY) list.length = KEEP_HISTORY;
+}
+/** Réglages « à plat » : { 'welcome.enabled': true, … } */
+function flatten(o, prefix = '', out = {}) {
+  for (const [k, v] of Object.entries(o ?? {})) {
+    const p = prefix ? `${prefix}.${k}` : k;
+    if (isObj(v) && Object.keys(v).length) flatten(v, p, out);
+    else out[p] = v;
+  }
+  return out;
+}
+function diffSettings(before, after) {
+  const a = flatten(before);
+  const b = flatten(after);
+  return [...new Set([...Object.keys(a), ...Object.keys(b)])]
+    .map((path) => ({ path, before: preview(path, a[path]), after: preview(path, b[path]) }))
+    .filter((c) => c.before !== c.after)
+    .sort((x, y) => x.path.localeCompare(y.path));
 }
 
 /** Modifier un réglage : set('welcome.enabled', false) */
 function set(path, value) {
   const keys = path.split('.');
+  const before = raw(path);
   db.settings ??= {};
   let o = db.settings;
   for (const k of keys.slice(0, -1)) o = o[k] ??= {};
   o[keys.at(-1)] = value;
   invalidate();
+  if (isObj(before) || isObj(value)) journal(diffSettings({ [path]: before }, { [path]: value }).map((c) => c));
+  else if (preview(path, before) !== preview(path, value)) journal([{ path, before: preview(path, before), after: preview(path, value) }]);
   save();
 }
 
 /** Remettre des sections par défaut : reset(['security']) ; reset() = tout */
 function reset(sections) {
+  const before = structuredClone(db.settings ?? {});
   if (!sections) db.settings = {};
   else for (const k of sections) delete db.settings?.[k];
   invalidate();
+  journal(diffSettings(before, db.settings ?? {}).map((c) => ({ ...c, after: c.after === '(défaut)' ? '(remis par défaut)' : c.after })));
   save();
 }
 
 /** Remplacer tous les réglages (restauration d'une sauvegarde). */
 function replaceAll(settings) {
+  journal(diffSettings(db.settings ?? {}, settings ?? {}));
   db.settings = settings ?? {};
   invalidate();
   save();
@@ -177,4 +256,4 @@ const on = (key) => {
   return get(m ? m[2] : `modules.${key}`) !== false;
 };
 
-module.exports = { DEFAULTS, all, get, set, reset, replaceAll, MODULES, on };
+module.exports = { DEFAULTS, all, get, raw, maintenance, set, reset, replaceAll, MODULES, on, withActor, diffSettings, flatten };

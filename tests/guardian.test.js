@@ -136,3 +136,75 @@ test('guardian : commandes qui échouent souvent et tâches bloquées repérées
   assert.ok(!late.includes('test-ok'));
   for (const [k, t] of g.tasks) if (k.startsWith('test')) g.tasks.delete(k), void t;
 });
+
+test('historique des réglages : auteur, avant → après, regroupement, secrets masqués', async () => {
+  const settings = require('../src/settings');
+  db.configHistory = [];
+  await settings.withActor({ user: 'Haro', source: 'web', page: '/bienvenue' }, async () => {
+    settings.set('welcome.enabled', false);
+    settings.set('welcome.message', 'Salut {user} !');
+    settings.set('welcome.message', 'Salut {user} !'); // sans changement : rien de plus
+  });
+  settings.set('stream.apiToken', 'abc123'); // valeur sensible, auteur « bot »
+  const [last, first] = db.configHistory;
+  assert.equal(first.user, 'Haro');
+  assert.equal(first.source, 'web');
+  assert.equal(first.changes.length, 2, 'un seul formulaire = une seule entrée');
+  assert.deepEqual(first.changes.find((c) => c.path === 'welcome.enabled'), { path: 'welcome.enabled', before: 'true', after: 'false' });
+  assert.equal(last.source, 'bot');
+  assert.equal(last.changes[0].after, '••••••');
+  assert.ok(!JSON.stringify(db.configHistory).includes('abc123'));
+  settings.reset(['welcome']);
+  assert.ok(db.configHistory[0].changes.some((c) => c.path === 'welcome.enabled' && c.after === '(remis par défaut)'));
+});
+
+test('mode maintenance : coupe sans perdre les réglages, fin automatique, rappel du gardien', () => {
+  const settings = require('../src/settings');
+  settings.set('notifications.tiktok', true);
+  settings.set('maintenance', { active: true, modules: ['tiktok', 'music'], staffOnly: true, since: Date.now() - 3 * 3600_000, until: null, by: 'Haro' });
+  assert.equal(settings.on('tiktok'), false);
+  assert.equal(settings.get('notifications.tiktok'), false, 'lecture directe aussi coupée');
+  assert.equal(settings.raw('notifications.tiktok'), true, 'le réglage enregistré est intact');
+  assert.equal(settings.on('levels'), true, 'les autres modules continuent');
+  const checks = g.runChecks({ isReady: () => true, ws: { ping: 10 } }, null);
+  assert.equal(checks.find((c) => c.id === 'maintenance')?.status, 'warn');
+  // Fin automatique
+  settings.set('maintenance', { ...settings.raw('maintenance'), until: Date.now() - 1000 });
+  assert.equal(settings.maintenance(), null);
+  assert.equal(settings.on('tiktok'), true);
+  settings.set('maintenance', { active: false });
+});
+
+test('comparateur de sauvegardes : rôles, salons, serveur et réglages', () => {
+  const { compare } = require('../src/backup');
+  const base = {
+    guild: { id: 'G', name: 'Ronins', verificationLevel: 1, everyonePermissions: '0' },
+    roles: [
+      { id: 'r1', name: '⚔️ Ronin', color: 1, hoist: false, mentionable: false, permissions: '0' },
+      { id: 'r2', name: '🎨 Artiste', color: 2, hoist: false, mentionable: false, permissions: '0' },
+    ],
+    channels: [
+      { id: 'cat', name: 'DOJO', type: 4, parentId: null },
+      { id: 'c1', name: 'discussion', type: 0, parentId: 'cat', topic: 'a', overwrites: [] },
+    ],
+    settings: { welcome: { enabled: true } },
+  };
+  const next = structuredClone(base);
+  next.guild.verificationLevel = 2;
+  next.roles[0].color = 9;
+  next.roles.splice(1, 1);
+  next.roles.push({ id: 'r3', name: '▶️ Notif YouTube', color: 3, hoist: false, mentionable: false, permissions: '0' });
+  next.channels[1].topic = 'b';
+  next.channels[1].parentId = null;
+  next.channels.push({ id: 'c2', name: 'youtube', type: 0, parentId: 'cat', overwrites: [] });
+  next.settings.welcome.enabled = false;
+  const d = compare(base, next);
+  assert.deepEqual(d.roles.added, ['▶️ Notif YouTube']);
+  assert.deepEqual(d.roles.removed, ['🎨 Artiste']);
+  assert.deepEqual(d.roles.changed, [{ name: '⚔️ Ronin', what: ['couleur'] }]);
+  assert.deepEqual(d.channels.added, ['youtube (texte)']);
+  assert.match(d.channels.changed[0].what.join(','), /déplacé.*sujet/);
+  assert.deepEqual(d.guild, ['niveau de vérification']);
+  assert.equal(d.settings[0].path, 'welcome.enabled');
+  assert.equal(compare(base, base).total, 0);
+});

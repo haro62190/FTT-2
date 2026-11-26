@@ -120,6 +120,8 @@ const NAV = [
   ['/serveur', '🏗️ Construction'],
   ['/logo', '🖼️ Logo & identité'],
   ['/modules', '🧩 Modules'],
+  ['/historique-config', '🕓 Historique des réglages'],
+  ['/maintenance', '🛠️ Mode maintenance'],
   ['/roles-permissions', '🎭 Rôles & permissions'],
   ['#', 'Communauté'],
   ['/bienvenue', '🏮 Bienvenue & départ'],
@@ -153,6 +155,7 @@ const NAV = [
   ['/vocaux', '🔊 Vocaux temporaires'],
   ['#', 'Sécurité'],
   ['/moderation', '🛡️ Modération & raid'],
+  ['/sante', '❤️ Santé générale'],
   ['/statut', '💓 État du bot'],
   ['/guardian', '🛡️ Kensei Guardian'],
   ['/incidents', '📜 Incidents'],
@@ -265,7 +268,10 @@ h2.brush{font:400 40px/1.15 Brush,'Segoe Script',cursive;letter-spacing:.01em;pa
 </style></head><body>
 <header><img class="logo" src="/logo.png" alt=""><h1>剣聖 <span>KENSEI</span></h1>${sess ? '<span class="live" title="Mis à jour en direct"><i></i>Bot en ligne <svg class="pulse" viewBox="0 0 26 12"><path d="M0 6h7l2-5 3 10 3-8 2 3h9"/></svg></span>' : ''}${sess ? (() => { const k = alertCount(); return `<a class="bell" href="/alertes" title="Centre d'alertes">🔔${k ? `<i>${k}</i>` : ''}</a>`; })() : ''}${sess && BADGE ? `<span class="server">${BADGE.icon ? `<img src="${esc(BADGE.icon)}" alt="">` : ''}${esc(BADGE.name)}</span>` : ''}${sess ? '<label class="menu-btn" for="menu">☰ Menu</label>' : ''}<div class="who">${avatar}${esc(sess?.username ?? '')}${sess ? ' · <a class="muted" href="/logout">Déconnexion</a>' : ''}</div></header>
 ${sess ? '<input type="checkbox" id="menu" aria-hidden="true">' : ''}<div class="wrap">${sess ? `<nav><a class="brand" href="/" title="Accueil"><img src="/assets/logo-kensei.jpg" alt="Kensei · Les Ronins"></a>${NAV.map(([href, label]) => (href === '#' ? `<div class="sec">${label}</div>` : `<a href="${href}" class="${href === path ? 'on' : ''}">${label}</a>`)).join('')}<a class="mobile-only" href="/logout">🚪 Déconnexion (${esc(sess.username ?? '')})</a></nav>` : ''}
-<main>${flash ? `<div class="flash${flash.startsWith('❌') ? ' err' : ''}">${esc(flash)}</div>` : ''}${SUBTITLES[path] ? `<h2 class="brush">${esc(title)}</h2><p class="subtitle">${esc(SUBTITLES[path])}</p>` : `<h2>${esc(title)}</h2>`}${body}</main></div>${nonce && script ? `<script nonce="${nonce}">${script}</script>` : ''}</body></html>`;
+<main>${(() => {
+    const m = sess && settings.maintenance();
+    return m ? `<div class="flash err">🛠️ <b>Mode maintenance actif</b> depuis ${esc(new Date(m.since).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }))}${m.until ? ` · fin automatique ${esc(new Date(m.until).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }))}` : ''} · ${(m.modules ?? []).length} fonction(s) coupée(s)${m.staffOnly ? ' · commandes réservées au staff' : ''} — <a href="/maintenance">gérer</a></div>` : '';
+  })()}${flash ? `<div class="flash${flash.startsWith('❌') ? ' err' : ''}">${esc(flash)}</div>` : ''}${SUBTITLES[path] ? `<h2 class="brush">${esc(title)}</h2><p class="subtitle">${esc(SUBTITLES[path])}</p>` : `<h2>${esc(title)}</h2>`}${body}</main></div>${nonce && script ? `<script nonce="${nonce}">${script}</script>` : ''}</body></html>`;
 }
 
 const csrf = (sess) => `<input type="hidden" name="csrf" value="${esc(sess.csrf)}">`;
@@ -540,7 +546,28 @@ const pages = {
       <form method="post">${csrf(sess)}<input type="hidden" name="action" value="create"><div class="row"><div><label>Nom</label><input type="text" name="name" maxlength="50" placeholder="ex : avant-gros-changement"></div></div><button>Créer une sauvegarde maintenant</button></form></div>
       <div class="card"><table><tr><th>#</th><th>Nom</th><th>Date</th><th>Taille</th><th></th></tr>
       ${list.map((b) => `<tr><td>${b.id}</td><td>${esc(b.name)}</td><td>${fmtDate(b.created_at)}</td><td>${(b.size / 1024).toFixed(0)} Ko</td><td><a class="btn ghost" style="margin:0" href="/sauvegardes/restaurer?id=${b.id}">Restaurer…</a></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Aucune sauvegarde.</td></tr>'}
-      </table></div>`,
+      </table></div>
+      ${list.length >= 2 ? `<form method="get" action="/sauvegardes/comparer" class="card"><h3>🔍 Comparer deux sauvegardes</h3><p class="muted">Ce qui a changé entre les deux : rôles, salons, paramètres du serveur et réglages du bot. Rien n'est modifié.</p>
+      <div class="row"><div><label>Ancienne</label><select name="a">${list.map((b, k) => `<option value="${b.id}" ${k === 1 ? 'selected' : ''}>#${b.id} · ${esc(b.name)} · ${fmtDate(b.created_at)}</option>`).join('')}</select></div>
+      <div><label>Récente</label><select name="b">${list.map((b, k) => `<option value="${b.id}" ${k === 0 ? 'selected' : ''}>#${b.id} · ${esc(b.name)} · ${fmtDate(b.created_at)}</option>`).join('')}</select></div></div><button>Comparer</button></form>` : ''}`,
+    };
+  },
+  '/sauvegardes/comparer'(guild, sess, q) {
+    const A = backup.getBackup(Number(q.get('a')));
+    const B = backup.getBackup(Number(q.get('b')));
+    if (!A || !B) return { title: '🔍 Comparer deux sauvegardes', body: '<div class="card"><p>Sauvegarde introuvable.</p><a class="btn" href="/sauvegardes">Retour</a></div>' };
+    const [older, newer] = A.created_at <= B.created_at ? [A, B] : [B, A];
+    const d = backup.compare(older.data, newer.data);
+    const list = (items, icon) => items.map((x) => `<li>${icon} ${esc(x)}</li>`).join('');
+    const changed = (items) => items.map((x) => `<li>✏️ <b>${esc(x.name)}</b>${x.type ? ` <span class="muted">(${esc(x.type)})</span>` : ''} : ${esc(x.what.join(', '))}</li>`).join('');
+    const block = (title, html) => `<div class="card"><h3>${title}</h3>${html ? `<ul style="margin:0;padding-left:18px">${html}</ul>` : '<p class="muted">Aucun changement.</p>'}</div>`;
+    return {
+      title: '🔍 Comparer deux sauvegardes',
+      body: `<div class="card"><p>De <b>#${older.id} « ${esc(older.name)} »</b> (${fmtDate(older.created_at)}) à <b>#${newer.id} « ${esc(newer.name)} »</b> (${fmtDate(newer.created_at)}) : <b>${d.total}</b> changement(s).</p><a class="btn ghost" href="/sauvegardes">Retour aux sauvegardes</a></div>
+      ${block('🎭 Rôles', list(d.roles.added, '➕') + list(d.roles.removed, '➖') + changed(d.roles.changed))}
+      ${block('📁 Salons', list(d.channels.added, '➕') + list(d.channels.removed, '➖') + changed(d.channels.changed))}
+      ${block('🏯 Serveur', list(d.guild, '✏️'))}
+      ${block('⚙️ Réglages du bot', d.settings.map((c) => `<li><code>${esc(c.path)}</code> : <span class="muted" style="text-decoration:line-through">${esc(c.before)}</span> → <b>${esc(c.after)}</b></li>`).join(''))}`,
     };
   },
   async 'POST /sauvegardes'(guild, sess, body) {
@@ -750,7 +777,7 @@ function start(client, guildId) {
         if (!sameToken(body.get('csrf'), sess.csrf)) return send(res, 403, page(sess, '', 'Requête refusée', '<p>Jeton de sécurité invalide, recharge la page.</p>'));
         const handler = pages[`POST ${url.pathname}`];
         if (!handler) return send(res, 404, page(sess, '', 'Introuvable', ''));
-        const flash = await handler(guild, sess, body).catch((e) => `❌ ${e.message}`);
+        const flash = await settings.withActor({ user: sess.username, userId: sess.userId, source: 'web', page: url.pathname }, () => handler(guild, sess, body)).catch((e) => `❌ ${e.message}`);
         sess.flash = flash;
         console.log(`🌐 ${sess.username} : ${url.pathname} — ${flash}`);
         require('./audit').record({ userId: sess.userId, user: sess.username, source: 'web', action: url.pathname, details: `${body.get('action') ?? ''} → ${flash}` });

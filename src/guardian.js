@@ -226,6 +226,11 @@ function runChecks(client = clientRef, guild = guildRef) {
     add('update', 'Mise à jour', 'error', `La version ${String(blocked.bad).slice(0, 7)} a échoué aux tests : elle n'a pas été installée, le bot tourne toujours sur ${String(blocked.good).slice(0, 7)}.${blocked.failures ? ` (${String(blocked.failures).split('|').filter(Boolean).slice(0, 2).join(' · ')})` : ''}`, 'Rien à faire côté serveur : la correction doit venir du code (GitHub). Elle s\'installera seule une fois les tests réparés.');
   } catch {}
 
+  // Mode maintenance oublié ?
+  const maint = settings.maintenance();
+  if (maint && !maint.until && Date.now() - maint.since > 2 * 3600_000) add('maintenance', 'Mode maintenance', 'warn', `Actif depuis ${Math.round((Date.now() - maint.since) / 3600_000)} h, sans fin prévue : ${(maint.modules ?? []).length} fonction(s) coupée(s).`, 'Site → 🛠️ Mode maintenance → « Terminer la maintenance » si elle n\'est plus utile.');
+  else if (maint) add('maintenance', 'Mode maintenance', 'off', `En cours${maint.until ? `, fin automatique ${new Date(maint.until).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' })}` : ''}.`);
+
   // Configuration
   const cfg = configIssues();
   if (cfg.length) out.push(...cfg);

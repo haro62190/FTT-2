@@ -445,6 +445,16 @@ Chaque arrivée est accueillie par une bannière en image (décor Kensei, avatar
 
 Toutes les 5 minutes, le gardien contrôle : connexion Discord, permissions et position du rôle du bot, salons/rôles manquants, Twitch, TikTok (et yt-dlp), YouTube, compteurs, copies de la base, serveur de secours, mémoire, disque, et les **erreurs répétées** (la même 5 fois en une heure). Quand un problème apparaît, il prévient le staff dans 🚨┃alertes-sécurité avec une **correction proposée**, puis quand c'est résolu (rappel toutes les 12 h si ça dure). **Il ne modifie jamais rien lui-même.** `/guardian` ou la page *🛡️ Kensei Guardian* du site pour un contrôle immédiat ; alertes désactivables dans *🧩 Modules*.
 
+## 🔧 Fiabilité et administration
+
+- **Mises à jour sûres** : `scripts/update.sh` lance la vérification et les tests **avant** de configurer le serveur ou de redémarrer. En cas d'échec, la nouvelle version n'est pas installée (le bot continue sur l'ancienne) et le gardien prévient le staff. Si le bot ne redémarre pas, retour arrière automatique (comme avant). `SKIP_TESTS=1` pour forcer.
+- **Exercice de restauration** chaque nuit : la nouvelle copie de la base est rechargée par le vrai code du bot dans un dossier temporaire (la vraie base n'est jamais touchée).
+- **Kensei Guardian** contrôle aussi : la configuration `.env`, les commandes qui échouent souvent, les tâches automatiques bloquées, la maintenance oubliée. Chaque problème devient un **incident** (page *📜 Incidents* : ouvert → vu par un admin → résolu, avec sa durée).
+- **❤️ Santé générale** : une page qui résume tout (verdict, problèmes et corrections, sauvegardes).
+- **🕓 Historique des réglages** : chaque réglage modifié, par qui, d'où (site, Discord, automatique), avant → après (valeurs sensibles masquées).
+- **🛠️ Mode maintenance** : couper temporairement certaines fonctions (et réserver les commandes au staff), avec fin automatique ; les réglages ne sont pas touchés et les protections restent actives.
+- **🔍 Comparer deux sauvegardes** (page *💾 Sauvegardes*) : rôles, salons, paramètres du serveur et réglages qui ont changé.
+
 ## 📊 Sondages, 🧭 accueil personnalisé
 
 - `/sondage question: choix: Warzone ; Fortnite ; Minecraft [duree:2h] [anonyme:] [multiple:] [resultats_en_direct:]` : 2 à 10 choix, **anonyme par défaut**, date limite, résultats publiés automatiquement à la fin (bouton 🔒 pour clore plus tôt : auteur ou staff).

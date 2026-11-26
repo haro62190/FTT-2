@@ -36,9 +36,9 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
     // ───────────────────────── Modules ─────────────────────────
     '/modules'(guild, sess) {
       const groups = new Map();
-      for (const [key, label, , group] of settings.MODULES) {
+      for (const [key, label, path, group] of settings.MODULES) {
         if (!groups.has(group)) groups.set(group, []);
-        groups.get(group).push(`<tr><td>${esc(label)}</td><td style="width:70px">${checkbox(`m_${key}`, settings.on(key), '')}</td></tr>`);
+        groups.get(group).push(`<tr><td>${esc(label)}</td><td style="width:70px">${checkbox(`m_${key}`, settings.raw(path) !== false, '')}</td></tr>`);
       }
       return {
         title: '🧩 Modules',
@@ -51,7 +51,7 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
       const changed = [];
       for (const [key, label, settingPath] of settings.MODULES) {
         const want = body.has(`m_${key}`);
-        if (settings.on(key) !== want) changed.push(`${want ? '✅' : '⛔'} ${label}`);
+        if ((settings.raw(settingPath) !== false) !== want) changed.push(`${want ? '✅' : '⛔'} ${label}`);
         settings.set(settingPath, want);
       }
       // AutoMod : appliquer tout de suite chez Discord
