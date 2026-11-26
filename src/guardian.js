@@ -65,6 +65,54 @@ function fixFor(text) {
   return 'Regarder le détail dans 💓 État du bot → Dernières erreurs ; si ça persiste, redémarrer le bot (`pm2 restart bot-discord`).';
 }
 
+// ───────── Tâches automatiques (battement à la fin de chaque passage) ─────────
+const tasks = new Map(); // key → { label, ms, since, last, runs }
+/** setInterval suivi par le gardien : il prévient si la tâche ne termine plus ses passages. */
+function every(key, label, ms, fn) {
+  const t = { label, ms, since: Date.now(), last: null, runs: 0 };
+  tasks.set(key, t);
+  const run = () =>
+    Promise.resolve()
+      .then(fn)
+      .catch(() => {})
+      .finally(() => {
+        t.last = Date.now();
+        t.runs++;
+      });
+  return setInterval(run, ms);
+}
+/** Tâches en retard : aucun passage terminé depuis 3 intervalles (5 min minimum). */
+function lateTasks(now = Date.now()) {
+  return [...tasks.entries()]
+    .map(([key, t]) => ({ key, ...t, limit: Math.max(3 * t.ms, 5 * 60_000) }))
+    .filter((t) => now - (t.last ?? t.since) > t.limit);
+}
+
+// ───────── Commandes qui échouent ─────────
+const CMD_WINDOW = 24 * 3600_000;
+const cmdEvents = []; // { at, name, ok, error }
+/** Appelé par commands.handle après chaque commande. */
+function commandResult(name, ok, error = null) {
+  cmdEvents.push({ at: Date.now(), name, ok, error: error ? String(error).split('\n')[0].slice(0, 200) : null });
+  while (cmdEvents.length && Date.now() - cmdEvents[0].at > CMD_WINDOW) cmdEvents.shift();
+  if (cmdEvents.length > 5000) cmdEvents.splice(0, cmdEvents.length - 5000);
+}
+/** Statistiques par commande sur 24 h, les plus fragiles d'abord. */
+function commandStats() {
+  const by = new Map();
+  for (const e of cmdEvents) {
+    if (Date.now() - e.at > CMD_WINDOW) continue;
+    const c = by.get(e.name) ?? { name: e.name, ok: 0, fail: 0, lastError: null };
+    if (e.ok) c.ok++;
+    else {
+      c.fail++;
+      c.lastError = e.error;
+    }
+    by.set(e.name, c);
+  }
+  return [...by.values()].map((c) => ({ ...c, rate: c.fail / (c.ok + c.fail) })).sort((a, b) => b.fail - a.fail || b.ok - a.ok);
+}
+
 // ───────── Contrôles ─────────
 const ago = (t) => (t ? Math.round((Date.now() - t) / 60_000) : Infinity);
 
@@ -195,6 +243,16 @@ function runChecks(client = clientRef, guild = guildRef) {
     else add('disk', 'Espace disque', 'ok', `${(freeMb / 1024).toFixed(1).replace('.', ',')} Go libres`);
   } catch {}
 
+  // Tâches automatiques
+  const late = lateTasks();
+  for (const t of late) add(`task:${t.key}`, `Tâche « ${t.label} »`, 'warn', `Aucun passage terminé depuis ${Math.round((Date.now() - (t.last ?? t.since)) / 60_000)} min (prévu toutes les ${Math.max(1, Math.round(t.ms / 60_000))} min).`, 'La tâche semble bloquée : redémarrer le bot (`pm2 restart bot-discord`) ; si ça revient, prévenir le développeur.');
+  if (tasks.size && !late.length) add('tasks', 'Tâches automatiques', 'ok', `${tasks.size} tâches suivies`);
+
+  // Commandes qui échouent souvent (au moins 3 échecs et 30 % des utilisations sur 24 h)
+  for (const c of commandStats().filter((x) => x.fail >= 3 && x.rate >= 0.3).slice(0, 5)) {
+    add(`cmd:${c.name}`, `Commande /${c.name}`, c.rate >= 0.7 ? 'error' : 'warn', `${c.fail} échec(s) sur ${c.ok + c.fail} utilisations en 24 h${c.lastError ? ` — ${c.lastError}` : ''}`, fixFor(`${c.name} ${c.lastError ?? ''}`));
+  }
+
   // Erreurs répétées
   for (const g of repeatedErrors().slice(0, 5)) {
     add(`err:${keyOf(g.text)}`, 'Erreur répétée', 'error', `${g.count}× en 1 h : ${g.text}`, fixFor(g.text));
@@ -221,17 +279,65 @@ async function notify(guild, changes) {
   await channel.send({ embeds: [embed], allowedMentions: { parse: [] } }).catch(() => {});
 }
 
+// ───────── Historique des incidents ─────────
+const KEEP_INCIDENTS = 300;
+const incidents = () => (state().incidents ??= []);
+const openIncident = (checkId) => incidents().find((x) => x.check === checkId && !x.resolvedAt);
+
+/** Un admin indique qu'il a vu l'incident (rien d'autre ne change : le gardien ne corrige rien). */
+function acknowledge(incidentId, who) {
+  const inc = incidents().find((x) => x.id === incidentId);
+  if (!inc) throw new Error('Incident introuvable.');
+  if (!inc.ack) inc.ack = { by: String(who).slice(0, 64), at: Date.now() };
+  save();
+  return inc;
+}
+
+/** Met à jour l'historique à partir des contrôles. Renvoie { opened, worsened, resolved }. */
+function track(checks, now = Date.now()) {
+  const list = incidents();
+  const bad = checks.filter((c) => c.status === 'warn' || c.status === 'error');
+  const out = { opened: [], worsened: [], resolved: [] };
+  for (const c of bad) {
+    const inc = openIncident(c.id);
+    if (!inc) {
+      const n = { id: `i${now.toString(36)}${Math.random().toString(36).slice(2, 5)}`, check: c.id, label: c.label, status: c.status, worst: c.status, detail: c.detail, fix: c.fix, openedAt: now, lastSeen: now, resolvedAt: null, ack: null };
+      list.unshift(n);
+      out.opened.push(n);
+    } else {
+      if (c.status === 'error' && inc.worst !== 'error') out.worsened.push(inc);
+      inc.status = c.status;
+      inc.worst = inc.worst === 'error' || c.status === 'error' ? 'error' : 'warn';
+      inc.detail = c.detail;
+      inc.fix = c.fix;
+      inc.lastSeen = now;
+    }
+  }
+  const active = new Set(bad.map((c) => c.id));
+  for (const inc of list) {
+    if (!inc.resolvedAt && !active.has(inc.check)) {
+      inc.resolvedAt = now;
+      out.resolved.push(inc);
+    }
+  }
+  if (list.length > KEEP_INCIDENTS) list.length = KEEP_INCIDENTS;
+  return out;
+}
+
 async function run() {
   checkYtdlp();
   const checks = runChecks();
   const s = state();
+  track(checks);
   const changes = [];
   const seen = new Set();
   for (const c of checks) {
     if (c.status !== 'warn' && c.status !== 'error') continue;
     seen.add(c.id);
     const prev = s.issues[c.id];
-    if (!prev || prev.status !== c.status || Date.now() - prev.notifiedAt > REMIND_MS) {
+    // Un incident déjà « vu » par un admin n'est plus rappelé toutes les 12 h (seulement s'il s'aggrave)
+    const acked = openIncident(c.id)?.ack;
+    if (!prev || prev.status !== c.status || (!acked && Date.now() - prev.notifiedAt > REMIND_MS)) {
       changes.push(c);
       s.issues[c.id] = { status: c.status, label: c.label, since: prev?.since ?? Date.now(), notifiedAt: Date.now() };
     }
@@ -285,4 +391,4 @@ const commands = [
   },
 ];
 
-module.exports = { start, run, runChecks, configIssues, repeatedErrors, recordLog, keyOf, fixFor, reportEmbed, ICON, commands };
+module.exports = { start, run, runChecks, configIssues, track, acknowledge, incidents, every, lateTasks, tasks, commandResult, commandStats, repeatedErrors, recordLog, keyOf, fixFor, reportEmbed, ICON, commands };

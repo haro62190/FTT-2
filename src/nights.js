@@ -181,7 +181,7 @@ async function tick(client, guild) {
 function start(client, guild) {
   const run = () => tick(client, guild).catch((e) => console.error('Soirées / rappels :', e.message));
   setTimeout(run, 20_000);
-  setInterval(run, 60_000);
+  require('./guardian').every('nights', 'Soirées et rappels', 60_000, run);
 }
 
 // ───────────────────────── Calendrier ─────────────────────────

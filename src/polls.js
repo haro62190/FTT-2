@@ -166,7 +166,7 @@ async function tick() {
 
 function start(client) {
   clientRef = client;
-  setInterval(() => tick().catch((e) => console.error('Sondages :', e.message)), 20_000).unref();
+  require('./guardian').every('polls', 'Sondages', 20_000, () => tick().catch((e) => console.error('Sondages :', e.message))).unref();
 }
 
 async function handleInteraction(i) {

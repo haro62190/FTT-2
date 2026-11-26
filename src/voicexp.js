@@ -34,7 +34,7 @@ async function tick(guild) {
 }
 
 function start(guild) {
-  setInterval(() => tick(guild).catch((e) => console.error('XP vocal :', e.message)), 60_000);
+  require('./guardian').every('voicexp', 'XP vocal', 60_000, () => tick(guild).catch((e) => console.error('XP vocal :', e.message)));
 }
 
 module.exports = { start };

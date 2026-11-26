@@ -147,7 +147,7 @@ async function check(guild) {
 function start(guild) {
   const run = () => check(guild).catch((e) => console.error('Saisons :', e.message));
   setTimeout(run, 30_000);
-  setInterval(run, 15 * 60_000);
+  require('./guardian').every('seasons', 'Saisons', 15 * 60_000, run);
 }
 
 const commands = [

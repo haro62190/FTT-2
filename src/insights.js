@@ -175,7 +175,7 @@ async function check(guild) {
 function start(guild) {
   db.trackingSince ??= Date.now();
   save();
-  setInterval(() => check(guild).catch((e) => console.error('Récap hebdo :', e.message)), 15 * 60_000);
+  require('./guardian').every('insights', 'Récap hebdo', 15 * 60_000, () => check(guild).catch((e) => console.error('Récap hebdo :', e.message)));
 }
 
 module.exports = { DAYS, track, unusedChannels, bestSlots, topGames, suggestions, weeklyStats, postWeekly, check, start, parisParts };

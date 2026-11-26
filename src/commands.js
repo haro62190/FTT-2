@@ -455,7 +455,9 @@ async function handle(interaction, ctx) {
   }
   try {
     await cmd.run(interaction, ctx);
+    require('./guardian').commandResult(interaction.commandName, true);
   } catch (err) {
+    require('./guardian').commandResult(interaction.commandName, false, err?.message ?? err);
     console.error(`Erreur /${interaction.commandName} :`, err);
     const msg = ephemeral('❌ Une erreur est survenue (le bot a-t-il les bonnes permissions ?).');
     if (interaction.replied || interaction.deferred) await interaction.followUp(msg).catch(() => {});

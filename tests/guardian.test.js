@@ -89,3 +89,50 @@ test('mise à jour : les tests passent AVANT la configuration du serveur et le r
   assert.match(s, /flock -n 9/);
   assert.match(s, /update-blocked\.json/);
 });
+
+test('guardian : incidents ouverts, aggravés, vus par un admin puis résolus', () => {
+  const t0 = Date.now();
+  const warn = [{ id: 'stats', label: 'Salons compteurs', status: 'warn', detail: 'en retard', fix: '/stats rafraichir' }];
+  let r = g.track(warn, t0);
+  assert.equal(r.opened.length, 1);
+  const inc = r.opened[0];
+  r = g.track([{ ...warn[0], status: 'error' }], t0 + 60_000);
+  assert.equal(r.worsened.length, 1);
+  assert.equal(inc.worst, 'error');
+  g.acknowledge(inc.id, 'Haro');
+  assert.equal(inc.ack.by, 'Haro');
+  r = g.track([], t0 + 120_000);
+  assert.equal(r.resolved.length, 1);
+  assert.equal(inc.resolvedAt, t0 + 120_000);
+  r = g.track(warn, t0 + 180_000); // le même problème revient : nouvel incident
+  assert.equal(r.opened.length, 1);
+  assert.notEqual(r.opened[0].id, inc.id);
+  assert.throws(() => g.acknowledge('inconnu', 'x'), /introuvable/);
+});
+
+test('guardian : commandes qui échouent souvent et tâches bloquées repérées', async () => {
+  for (let k = 0; k < 4; k++) g.commandResult('play', false, 'Error: yt-dlp n\'est pas installé');
+  g.commandResult('play', true);
+  for (let k = 0; k < 10; k++) g.commandResult('rang', true);
+  g.commandResult('rang', false, 'oups');
+  const stats = g.commandStats();
+  assert.equal(stats[0].name, 'play');
+  assert.equal(stats[0].fail, 4);
+  const checks = g.runChecks({ isReady: () => true, ws: { ping: 10 } }, null);
+  const play = checks.find((c) => c.id === 'cmd:play');
+  assert.ok(play && play.status === 'error', 'play échoue 80 % du temps');
+  assert.match(play.fix, /yt-dlp/);
+  assert.ok(!checks.find((c) => c.id === 'cmd:rang'), '1 échec sur 11 : pas d\'alerte');
+
+  // Tâche qui ne termine plus : en retard ; tâche qui tourne : ok
+  const timer = g.every('test-ok', 'Tâche test', 60_000, () => {});
+  clearInterval(timer);
+  g.tasks.get('test-ok').since = Date.now() - 4 * 60_000;
+  g.tasks.get('test-ok').last = Date.now();
+  g.every('test-bloquee', 'Tâche bloquée', 60_000, () => new Promise(() => {})).unref();
+  g.tasks.get('test-bloquee').since = Date.now() - 10 * 60_000;
+  const late = g.lateTasks().map((t) => t.key);
+  assert.ok(late.includes('test-bloquee'));
+  assert.ok(!late.includes('test-ok'));
+  for (const [k, t] of g.tasks) if (k.startsWith('test')) g.tasks.delete(k), void t;
+});

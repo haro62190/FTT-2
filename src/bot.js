@@ -365,7 +365,7 @@ client.once(Events.ClientReady, async () => {
   const backup = require('./backup');
   const auto = () => guild.channels.fetch().then(() => { backup.autoBackup(guild); require('./dbbackup').daily(); require('./rescue').daily(guild).catch((e) => console.error('Copie de secours :', e.message)); return backup.offsiteBackup(guild); }).catch((e) => console.error('Sauvegarde auto :', e.message));
   auto();
-  setInterval(auto, 6 * 3600_000);
+  require('./guardian').every('backups', 'Sauvegardes automatiques', 6 * 3600_000, auto);
 });
 
 client.login(DISCORD_TOKEN);
