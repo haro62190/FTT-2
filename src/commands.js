@@ -125,33 +125,6 @@ const commands = [
       return i.reply({ embeds: [embed] });
     },
   },
-  {
-    category: '🎉 Général',
-    data: new SlashCommandBuilder()
-      .setName('sondage')
-      .setDescription('Créer un sondage')
-      .addStringOption((o) => o.setName('question').setDescription('La question').setRequired(true).setMaxLength(300))
-      .addStringOption((o) => o.setName('choix1').setDescription('Choix 1').setRequired(true).setMaxLength(55))
-      .addStringOption((o) => o.setName('choix2').setDescription('Choix 2').setRequired(true).setMaxLength(55))
-      .addStringOption((o) => o.setName('choix3').setDescription('Choix 3').setMaxLength(55))
-      .addStringOption((o) => o.setName('choix4').setDescription('Choix 4').setMaxLength(55))
-      .addIntegerOption((o) => o.setName('duree').setDescription('Durée en heures (24 par défaut)').setMinValue(1).setMaxValue(168)),
-    async run(i) {
-      const answers = ['choix1', 'choix2', 'choix3', 'choix4']
-        .map((k) => i.options.getString(k))
-        .filter(Boolean)
-        .map((text) => ({ text }));
-      return i.reply({
-        poll: {
-          question: { text: i.options.getString('question') },
-          answers,
-          duration: i.options.getInteger('duree') ?? 24,
-          allowMultiselect: false,
-        },
-      });
-    },
-  },
-
   // ───────── Niveaux ─────────
   {
     category: '⭐ Niveaux',
@@ -445,6 +418,7 @@ commands.push(
   ...require('./reports').commands,
   ...require('./rescue').commands,
   ...require('./emojis').commands,
+  ...require('./polls').commands,
 );
 
 // /help = /aide
