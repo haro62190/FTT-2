@@ -10,6 +10,9 @@ const { redact } = require('./redact');
 
 const MAX = 1024 * 1024;
 let file = null;
+const listeners = new Set();
+/** Être prévenu de chaque erreur / avertissement (utilisé par 🛡️ Kensei Guardian). */
+const onLog = (fn) => listeners.add(fn);
 
 function write(level, args) {
   if (!file) return;
@@ -32,6 +35,11 @@ function install() {
     console[name] = (...args) => {
       original(...args.map((a) => (typeof a === 'string' ? redact(a) : a)));
       write(level, args);
+      for (const fn of listeners) {
+        try {
+          fn(level, redact(util.format(...args)));
+        } catch {}
+      }
     };
   }
   checkEnvFile();
@@ -59,4 +67,4 @@ function tail(lines = 100) {
   }
 }
 
-module.exports = { install, tail };
+module.exports = { install, tail, onLog };

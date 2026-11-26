@@ -420,6 +420,7 @@ commands.push(
   ...require('./emojis').commands,
   ...require('./polls').commands,
   ...require('./onboarding').commands,
+  ...require('./guardian').commands,
 );
 
 // /help = /aide

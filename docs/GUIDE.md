@@ -59,7 +59,8 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/live` | Le stream est-il en ligne ? |
 | `/profil [membre:]` | Infos sur un membre |
 | `/serveur` | Infos sur le serveur |
-| `/sondage question: choix1: choix2: [choix3:] [choix4:] [duree:]` | Créer un sondage |
+| `/sondage question: choix: A ; B ; C [duree:2h] [anonyme:] [multiple:] [resultats_en_direct:]` | Sondage anonyme avec date limite et résultats automatiques |
+| `/accueil` | Choisir tes intérêts et tes jeux : guide et rôles sur mesure |
 | `/guide [staff:]` | Le guide du serveur et de toutes les commandes |
 | `/merci membre: [raison:]` | Remercier un membre qui t'a aidé (+1 réputation) |
 | `/rep [membre:]` | La réputation d'un membre et le classement |
@@ -280,6 +281,7 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 
 | Commande | Ce qu'elle fait |
 |---|---|
+| `/guardian` | 🛡️ Contrôle complet du bot avec corrections proposées (staff) |
 | `/emoji ajouter image: [nom:]` · `/emoji supprimer nom:` · `/emoji liste` | Émojis personnalisés du serveur (statiques ou GIF animés) |
 | `/backup creer [nom:]` | Créer une sauvegarde |
 | `/backup liste` | Voir les sauvegardes |

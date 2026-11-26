@@ -44,6 +44,27 @@ module.exports = ({ esc, csrf, fetchMembers, memberName, fmtDate }) => {
       return '✅ Page vitrine mise à jour.';
     },
 
+    // ───────────────────────── Kensei Guardian ─────────────────────────
+    '/guardian'(guild, sess) {
+      const g = require('./guardian');
+      const checks = g.runChecks(guild.client, guild);
+      const bad = checks.filter((c) => c.status === 'warn' || c.status === 'error');
+      const st = db.guardian ?? {};
+      const row = (c) => `<tr><td>${g.ICON[c.status]}</td><td><b>${esc(c.label)}</b>${c.detail ? `<br><span class="muted">${esc(c.detail)}</span>` : ''}</td><td>${(c.status === 'warn' || c.status === 'error') && c.fix ? `💡 ${esc(c.fix)}` : ''}</td></tr>`;
+      return {
+        title: '🛡️ Kensei Guardian',
+        body: `<div class="card"><p>Le gardien contrôle le bot toutes les 5 minutes : connexion, permissions, salons, Twitch, TikTok, YouTube, compteurs, sauvegardes, serveur de secours, mémoire, disque et erreurs répétées. Il prévient le staff dans 🚨┃alertes-sécurité quand un problème apparaît puis quand il est résolu. <b>Il ne modifie jamais rien lui-même</b> : il propose la correction.</p>
+        <p>${bad.length ? `<span class="badge bad">${bad.length} point(s) à regarder</span>` : '<span class="badge ok">Tout va bien</span>'} · dernier passage automatique : ${st.lastRun ? fmtDate(st.lastRun) : 'pas encore'}</p></div>
+        <div class="card"><table><tr><th></th><th>Contrôle</th><th>Correction proposée</th></tr>${[...bad, ...checks.filter((c) => !bad.includes(c))].map(row).join('')}</table></div>
+        <form method="post" class="card">${csrf(sess)}${hidden('action', 'run')}<button>Lancer les contrôles maintenant (et prévenir le staff)</button></form>`,
+      };
+    },
+    async 'POST /guardian'() {
+      const checks = await require('./guardian').run();
+      const bad = checks.filter((c) => c.status === 'warn' || c.status === 'error').length;
+      return bad ? `🛡️ ${bad} point(s) à regarder.` : '🛡️ Tout va bien.';
+    },
+
     // ───────────────────────── Émojis ─────────────────────────
     async '/emojis'(guild, sess) {
       const em = require('./emojis');

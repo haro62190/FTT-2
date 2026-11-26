@@ -441,6 +441,16 @@ Tableau de bord → *😀 Émojis* (choisis l'image, le nom se remplit tout seul
 
 Chaque arrivée est accueillie par une bannière en image (décor Kensei, avatar, pseudo, « Ronin n°… ») sous le message de bienvenue. Désactivable sur *🏮 Bienvenue & départ*.
 
+## 🛡️ Kensei Guardian
+
+Toutes les 5 minutes, le gardien contrôle : connexion Discord, permissions et position du rôle du bot, salons/rôles manquants, Twitch, TikTok (et yt-dlp), YouTube, compteurs, copies de la base, serveur de secours, mémoire, disque, et les **erreurs répétées** (la même 5 fois en une heure). Quand un problème apparaît, il prévient le staff dans 🚨┃alertes-sécurité avec une **correction proposée**, puis quand c'est résolu (rappel toutes les 12 h si ça dure). **Il ne modifie jamais rien lui-même.** `/guardian` ou la page *🛡️ Kensei Guardian* du site pour un contrôle immédiat ; alertes désactivables dans *🧩 Modules*.
+
+## 📊 Sondages, 🧭 accueil personnalisé
+
+- `/sondage question: choix: Warzone ; Fortnite ; Minecraft [duree:2h] [anonyme:] [multiple:] [resultats_en_direct:]` : 2 à 10 choix, **anonyme par défaut**, date limite, résultats publiés automatiquement à la fin (bouton 🔒 pour clore plus tôt : auteur ou staff).
+- Après le règlement, bouton **🧭 Personnaliser mon arrivée** (ou `/accueil`) : le membre choisit ses intérêts et ses jeux et reçoit un guide avec seulement ce qui le concerne, plus les rôles adaptés. Liste des jeux : page *🏮 Bienvenue & départ*.
+- Lives : le récap de fin de live montre les **clips du live** et la **comparaison avec les 4 lives précédents** ; `/streams semaines:true` (et la page *📺 Lives*) compare les 8 dernières semaines.
+
 ## 📱 Alertes TikTok
 
 Remplis `TIKTOK_USERNAME` dans `.env` (pseudo sans @) puis redémarre le bot. Il vérifie ton profil toutes les 2 minutes :

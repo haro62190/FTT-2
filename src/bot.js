@@ -341,6 +341,7 @@ client.once(Events.ClientReady, async () => {
     health.alert('Permissions manquantes', `Le bot n'a pas : ${missingPerms.join(', ')}.\nCertaines fonctions ne marcheront pas. Réinvite-le avec le lien de « npm run invite » ou ajoute ces permissions à son rôle.`).catch(() => {});
   }
   await health.start(client, guild);
+  require('./guardian').start(client, guild);
   require('./voicexp').start(guild);
   require('./birthdays').start(guild);
   require('./seasons').start(guild);
