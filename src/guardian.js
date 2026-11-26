@@ -364,6 +364,7 @@ function start(client, guild) {
   clientRef = client;
   guildRef = guild;
   require('./logger').onLog(recordLog);
+  require('./logger').onClear(() => recent.splice(0)); // erreurs effacées : le décompte des répétitions repart de zéro
   setTimeout(() => run().catch((e) => console.warn('Guardian :', e.message)), 90_000).unref(); // laisse les modules démarrer
   setInterval(() => run().catch((e) => console.warn('Guardian :', e.message)), EVERY_MS).unref();
 }

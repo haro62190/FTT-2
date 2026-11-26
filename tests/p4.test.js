@@ -96,3 +96,24 @@ test('idées de contenu : clips les plus vus d\'abord, moments du chat sans doub
   assert.deepEqual(list.map((x) => x.title), ['Gros clip', 'Petit clip', '« incroyable »']);
   assert.match(list[2].url, /videos\/1\?t=/);
 });
+
+test('erreurs : « Effacer » masque les anciennes, garde le fichier, affiche les nouvelles', () => {
+  const fs = require('fs');
+  const logger = require('../src/logger');
+  logger.install();
+  const realError = console.error;
+  console.error = () => {}; // pas de bruit dans la sortie des tests (le journal est quand même écrit)
+  logger.install();
+  console.error('Ancienne erreur');
+  assert.ok(logger.tail(50).some((l) => l.includes('Ancienne erreur')));
+  logger.clear();
+  assert.ok(!logger.tail(50).some((l) => l.includes('Ancienne erreur')), 'masquée sur le site');
+  const file = require('path').join(require('../src/store').DIR, 'logs', 'erreurs.log');
+  assert.ok(fs.readFileSync(file, 'utf8').includes('Ancienne erreur'), 'toujours dans le fichier');
+  // Une erreur qui arrive après l'effacement s'affiche
+  const later = Date.now() + 5;
+  while (Date.now() < later);
+  console.error('Nouvelle erreur');
+  assert.ok(logger.tail(50).some((l) => l.includes('Nouvelle erreur')));
+  console.error = realError;
+});
