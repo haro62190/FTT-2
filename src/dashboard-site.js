@@ -44,6 +44,29 @@ module.exports = ({ esc, csrf, fetchMembers, memberName, fmtDate }) => {
       return '✅ Page vitrine mise à jour.';
     },
 
+    // ───────────────────────── Salons inactifs ─────────────────────────
+    '/salons-inactifs'(guild, sess) {
+      const ins = require('./insights');
+      const u = ins.unusedChannels(guild);
+      const archived = Object.entries(db.archivedChannels ?? {}).map(([id, a]) => ({ id, ...a, ch: guild.channels.cache.get(id) })).filter((x) => x.ch);
+      const btn = (id, action, label, cls = 'ghost') => `<form method="post" class="inline">${csrf(sess)}${hidden('action', action)}${hidden('id', id)}<button class="${cls}" style="margin:0 4px 0 0">${label}</button></form>`;
+      return {
+        title: '🕸️ Salons inactifs',
+        body: `<div class="card"><p>Les salons sans message (ou sans passage en vocal) depuis 30 jours. <b>Rien n'est fait automatiquement</b> : tu choisis. L'archivage est réversible (le salon passe en lecture seule dans ${esc(ins.ARCHIVE_NAME)}, et « Remettre » lui rend sa place et ses permissions).</p></div>
+        <div class="card"><h3>Inactifs</h3>${
+          !u.ready
+            ? '<p class="muted">Analyse disponible après 30 jours de suivi de l\'activité.</p>'
+            : `<table>${u.list.map((c) => `<tr><td>${c.voice ? '🔊' : '#'} ${esc(c.name)}<br><span class="muted">${c.last ? `dernière activité ${fmtDate(c.last)}` : 'aucune activité'}</span></td><td>${btn(c.id, 'archive', '📦 Archiver')}${btn(c.id, 'keep', '✅ Garder')}${c.voice ? '' : btn(c.id, 'nudge', '📣 Relancer')}</td></tr>`).join('') || '<tr><td class="muted">Aucun, tout le serveur vit ✅</td></tr>'}</table>`
+        }</div>
+        <div class="card"><h3>Archivés</h3><table>${archived.map((x) => `<tr><td>#${esc(x.ch.name)}<br><span class="muted">archivé ${fmtDate(x.at)} par ${esc(x.by)}</span></td><td>${btn(x.id, 'restore', '↩️ Remettre', '')}</td></tr>`).join('') || '<tr><td class="muted">Aucun.</td></tr>'}</table></div>`,
+      };
+    },
+    async 'POST /salons-inactifs'(guild, sess, body) {
+      const action = String(body.get('action') ?? '');
+      if (!['archive', 'keep', 'nudge', 'restore'].includes(action)) return '❌ Action inconnue.';
+      return require('./insights').channelAction(guild, String(body.get('id') ?? ''), action, sess.username);
+    },
+
     // ───────────────────────── Santé générale (vue d'ensemble) ─────────────────────────
     '/sante'(guild, sess) {
       const g = require('./guardian');

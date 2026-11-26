@@ -185,6 +185,9 @@ async function checkLive(guild) {
         })
         .catch(() => {});
     }
+    await require('./contentideas')
+      .postAfterLive(guild, { title: state.title, highlights: state.highlights ?? [], clips: liveClips, vodUrl: vod?.url ?? null, startedAt })
+      .catch((e) => console.error('Idées de contenu :', e.message));
     db.twitchLive = null;
     save();
     require('./feed').push('⚫', `Fin du live Twitch : ${fmtDuration(entry.durationMin * 60_000)}, pic ${state.peak ?? 0} viewers`);

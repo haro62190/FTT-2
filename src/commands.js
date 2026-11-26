@@ -421,6 +421,7 @@ commands.push(
   ...require('./polls').commands,
   ...require('./onboarding').commands,
   ...require('./guardian').commands,
+  ...require('./notify').commands,
 );
 
 // /help = /aide

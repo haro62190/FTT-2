@@ -144,7 +144,7 @@ async function onJoin(member) {
   if (accountDays < 14 || db.levels?.[member.id]) return null;
   ref().members[member.id] = { sponsor, joinedAt: Date.now(), rewarded: false };
   save();
-  member.guild.client.users.send(sponsor, `🤝 **${member.user.username}** vient d'arriver sur ${member.guild.name} grâce à toi ! Tu recevras ta récompense quand il se sera installé (niveau 3).`).catch(() => {});
+  require('./notify').dm(member.guild.client, sponsor, `🤝 **${member.user.username}** vient d'arriver sur ${member.guild.name} grâce à toi ! Tu recevras ta récompense quand il se sera installé (niveau 3).`, 'referral').catch(() => {});
   return sponsor;
 }
 
@@ -163,7 +163,7 @@ async function checkReferrals(guild) {
     require('./economy').add(r.sponsor, reward);
     require('./economy').add(userId, Math.round(reward / 2));
     save();
-    guild.client.users.send(r.sponsor, `🤝 Ton filleul **${member.displayName}** s'est bien installé : **+${reward} 両** pour toi !`).catch(() => {});
+    require('./notify').dm(guild.client, r.sponsor, `🤝 Ton filleul **${member.displayName}** s'est bien installé : **+${reward} 両** pour toi !`, 'referral').catch(() => {});
     require('./feed').push('🤝', `Parrainage réussi : ${member.displayName}`);
   }
 }

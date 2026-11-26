@@ -5,7 +5,7 @@
  *    (meilleurs créneaux selon l'activité réelle, jeux les plus joués par la commu)
  *  - Suivi d'activité : dernier message / dernière connexion de chaque salon, activité par jour et par heure
  */
-const { ChannelType, EmbedBuilder } = require('discord.js');
+const { ActionRowBuilder, ChannelType, EmbedBuilder, MessageFlags, PermissionFlagsBits: P, StringSelectMenuBuilder } = require('discord.js');
 const { BRAND_COLOR, config, findChannel } = require('./shared');
 const { db, save } = require('./store');
 const settings = require('./settings');
@@ -41,8 +41,87 @@ function unusedChannels(guild) {
   const list = guild.channels.cache
     .filter((c) => (c.type === ChannelType.GuildText || c.type === ChannelType.GuildVoice) && !skip.has(byName.get(c.name)?.access))
     .filter((c) => !(db.tempVoice?.[c.id]) && (db.channelActivity?.[c.id] ?? 0) < since)
+    .filter((c) => !(db.channelKeep?.[c.id] > Date.now()) && !db.archivedChannels?.[c.id] && c.parent?.name !== ARCHIVE_NAME)
     .map((c) => ({ id: c.id, name: c.name, voice: c.type === ChannelType.GuildVoice, last: db.channelActivity?.[c.id] ?? null }));
   return { ready: true, list };
+}
+
+// ───────── Actions proposées sur les salons inactifs (toujours déclenchées par un admin) ─────────
+const ARCHIVE_NAME = '🗄️ ARCHIVES';
+const NUDGES = [
+  '🍜 C\'est bien calme par ici… Quelqu\'un a quelque chose à partager aujourd\'hui ?',
+  '⚔️ Ce salon attend vos messages, ronins ! Quoi de neuf de votre côté ?',
+  '🏮 Petit rappel : ce salon est fait pour vous. Lancez la discussion !',
+];
+
+/**
+ * Applique une action choisie par un admin : 'archive' (lecture seule + rangé dans 🗄️ ARCHIVES, réversible),
+ * 'restore' (annule l'archivage), 'keep' (ne plus le signaler pendant 60 jours), 'nudge' (message de relance).
+ */
+async function channelAction(guild, channelId, action, by = '?') {
+  const ch = guild.channels.cache.get(channelId);
+  if (!ch) throw new Error('Salon introuvable.');
+  const arch = (db.archivedChannels ??= {});
+  if (action === 'keep') {
+    (db.channelKeep ??= {})[ch.id] = Date.now() + 60 * 86_400_000;
+    save();
+    return `✅ #${ch.name} est gardé : il ne sera plus signalé pendant 60 jours.`;
+  }
+  if (action === 'nudge') {
+    if (!ch.isTextBased?.() || ch.isVoiceBased?.()) throw new Error('La relance ne marche que dans un salon textuel.');
+    await ch.send({ content: NUDGES[Math.floor(Math.random() * NUDGES.length)], allowedMentions: { parse: [] } });
+    (db.channelKeep ??= {})[ch.id] = Date.now() + 14 * 86_400_000; // on laisse 2 semaines pour voir
+    save();
+    return `📣 Message de relance posté dans #${ch.name}.`;
+  }
+  if (action === 'archive') {
+    if (arch[ch.id]) throw new Error('Ce salon est déjà archivé.');
+    let cat = guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory && c.name === ARCHIVE_NAME);
+    cat ??= await guild.channels.create({ name: ARCHIVE_NAME, type: ChannelType.GuildCategory, reason: `Archivage demandé par ${by}` });
+    arch[ch.id] = { parentId: ch.parentId, position: ch.rawPosition, overwrites: ch.permissionOverwrites.cache.map((o) => ({ id: o.id, type: o.type, allow: o.allow.bitfield.toString(), deny: o.deny.bitfield.toString() })), by, at: Date.now() };
+    save();
+    await ch.setParent(cat.id, { lockPermissions: false, reason: `Archivage demandé par ${by}` });
+    await ch.permissionOverwrites.edit(guild.roles.everyone, { SendMessages: false, Connect: false, AddReactions: false }, { reason: 'Salon archivé (lecture seule)' });
+    return `📦 #${ch.name} archivé : en lecture seule dans ${ARCHIVE_NAME}. Annulable depuis le site (🕸️ Salons inactifs).`;
+  }
+  if (action === 'restore') {
+    const a = arch[ch.id];
+    if (!a) throw new Error('Ce salon n\'est pas archivé.');
+    await ch.setParent(a.parentId ?? null, { lockPermissions: false, reason: `Désarchivage par ${by}` });
+    await ch.permissionOverwrites.set(a.overwrites.map((o) => ({ ...o, allow: BigInt(o.allow), deny: BigInt(o.deny) })), `Désarchivage par ${by}`);
+    delete arch[ch.id];
+    save();
+    return `↩️ #${ch.name} est revenu à sa place, avec ses permissions d'origine.`;
+  }
+  throw new Error('Action inconnue.');
+}
+
+/** Menu pour le rapport staff : choisir un salon inactif et l'action à faire. */
+function actionMenu(list) {
+  if (!list.length) return [];
+  const options = list.slice(0, 8).flatMap((c) => [
+    { label: `📦 Archiver ${c.voice ? '🔊' : '#'}${c.name}`.slice(0, 100), value: `archive:${c.id}` },
+    { label: `✅ Garder ${c.voice ? '🔊' : '#'}${c.name}`.slice(0, 100), value: `keep:${c.id}` },
+    ...(c.voice ? [] : [{ label: `📣 Relancer #${c.name}`.slice(0, 100), value: `nudge:${c.id}` }]),
+  ]);
+  return [new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('ia:act').setPlaceholder('Que faire de ces salons ? (rien n\'est fait sans ton choix)').addOptions(options.slice(0, 25)))];
+}
+
+async function handleInteraction(i) {
+  if (i.customId !== 'ia:act' || !i.isStringSelectMenu()) return false;
+  if (!i.memberPermissions?.has(P.ManageChannels)) {
+    await i.reply({ content: 'Réservé aux admins (permission « Gérer les salons »).', flags: MessageFlags.Ephemeral });
+    return true;
+  }
+  const [action, id] = i.values[0].split(':');
+  try {
+    const msg = await channelAction(i.guild, id, action, i.user.username);
+    require('./audit').record({ userId: i.user.id, user: i.user.username, source: 'discord', action: 'salon inactif', details: msg });
+    await i.reply({ content: msg, flags: MessageFlags.Ephemeral });
+  } catch (e) {
+    await i.reply({ content: `❌ ${e.message}`, flags: MessageFlags.Ephemeral });
+  }
+  return true;
 }
 
 /** Les meilleurs créneaux (jour + heure) selon les messages, en ignorant la nuit. */
@@ -153,6 +232,7 @@ async function postWeekly(guild) {
             ...(require('./reports').pendingCount() ? [{ name: '🚩 Signalements en attente', value: `${require('./reports').pendingCount()} → 🚩┃signalements` }] : []),
           ),
       ],
+      components: unused.ready ? actionMenu(unused.list) : [],
     })
     .catch(() => {});
   require('./feed').push('📜', 'Récap hebdomadaire publié');
@@ -178,4 +258,4 @@ function start(guild) {
   require('./guardian').every('insights', 'Récap hebdo', 15 * 60_000, () => check(guild).catch((e) => console.error('Récap hebdo :', e.message)));
 }
 
-module.exports = { DAYS, track, unusedChannels, bestSlots, topGames, suggestions, weeklyStats, postWeekly, check, start, parisParts };
+module.exports = { DAYS, track, unusedChannels, channelAction, actionMenu, handleInteraction, ARCHIVE_NAME, bestSlots, topGames, suggestions, weeklyStats, postWeekly, check, start, parisParts };

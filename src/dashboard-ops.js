@@ -151,7 +151,7 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
         const x = require('./shared').own(nt.all(), body.get('id'));
         if (!x) return '❌ Soirée introuvable.';
         const promoted = nt.cancel(x, body.get('user'));
-        if (promoted) guild.client.users.send(promoted, `🎟️ Une place s'est libérée : tu participes à **${x.title}** !`).catch(() => {});
+        if (promoted) require('./notify').dm(guild.client, promoted, `🎟️ Une place s'est libérée : tu participes à **${x.title}** !`, 'reminder').catch(() => {});
         await nt.publish(guild, x).catch(() => {});
         return '✅ Réservation retirée.';
       }

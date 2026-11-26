@@ -72,7 +72,7 @@ async function update(guild, r, status, byId, note = '') {
   const channel = findChannel(guild, 'reports') ?? findChannel(guild, 'mod_chat');
   const msg = r.messageId && channel && (await channel.messages.fetch(r.messageId).catch(() => null));
   await msg?.edit(card(r)).catch(() => {});
-  await guild.client.users.send(r.reporter, DM[status](r)).catch(() => {});
+  await require('./notify').dm(guild.client, r.reporter, DM[status](r), 'report');
 }
 
 async function handleInteraction(i) {

@@ -122,6 +122,7 @@ const NAV = [
   ['/modules', '🧩 Modules'],
   ['/historique-config', '🕓 Historique des réglages'],
   ['/maintenance', '🛠️ Mode maintenance'],
+  ['/salons-inactifs', '🕸️ Salons inactifs'],
   ['/roles-permissions', '🎭 Rôles & permissions'],
   ['#', 'Communauté'],
   ['/bienvenue', '🏮 Bienvenue & départ'],

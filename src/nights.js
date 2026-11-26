@@ -131,7 +131,7 @@ async function handleInteraction(i) {
     else {
       const promoted = cancel(n, i.user.id);
       note = '👋 Réservation annulée.';
-      if (promoted) i.client.users.send(promoted, `🎟️ Une place s'est libérée : tu participes à **${n.title}** ${ts(n.startsAt, 'R')} !`).catch(() => {});
+      if (promoted) require('./notify').dm(i.client, promoted, `🎟️ Une place s'est libérée : tu participes à **${n.title}** ${ts(n.startsAt, 'R')} !`, 'reminder').catch(() => {});
     }
   } catch (err) {
     note = `❌ ${err.message}`;
@@ -157,7 +157,7 @@ async function tick(client, guild) {
       if (!n.reminded[key] && now >= n.startsAt - before && now < n.startsAt + 30 * 60_000) {
         n.reminded[key] = true;
         save();
-        for (const id of n.booked) await client.users.send(id, text).catch(() => {});
+        for (const id of n.booked) await require('./notify').dm(client, id, text, 'reminder');
       }
     }
   }
@@ -172,7 +172,7 @@ async function tick(client, guild) {
     save();
     const subs = await ev.fetchSubscribers({ limit: 100 }).catch(() => null);
     for (const s of subs?.values() ?? []) {
-      await s.user.send(`⏰ **${ev.name}** commence ${ts(start, 'R')} sur ${guild.name} ! ${ev.url}`).catch(() => {});
+      await require('./notify').dm(guild.client, s.user.id, `⏰ **${ev.name}** commence ${ts(start, 'R')} sur ${guild.name} ! ${ev.url}`, 'reminder');
     }
   }
   for (const [k, at] of Object.entries(sent)) if (now - at > 14 * 86_400_000) delete sent[k];

@@ -209,7 +209,7 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
 // ───────────────────────── Boutons ─────────────────────────
 
 // Modules avec boutons / menus / formulaires (chacun reconnaît ses propres identifiants)
-const INTERACTIVE = ['./gaming', './tournaments', './nights', './livegames', './applications', './reports', './polls', './onboarding'];
+const INTERACTIVE = ['./gaming', './tournaments', './nights', './livegames', './applications', './reports', './polls', './onboarding', './notify', './insights'];
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.inGuild()) return;
@@ -349,6 +349,7 @@ client.once(Events.ClientReady, async () => {
   require('./nights').start(client, guild);
   require('./livegames').start(client);
   require('./polls').start(client);
+  require('./notify').start(client);
   require('./social').start(guild);
   require('./challenges').start(client, guild);
   require('./insights').start(guild);
