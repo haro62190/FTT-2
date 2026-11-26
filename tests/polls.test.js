@@ -76,3 +76,25 @@ test('accueil personnalisé : guide adapté, rôles donnés, jeux ajoutés au pr
   const picker = ob.picker('u9');
   assert.equal(picker.flags, require('discord.js').MessageFlags.Ephemeral);
 });
+
+test('lives : comparaison avec les lives précédents et regroupement par semaine', () => {
+  const { db } = require('../src/store');
+  const streams = require('../src/streams');
+  const now = Date.now();
+  db.streams = [];
+  const mk = (daysAgo, avg, peak, dur, f) => streams.record({ platform: 'twitch', startedAt: now - daysAgo * 86_400_000, endedAt: now - daysAgo * 86_400_000 + dur * 60_000, avg, peak, followersGained: f });
+  mk(30, 10, 20, 120, 2);
+  mk(20, 10, 20, 120, 2);
+  const last = mk(0.1, 15, 30, 180, 5);
+  const c = streams.compare(last);
+  assert.equal(c.count, 2);
+  assert.equal(c.avg, 50);
+  assert.equal(c.peak, 50);
+  assert.equal(c.duration, 50);
+  assert.equal(c.followers, 3);
+  const w = streams.weekly(8);
+  assert.equal(w.length, 8);
+  assert.equal(w.reduce((n, x) => n + x.count, 0) >= 1, true);
+  assert.equal(w[0].count >= 1 || w[1].count >= 1, true);
+  assert.equal(streams.compare(db.streams.at(-1)), null, 'premier live : rien à comparer');
+});

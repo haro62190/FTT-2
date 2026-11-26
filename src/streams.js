@@ -39,6 +39,55 @@ function summary(days = 30, platform = null) {
   };
 }
 
+/** Comparaison d'un live avec la moyenne des `n` lives précédents de la même plateforme (en %). */
+function compare(entry, n = 4) {
+  const prev = list()
+    .filter((s) => s !== entry && s.platform === entry.platform && s.startedAt < entry.startedAt)
+    .slice(0, n);
+  if (!prev.length) return null;
+  const mean = (f) => {
+    const v = prev.map(f).filter((x) => typeof x === 'number');
+    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+  };
+  const delta = (cur, ref) => (typeof cur === 'number' && ref ? Math.round(((cur - ref) / ref) * 100) : null);
+  return {
+    count: prev.length,
+    avg: delta(entry.avg, mean((s) => s.avg)),
+    peak: delta(entry.peak, mean((s) => s.peak)),
+    duration: delta(entry.durationMin, mean((s) => s.durationMin)),
+    followers: typeof entry.followersGained === 'number' ? entry.followersGained - Math.round(mean((s) => s.followersGained) ?? 0) : null,
+  };
+}
+
+/** Lives regroupés par semaine (lundi), de la plus récente à la plus ancienne. */
+function weekly(weeks = 8, platform = 'twitch') {
+  const monday = (t) => {
+    const d = new Date(new Date(t).toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d;
+  };
+  const start = monday(Date.now());
+  const out = [];
+  for (let w = 0; w < weeks; w++) {
+    const from = new Date(start);
+    from.setDate(from.getDate() - 7 * w);
+    const to = new Date(from);
+    to.setDate(to.getDate() + 7);
+    const items = list().filter((s) => (!platform || s.platform === platform) && monday(s.startedAt).getTime() === from.getTime());
+    const withAvg = items.filter((s) => typeof s.avg === 'number');
+    out.push({
+      week: from,
+      count: items.length,
+      hours: items.reduce((n, s) => n + s.durationMin, 0) / 60,
+      avg: withAvg.length ? withAvg.reduce((n, s) => n + s.avg, 0) / withAvg.length : null,
+      peak: items.reduce((n, s) => Math.max(n, s.peak ?? 0), 0) || null,
+      followers: items.reduce((n, s) => n + (s.followersGained ?? 0), 0),
+    });
+  }
+  return out;
+}
+
 const fmtDuration = (min) => (min >= 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')}` : `${min} min`);
 
 /** Bouton « Regarder » pour les annonces de live. */
@@ -142,8 +191,22 @@ const commands = [
     data: new SlashCommandBuilder()
       .setName('streams')
       .setDescription('Historique et statistiques des lives')
-      .addIntegerOption((o) => o.setName('jours').setDescription('Période (30 jours par défaut)').addChoices({ name: '7 jours', value: 7 }, { name: '30 jours', value: 30 }, { name: '90 jours', value: 90 }, { name: '1 an', value: 365 })),
+      .addIntegerOption((o) => o.setName('jours').setDescription('Période (30 jours par défaut)').addChoices({ name: '7 jours', value: 7 }, { name: '30 jours', value: 30 }, { name: '90 jours', value: 90 }, { name: '1 an', value: 365 }))
+      .addBooleanOption((o) => o.setName('semaines').setDescription('Comparer les 8 dernières semaines')),
     run(i) {
+      if (i.options.getBoolean('semaines')) {
+        const w = weekly(8);
+        const nn = (x) => (x === null ? '—' : Math.round(x).toLocaleString('fr-FR'));
+        const arrow = (cur, prev) => (cur === null || prev === null || prev === 0 ? '' : cur > prev ? ' ↗️' : cur < prev ? ' ↘️' : ' ➡️');
+        const lines = w.map((x, k) => {
+          const prev = w[k + 1];
+          const d = x.week.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+          return x.count
+            ? `**Sem. du ${d}** · ${x.count} live${x.count > 1 ? 's' : ''} · ${x.hours.toFixed(1).replace('.', ',')} h · moy. ${nn(x.avg)}${prev ? arrow(x.avg, prev.avg) : ''} · pic ${nn(x.peak)} · ${x.followers >= 0 ? '+' : ''}${x.followers} followers`
+            : `Sem. du ${d} · _pas de live_`;
+        });
+        return i.reply({ embeds: [new EmbedBuilder().setColor(BRAND_COLOR).setTitle('📈 Les lives semaine par semaine').setDescription(lines.join('\n'))], allowedMentions: { parse: [] } });
+      }
       const days = i.options.getInteger('jours') ?? 30;
       const s = summary(days);
       const last = list().slice(0, 8);
@@ -171,4 +234,4 @@ const commands = [
   },
 ];
 
-module.exports = { record, summary, list, milestoneOf, checkMilestones, watchButton, fmtDuration, onMessage, isLive, commands };
+module.exports = { record, summary, compare, weekly, list, milestoneOf, checkMilestones, watchButton, fmtDuration, onMessage, isLive, commands };
