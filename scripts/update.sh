@@ -62,7 +62,7 @@ if grep -qx restart "$PENDING" && [ "${SKIP_TESTS:-0}" != "1" ]; then
     git reset --hard --quiet "$GOOD"
     [ "$DEPS_CHANGED" -gt 0 ] && npm ci --omit=dev --no-audit --no-fund
     mkdir -p data
-    FAILS=$(grep -E '^not ok|❌' <<<"$TEST_OUT" | head -5 | sed 's/"/\\"/g' | tr '\n' '|' || true)
+    FAILS=$(grep -E '^not ok' <<<"$TEST_OUT" | head -5 | sed 's/"/\\"/g' | tr '\n' '|' || true)
     printf '{"bad":"%s","good":"%s","at":%s000,"failures":"%s"}\n' "$NEW" "$GOOD" "$(date +%s)" "$FAILS" > data/update-blocked.json
     rm -f "$PENDING" "$PREV"
     exit 1
