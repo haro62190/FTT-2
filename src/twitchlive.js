@@ -350,7 +350,7 @@ function start(guild, client) {
   const every = (fn, ms, label) => {
     const run = () => (LOGIN_() ? fn(guild).catch((e) => console.error(`Twitch ${label} :`, e.message)) : null);
     run();
-    setInterval(run, ms);
+    require('./guardian').every(`twitch-${label}`, `Twitch : ${label}`, ms, run);
   };
   every(checkLive, POLL_MS, 'live');
   every(checkClips, CLIPS_MS, 'clips');

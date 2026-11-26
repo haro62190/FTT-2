@@ -155,6 +155,7 @@ const NAV = [
   ['/moderation', '🛡️ Modération & raid'],
   ['/statut', '💓 État du bot'],
   ['/guardian', '🛡️ Kensei Guardian'],
+  ['/incidents', '📜 Incidents'],
   ['/automod', '🤖 AutoMod'],
   ['/avertissements', '⚠️ Avertissements'],
   ['/tickets', '🎫 Tickets'],

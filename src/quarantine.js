@@ -90,7 +90,7 @@ async function onJoin(member) {
 }
 
 function start(guild) {
-  setInterval(() => sweep(guild).catch((e) => console.error('Quarantaine :', e.message)), 60_000);
+  require('./guardian').every('quarantine', 'Quarantaine', 60_000, () => sweep(guild).catch((e) => console.error('Quarantaine :', e.message)));
 }
 
 function hierarchyError(i, target) {

@@ -32,7 +32,7 @@ async function sweep(guild) {
 function start(guild) {
   const run = () => sweep(guild).catch((e) => console.error('Rôles temporaires :', e.message));
   run();
-  setInterval(run, 60_000);
+  require('./guardian').every('temproles', 'Rôles temporaires', 60_000, run);
 }
 
 module.exports = { grant, start };

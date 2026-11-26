@@ -134,7 +134,7 @@ function start(guild) {
         })
       : null;
   run();
-  setInterval(run, POLL_MS);
+  require('./guardian').every('youtube', 'YouTube', POLL_MS, run);
 }
 
 module.exports = { start, check, parseFeed, normalize, channelId, source, state };

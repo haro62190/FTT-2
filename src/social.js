@@ -187,8 +187,8 @@ async function checkMonth(guild) {
 function start(guild) {
   snapshotInvites(guild).catch(() => {});
   checkMonth(guild).catch(() => {});
-  setInterval(() => checkMonth(guild).catch((e) => console.error('Membre du mois :', e.message)), 15 * 60_000);
-  setInterval(() => checkReferrals(guild).catch((e) => console.error('Parrainage :', e.message)), 10 * 60_000);
+  require('./guardian').every('motm', 'Membre du mois', 15 * 60_000, () => checkMonth(guild).catch((e) => console.error('Membre du mois :', e.message)));
+  require('./guardian').every('referrals', 'Parrainage', 10 * 60_000, () => checkReferrals(guild).catch((e) => console.error('Parrainage :', e.message)));
 }
 
 // ───────────────────────── Commandes ─────────────────────────

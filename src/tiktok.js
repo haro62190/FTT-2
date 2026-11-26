@@ -159,7 +159,7 @@ function startTikTokWatcher(guild) {
     if (tick++ % 2 === 0) await checkVideos(guild).catch((err) => logError('vidéos', err));
   };
   run();
-  setInterval(run, POLL_MS);
+  require('./guardian').every('tiktok', 'TikTok', POLL_MS, run);
   console.log(`📱 TikTok ${USERNAME_() ? `@${USERNAME_()}` : '(compte à régler sur le tableau de bord)'} : vérification toutes les ${POLL_MS / 1000}s`);
 }
 

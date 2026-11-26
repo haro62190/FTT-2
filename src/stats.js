@@ -147,7 +147,7 @@ async function start(guild, twitch) {
   // Charger la liste des membres une fois pour compter les humains (les arrivées/départs la tiennent à jour)
   await guild.members.fetch().catch(() => {});
   setTimeout(() => refresh(guild).catch((e) => console.error('Stats :', e.message)), 15_000);
-  setInterval(() => refresh(guild).catch((e) => console.error('Stats :', e.message)), INTERVAL_MS);
+  require('./guardian').every('stats', 'Salons compteurs', INTERVAL_MS, () => refresh(guild).catch((e) => console.error('Stats :', e.message)));
   console.log('📊 Salons compteurs : mise à jour toutes les 10 minutes');
 }
 

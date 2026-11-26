@@ -56,8 +56,40 @@ module.exports = ({ esc, csrf, fetchMembers, memberName, fmtDate }) => {
         body: `<div class="card"><p>Le gardien contrôle le bot toutes les 5 minutes : connexion, permissions, salons, Twitch, TikTok, YouTube, compteurs, sauvegardes, serveur de secours, mémoire, disque et erreurs répétées. Il prévient le staff dans 🚨┃alertes-sécurité quand un problème apparaît puis quand il est résolu. <b>Il ne modifie jamais rien lui-même</b> : il propose la correction.</p>
         <p>${bad.length ? `<span class="badge bad">${bad.length} point(s) à regarder</span>` : '<span class="badge ok">Tout va bien</span>'} · dernier passage automatique : ${st.lastRun ? fmtDate(st.lastRun) : 'pas encore'}</p></div>
         <div class="card"><table><tr><th></th><th>Contrôle</th><th>Correction proposée</th></tr>${[...bad, ...checks.filter((c) => !bad.includes(c))].map(row).join('')}</table></div>
-        <form method="post" class="card">${csrf(sess)}${hidden('action', 'run')}<button>Lancer les contrôles maintenant (et prévenir le staff)</button></form>`,
+        <form method="post" class="card">${csrf(sess)}${hidden('action', 'run')}<button>Lancer les contrôles maintenant (et prévenir le staff)</button> <a class="btn ghost" href="/incidents">📜 Historique des incidents</a></form>
+        <div class="card"><h3>⌨️ Commandes (24 h)</h3><table><tr><th>Commande</th><th>Réussies</th><th>Échecs</th><th>Dernière erreur</th></tr>
+        ${g.commandStats().slice(0, 15).map((c) => `<tr><td><code>/${esc(c.name)}</code></td><td>${c.ok}</td><td>${c.fail ? `<b>${c.fail}</b> (${Math.round(c.rate * 100)} %)` : '0'}</td><td class="muted">${esc(c.lastError ?? '')}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Aucune commande utilisée depuis le dernier démarrage.</td></tr>'}</table></div>
+        <div class="card"><h3>⏱️ Tâches automatiques</h3><table><tr><th>Tâche</th><th>Toutes les</th><th>Dernier passage</th><th>Passages</th></tr>
+        ${[...g.tasks.entries()].map(([key, t]) => {
+          const late = g.lateTasks().some((x) => x.key === key);
+          const every = t.ms >= 3600_000 ? `${Math.round(t.ms / 3600_000)} h` : t.ms >= 60_000 ? `${Math.round(t.ms / 60_000)} min` : `${Math.round(t.ms / 1000)} s`;
+          return `<tr><td>${late ? '🟠' : '🟢'} ${esc(t.label)}</td><td>${every}</td><td>${t.last ? fmtDate(t.last) : 'pas encore'}</td><td>${t.runs}</td></tr>`;
+        }).join('') || '<tr><td colspan="4" class="muted">Aucune tâche suivie.</td></tr>'}</table></div>`,
       };
+    },
+    '/incidents'(guild, sess, q) {
+      const g = require('./guardian');
+      const filter = q?.get?.('f') ?? 'all';
+      const list = g.incidents().filter((x) => (filter === 'open' ? !x.resolvedAt : filter === 'resolved' ? x.resolvedAt : true));
+      const dur = (a, b) => {
+        const m = Math.round(((b ?? Date.now()) - a) / 60_000);
+        return m >= 1440 ? `${Math.floor(m / 1440)} j ${Math.floor((m % 1440) / 60)} h` : m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}` : `${m} min`;
+      };
+      const statusCell = (x) => (x.resolvedAt ? '<span class="badge ok">résolu</span>' : x.ack ? `<span class="badge">vu par ${esc(x.ack.by)}</span>` : `<span class="badge bad">ouvert</span>`);
+      const tab = (f, label) => `<a class="btn ${filter === f ? '' : 'ghost'}" href="/incidents?f=${f}" style="margin:0 6px 6px 0">${label}</a>`;
+      const open = g.incidents().filter((x) => !x.resolvedAt).length;
+      return {
+        title: '📜 Historique des incidents',
+        body: `<div class="card"><p>Chaque problème repéré par 🛡️ Kensei Guardian devient un incident : quand il est apparu, s'il a été vu par un admin, quand il a été résolu et combien de temps il a duré. <b>${open}</b> incident(s) ouvert(s).</p>
+        <div>${tab('all', 'Tous')}${tab('open', 'Ouverts')}${tab('resolved', 'Résolus')}</div></div>
+        <div class="card"><table><tr><th></th><th>Incident</th><th>Apparu</th><th>Durée</th><th>Statut</th><th></th></tr>
+        ${list.slice(0, 100).map((x) => `<tr><td>${g.ICON[x.resolvedAt ? 'ok' : x.status]}</td><td><b>${esc(x.label)}</b><br><span class="muted">${esc(x.detail ?? '')}</span>${!x.resolvedAt && x.fix ? `<br>💡 ${esc(x.fix)}` : ''}</td><td style="white-space:nowrap">${fmtDate(x.openedAt)}</td><td>${dur(x.openedAt, x.resolvedAt)}</td><td>${statusCell(x)}</td><td>${!x.resolvedAt && !x.ack ? `<form method="post" class="inline">${csrf(sess)}${hidden('action', 'ack')}${hidden('id', x.id)}<button class="ghost" style="margin:0">J'ai vu</button></form>` : ''}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">Aucun incident 🎉</td></tr>'}</table></div>`,
+      };
+    },
+    async 'POST /incidents'(guild, sess, body) {
+      if (body.get('action') !== 'ack') return '❌ Action inconnue.';
+      const inc = require('./guardian').acknowledge(String(body.get('id') ?? ''), sess.username);
+      return `👁️ Incident « ${inc.label} » marqué comme vu (plus de rappel toutes les 12 h, il reste suivi jusqu'à sa résolution).`;
     },
     async 'POST /guardian'() {
       const checks = await require('./guardian').run();

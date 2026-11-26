@@ -99,7 +99,7 @@ async function create(channel, { prize, ms, winners = 1, hostId, role = null }) 
 }
 
 function start(client) {
-  setInterval(() => {
+  require('./guardian').every('giveaways', 'Giveaways', 15_000, () => {
     const now = Date.now();
     for (const [id, g] of Object.entries(all())) {
       if (!g.ended && g.endsAt <= now) end(client, id).catch((e) => console.error('Giveaway :', e.message));

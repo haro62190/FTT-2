@@ -110,7 +110,7 @@ async function tick(guild) {
 
 function start(client, guild) {
   clientRef = client;
-  setInterval(() => tick(guild).catch((e) => console.error('Défis :', e.message)), 60_000);
+  require('./guardian').every('challenges', 'Défis collectifs', 60_000, () => tick(guild).catch((e) => console.error('Défis :', e.message)));
 }
 
 const commands = [
