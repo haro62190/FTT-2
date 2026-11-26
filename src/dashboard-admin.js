@@ -127,7 +127,12 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
     },
 
     // ───────────────────────── Diagnostic ─────────────────────────
-    async '/diagnostic'(guild) {
+    async 'POST /diagnostic'(guild, sess, body) {
+      if (body.get('action') !== 'clear-errors') return '❌ Action inconnue.';
+      require('./logger').clear();
+      return '🧹 Erreurs effacées (le fichier reste sur le VPS pour un diagnostic).';
+    },
+    async '/diagnostic'(guild, sess) {
       const tool = (cmd, args) => {
         try {
           return execFileSync(cmd, args, { encoding: 'utf8', timeout: 4000, stdio: ['ignore', 'pipe', 'ignore'] }).split('\n')[0].slice(0, 80);
@@ -186,7 +191,7 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
           ${row('Copie dans 💾┃sauvegardes', s.lastOffsite ? fmtDate(s.lastOffsite) : 'jamais')}
           ${row('Membres en quarantaine', Object.keys(db.quarantine ?? {}).length)}
         </table></div>
-        <div class="card"><h3>Dernières erreurs (data/logs/erreurs.log)</h3>${errors.length ? `<pre>${esc(errors.join('\n'))}</pre>` : '<p class="muted">Aucune erreur enregistrée 🎉</p>'}</div>`,
+        <div class="card"><h3>Dernières erreurs (data/logs/erreurs.log)</h3>${errors.length ? `<pre>${esc(errors.join('\n'))}</pre><form method="post">${csrf(sess)}${hidden('action', 'clear-errors')}<button class="ghost">🧹 Effacer les erreurs</button></form>` : '<p class="muted">Aucune erreur enregistrée 🎉</p>'}</div>`,
       };
     },
 

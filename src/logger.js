@@ -58,13 +58,37 @@ function checkEnvFile() {
   } catch {}
 }
 
-/** Dernières lignes du journal (pour le tableau de bord). */
+/** Dernières lignes du journal (pour le tableau de bord), sans celles d'avant le dernier « Effacer ». */
 function tail(lines = 100) {
+  const since = clearedAt();
   try {
-    return fs.readFileSync(file, 'utf8').trim().split('\n').slice(-lines);
+    return fs
+      .readFileSync(file, 'utf8')
+      .trim()
+      .split('\n')
+      .filter((l) => {
+        if (!since) return true;
+        const t = Date.parse(l.match(/^\[([^\]]+)\]/)?.[1] ?? '');
+        return Number.isNaN(t) || t > since;
+      })
+      .slice(-lines);
   } catch {
     return [];
   }
 }
 
-module.exports = { install, tail, onLog };
+/**
+ * « Effacer » les erreurs affichées : elles sont seulement masquées sur le site (le fichier data/logs/erreurs.log
+ * est gardé pour un diagnostic). Les nouvelles erreurs s'affichent normalement.
+ */
+const clearedAt = () => require('./store').db.errorsClearedAt ?? 0;
+function clear() {
+  const { db, save } = require('./store');
+  db.errorsClearedAt = Date.now();
+  save();
+  for (const fn of clearListeners) fn();
+}
+const clearListeners = new Set();
+const onClear = (fn) => clearListeners.add(fn);
+
+module.exports = { install, tail, onLog, clear, onClear, clearedAt };

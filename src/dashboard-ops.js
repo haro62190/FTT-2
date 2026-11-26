@@ -207,10 +207,14 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
         ${box(!apps.length, `Candidatures en attente (${apps.length})`, apps.length ? `<table><tr><th>Candidat</th><th>Poste</th><th>Motivation</th><th></th></tr>${apps.map((a) => `<tr><td>${memberName(guild, a.userId)}<br><span class="muted">${fmtDate(a.at)}</span></td><td>${esc(ap.KINDS[a.kind].label)}</td><td>${esc(String(a.answers.why ?? '').slice(0, 200))}</td><td style="white-space:nowrap">${inlineBtn(sess, { action: 'app', id: a.id, ok: '1' }, 'Accepter', '')}${inlineBtn(sess, { action: 'app', id: a.id, ok: '0' }, 'Refuser')}</td></tr>`).join('')}</table>` : '<p class="muted">Aucune candidature en attente.</p>')}
         ${box(!tickets, `Tickets ouverts (${tickets})`, `<p><a href="/tickets">Voir les tickets</a></p>`)}
         ${box(!quarantined.length, `Membres en quarantaine (${quarantined.length})`, quarantined.length ? `<p>${quarantined.map(([id, q]) => `${memberName(guild, id)} <span class="muted">— ${esc(q.reason ?? '')}</span>`).join('<br>')}</p>` : '<p class="muted">Personne.</p>')}
-        ${box(!errors.length, 'Dernières erreurs du bot', errors.length ? `<pre style="white-space:pre-wrap;font-size:12px;max-height:240px;overflow:auto">${esc(errors.join('\n'))}</pre>` : '<p class="muted">Aucune erreur récente.</p>')}`,
+        ${box(!errors.length, 'Dernières erreurs du bot', errors.length ? `<pre style="white-space:pre-wrap;font-size:12px;max-height:240px;overflow:auto">${esc(errors.join('\n'))}</pre><form method="post">${csrf(sess)}${hidden('action', 'clear-errors')}<button class="ghost">🧹 Effacer les erreurs</button></form>` : '<p class="muted">Aucune erreur récente.</p>')}`,
       };
     },
     async 'POST /alertes'(guild, sess, body) {
+      if (body.get('action') === 'clear-errors') {
+        require('./logger').clear();
+        return '🧹 Erreurs effacées. Si une erreur revient, c\'est que sa cause n\'est pas réglée (le 🛡️ Guardian te dira quoi faire).';
+      }
       if (body.get('action') === 'report') {
         const rp = require('./reports');
         const r = require('./shared').own(rp.all(), body.get('id'));
