@@ -91,6 +91,12 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
         <div class="card"><h3>🎉 Paliers d'abonnés</h3><p class="muted">Annonce automatique dans 📢 quand un palier est franchi (module « Paliers d'abonnés »).</p>
         <table><tr><th>Plateforme</th><th>Actuellement</th><th>Dernier palier</th><th>Prochain</th></tr>
         ${[['twitch', '🟣 Twitch'], ['tiktok', '📱 TikTok'], ['youtube', '▶️ YouTube'], ['discord', '👥 Discord']].map(([k, label]) => `<tr><td>${label}</td><td>${fmt(counts[k])}</td><td>${fmt(m[k] || null)}</td><td>${next(counts[k])}</td></tr>`).join('')}</table></div>
+        <div class="card"><h3>📈 Semaine par semaine (Twitch)</h3><table><tr><th>Semaine du</th><th>Lives</th><th>Heures</th><th>Viewers moy.</th><th>Pic</th><th>Followers</th></tr>
+        ${streams.weekly(8).map((w, k, all) => {
+          const prev = all[k + 1];
+          const trend = prev && w.avg !== null && prev.avg ? (w.avg > prev.avg ? ' ↗️' : w.avg < prev.avg ? ' ↘️' : '') : '';
+          return `<tr><td>${w.week.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</td><td>${w.count || '—'}</td><td>${w.count ? w.hours.toFixed(1).replace('.', ',') : '—'}</td><td>${fmt(w.avg)}${trend}</td><td>${fmt(w.peak)}</td><td>${w.count ? `${w.followers >= 0 ? '+' : ''}${w.followers}` : '—'}</td></tr>`;
+        }).join('')}</table></div>
         <div class="card"><h3>🗓️ Historique</h3><table><tr><th>Date</th><th></th><th>Titre</th><th>Durée</th><th>Viewers</th><th>Followers</th><th>Plus actifs</th></tr>
         ${items.map((x) => `<tr><td style="white-space:nowrap">${fmtDate(x.startedAt)}</td><td>${x.platform === 'tiktok' ? '📱' : '🟣'}</td><td>${esc(x.title ?? '')}${x.games?.length ? `<br><span class="muted">${esc(x.games.join(', '))}</span>` : ''}${x.vod ? `<br><a href="${esc(x.vod)}" target="_blank" rel="noopener">Revoir</a>` : ''}</td><td>${streams.fmtDuration(x.durationMin)}</td><td>${x.peak ? `pic ${x.peak}` : '—'}${x.avg ? `<br><span class="muted">moy. ${x.avg}</span>` : ''}</td><td>${x.followersGained == null ? '—' : `${x.followersGained >= 0 ? '+' : ''}${x.followersGained}`}</td><td>${(x.topChatters ?? []).map((id) => memberName(guild, id)).join(', ') || '—'}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">Aucun live enregistré sur cette période.</td></tr>'}
         </table></div>`,

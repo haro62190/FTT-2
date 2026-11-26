@@ -147,6 +147,14 @@ async function checkLive(guild) {
       discordMessages: state.discordMsgs ?? 0,
     });
     const moments = require('./twitchchat').recapLines(state.highlights, vod?.url);
+    // Clips créés pendant le live (récupérés toutes les 5 min), les plus vus d'abord
+    const liveClips = Object.values(db.clipsGallery ?? {})
+      .filter((c) => c.createdAt >= startedAt - 60_000 && c.createdAt <= Date.now())
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 3);
+    const cmp = require('./streams').compare(entry);
+    const pct = (x) => (x === null ? null : `${x > 0 ? '+' : ''}${x} %`);
+    const cmpText = cmp && [pct(cmp.avg) && `viewers moy. ${pct(cmp.avg)}`, pct(cmp.peak) && `pic ${pct(cmp.peak)}`, pct(cmp.duration) && `durée ${pct(cmp.duration)}`].filter(Boolean).join(' · ');
     const ch = guild.channels.cache.get(state.channelId);
     const msg = ch && (await ch.messages.fetch(state.messageId).catch(() => null));
     if (msg) {
@@ -159,7 +167,10 @@ async function checkLive(guild) {
           { name: '👀 Viewers', value: `pic ${state.peak ?? 0} · moy. ${avg ?? '—'}`, inline: true },
           { name: '🟣 Followers', value: gained === null ? '—' : `${gained >= 0 ? '+' : ''}${gained}`, inline: true },
           { name: '🎮 Jeux', value: state.games.join(', ') || '—' },
+          ...(cmpText ? [{ name: `📈 Par rapport aux ${cmp.count} lives précédents`, value: cmpText }] : []),
+          ...(db.stats?.twitch ? [{ name: '🟣 Followers au total', value: db.stats.twitch.toLocaleString('fr-FR'), inline: true }] : []),
           ...(moments.length ? [{ name: '💥 Moments forts', value: moments.join('\n').slice(0, 1024) }] : []),
+          ...(liveClips.length ? [{ name: '🎬 Clips du live', value: liveClips.map((c) => `[${c.title.slice(0, 60)}](${c.url}) — ${c.creator} · ${c.views} vues`).join('\n').slice(0, 1024) }] : []),
           ...(topChatters.length ? [{ name: '💬 Les plus actifs sur le Discord pendant le live', value: topChatters.map(([id, n]) => `<@${id}> (${n})`).join(' · ') }] : []),
         )
         .setFooter({ text: `Stream ID ${state.streamId} · historique : /streams` })

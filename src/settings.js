@@ -164,6 +164,7 @@ const MODULES = [
   ['milestones', '🎉 Paliers d\'abonnés', 'modules.milestones', 'Stream'],
   ['highlights', '💥 Moments forts (lecture du chat Twitch)', 'modules.highlights', 'Stream'],
   ['liveGames', '🎲 Quiz, pronostics et votes du live', 'modules.liveGames', 'Stream'],
+  ['guardian', '🛡️ Kensei Guardian (alertes de surveillance du bot)', 'modules.guardian', 'Sécurité'],
   ['antiRaid', '🛡️ Anti-raid', 'security.antiRaid', 'Sécurité'],
   ['antiSpam', '🤖 Anti-spam', 'security.antiSpam', 'Sécurité'],
   ['antiNuke', '💣 Anti-nuke', 'security.antiNuke', 'Sécurité'],
