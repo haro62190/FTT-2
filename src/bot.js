@@ -209,7 +209,7 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
 // ───────────────────────── Boutons ─────────────────────────
 
 // Modules avec boutons / menus / formulaires (chacun reconnaît ses propres identifiants)
-const INTERACTIVE = ['./gaming', './tournaments', './nights', './livegames', './applications', './reports', './polls'];
+const INTERACTIVE = ['./gaming', './tournaments', './nights', './livegames', './applications', './reports', './polls', './onboarding'];
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.inGuild()) return;
@@ -251,7 +251,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await member.roles.add(role, 'Règlement accepté');
       const rolesChannel = findChannel(i.guild, 'roles');
       const text = `✅ Bienvenue parmi les Ronins ! Tu as maintenant accès au serveur.${rolesChannel ? ` Choisis tes notifications dans ${rolesChannel}.` : ''}`;
-      return i.isButton() && i.customId.startsWith('verify:') ? i.update({ content: text, components: [] }) : i.reply({ content: text, flags: MessageFlags.Ephemeral });
+      const components = [require('./onboarding').startButton()]; // 🧭 accueil personnalisé
+      const full = `${text}\n🧭 Dis-moi ce que tu aimes et je te montre ce qui est fait pour toi :`;
+      return i.isButton() && i.customId.startsWith('verify:') ? i.update({ content: full, components }) : i.reply({ content: full, components, flags: MessageFlags.Ephemeral });
     };
 
     if (interaction.customId.startsWith('verify:')) return community.onVerifyButton(interaction, grantMember);

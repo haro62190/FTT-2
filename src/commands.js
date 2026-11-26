@@ -419,6 +419,7 @@ commands.push(
   ...require('./rescue').commands,
   ...require('./emojis').commands,
   ...require('./polls').commands,
+  ...require('./onboarding').commands,
 );
 
 // /help = /aide

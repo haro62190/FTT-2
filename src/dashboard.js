@@ -372,6 +372,8 @@ const pages = {
       <h3>Message de bienvenue</h3>${checkbox('welcome_enabled', w.enabled, 'Activé')}${checkbox('welcome_banner', w.banner !== false, 'Avec la bannière en image (avatar, pseudo, numéro de membre)')}
       <label>Message — variables : <code>{user}</code> <code>{username}</code> <code>{server}</code> <code>{count}</code> <code>{rules}</code></label>
       <textarea name="welcome_message" maxlength="1500">${esc(w.message)}</textarea>
+      <h3 style="margin-top:18px">🧭 Accueil personnalisé</h3><p class="muted">Après le règlement (ou avec <code>/accueil</code>), chaque membre choisit ses intérêts et ses jeux et reçoit un guide sur mesure. Jeux proposés (un par ligne, 25 max) :</p>
+      <textarea name="onboarding_games" rows="6" maxlength="2000">${esc(require('./onboarding').gameList().join('\n'))}</textarea>
       <h3 style="margin-top:18px">Message de départ</h3>${checkbox('goodbye_enabled', g.enabled, 'Activé')}
       <label>Message — variables : <code>{username}</code> <code>{server}</code> <code>{count}</code></label>
       <textarea name="goodbye_message" maxlength="1500">${esc(g.message)}</textarea>
@@ -381,6 +383,8 @@ const pages = {
   async 'POST /bienvenue'(guild, sess, body) {
     settings.set('welcome.enabled', body.has('welcome_enabled'));
     settings.set('welcome.banner', body.has('welcome_banner'));
+    const games = String(body.get('onboarding_games') ?? '').split('\n').map((g) => g.trim().slice(0, 80)).filter(Boolean);
+    if (games.length) settings.set('onboarding.games', [...new Set(games)].slice(0, 25));
     settings.set('goodbye.enabled', body.has('goodbye_enabled'));
     for (const k of ['welcome', 'goodbye']) {
       const msg = (body.get(`${k}_message`) ?? '').trim().slice(0, 1500);

@@ -53,3 +53,26 @@ test('sondages : clôture automatique à la date limite, résultats publiés', a
   assert.match(sent[0].content, /Gagnant : \*\*Oui\*\*/);
   assert.ok(edits.length >= 1);
 });
+
+test('accueil personnalisé : guide adapté, rôles donnés, jeux ajoutés au profil', async () => {
+  const { Collection } = require('discord.js');
+  const ob = require('../src/onboarding');
+  const { db } = require('../src/store');
+  const mk = (key, name) => ({ id: key, name, editable: true });
+  const roleList = [mk('r_live', '🔴 Notif Live'), mk('r_gamer', '🕹️ Joueur'), mk('r_art', '🎨 Artiste')];
+  const channels = new Collection([['c1', { id: 'c1', name: '🔴┃en-live', toString: () => '<#c1>' }], ['c2', { id: 'c2', name: '🎮┃recherche-joueurs', toString: () => '<#c2>' }]]);
+  const guild = { channels: { cache: channels }, roles: { cache: new Collection(roleList.map((r) => [r.id, r])) } };
+  const given = [];
+  const member = { id: 'u9', guild, roles: { cache: new Collection(), add: async (r) => given.push(r.name) } };
+  db.players = {};
+  const c = { interests: ['lives', 'play'], games: ['Fortnite'] };
+  const added = await ob.apply(member, c);
+  assert.deepEqual(added.sort(), ['🔴 Notif Live', '🕹️ Joueur'].sort());
+  assert.deepEqual(db.players.u9.games, ['Fortnite']);
+  const g = JSON.stringify(ob.guide(guild, c).embeds[0].toJSON());
+  assert.ok(g.includes('<#c1>') && g.includes('<#c2>'));
+  assert.ok(g.includes('Fortnite'));
+  assert.ok(!g.includes('Création & fan-art'), 'seulement ce qui a été choisi');
+  const picker = ob.picker('u9');
+  assert.equal(picker.flags, require('discord.js').MessageFlags.Ephemeral);
+});
