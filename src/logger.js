@@ -62,14 +62,15 @@ function checkEnvFile() {
 function tail(lines = 100) {
   const since = clearedAt();
   try {
+    let current = 0; // une erreur sur plusieurs lignes (pile d'appels) : les lignes suivantes gardent sa date
     return fs
       .readFileSync(file, 'utf8')
       .trim()
       .split('\n')
       .filter((l) => {
-        if (!since) return true;
-        const t = Date.parse(l.match(/^\[([^\]]+)\]/)?.[1] ?? '');
-        return Number.isNaN(t) || t > since;
+        const t = Date.parse(l.match(/^\[(\d{4}-[^\]]+)\]/)?.[1] ?? '');
+        if (!Number.isNaN(t)) current = t;
+        return !since || current > since;
       })
       .slice(-lines);
   } catch {
