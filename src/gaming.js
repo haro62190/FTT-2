@@ -285,9 +285,7 @@ async function handleInteraction(i) {
         return true;
       }
       l.joined.push(i.user.id);
-      i.client.users
-        .send(l.author, `🎮 <@${i.user.id}> rejoint ta recherche **${l.game}** sur ${i.guild.name} !`)
-        .catch(() => {});
+      require('./notify').dm(i.client, l.author, `🎮 <@${i.user.id}> rejoint ta recherche **${l.game}** sur ${i.guild.name} !`, 'lfg').catch(() => {});
     } else if (action === 'leave') {
       l.joined = l.joined.filter((x) => x !== i.user.id);
     }

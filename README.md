@@ -455,6 +455,12 @@ Toutes les 5 minutes, le gardien contrôle : connexion Discord, permissions et p
 - **🛠️ Mode maintenance** : couper temporairement certaines fonctions (et réserver les commandes au staff), avec fin automatique ; les réglages ne sont pas touchés et les protections restent actives.
 - **🔍 Comparer deux sauvegardes** (page *💾 Sauvegardes*) : rôles, salons, paramètres du serveur et réglages qui ont changé.
 
+## 🔔 Notifications sans excès
+
+- `/notifications` : chaque membre choisit les annonces qui le mentionnent (rôles 🔴 Live, ▶️ YouTube…), les MP du bot qu'il accepte (rappels, suggestions, recherche de joueurs, parrainage, signalements), des **heures calmes** (les MP qui peuvent attendre partent ensuite, les rappels horaires sont abandonnés) et un **maximum de MP par jour** (6 par défaut). Les messages de modération sont toujours envoyés.
+- **🕸️ Salons inactifs** (site, et menu dans le rapport staff du lundi) : archiver (lecture seule, rangé dans 🗄️ ARCHIVES, **réversible** avec « Remettre »), garder (plus signalé pendant 60 j) ou relancer (message d'animation). Rien n'est fait sans un admin.
+- **🎬 Idées de contenu** : à la fin de chaque live, le staff reçoit les meilleurs moments à monter en Short / TikTok (clips les plus vus, pics du chat, liens horodatés vers la rediffusion).
+
 ## 📊 Sondages, 🧭 accueil personnalisé
 
 - `/sondage question: choix: Warzone ; Fortnite ; Minecraft [duree:2h] [anonyme:] [multiple:] [resultats_en_direct:]` : 2 à 10 choix, **anonyme par défaut**, date limite, résultats publiés automatiquement à la fin (bouton 🔒 pour clore plus tôt : auteur ou staff).

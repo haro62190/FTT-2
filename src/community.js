@@ -76,7 +76,7 @@ async function onSuggestionButton(i) {
     s.status = action;
     s.by = i.user.id;
     const author = await i.client.users.fetch(s.authorId).catch(() => null);
-    await author?.send(`💡 Ta suggestion #${s.number} sur **${i.guild.name}** est maintenant : **${STATUS[action].label}**`).catch(() => {});
+    if (author) await require('./notify').dm(i.client, author.id, `💡 Ta suggestion #${s.number} sur **${i.guild.name}** est maintenant : **${STATUS[action].label}**`, 'suggestion');
   }
   save();
   const author = await i.client.users.fetch(s.authorId).catch(() => null);
@@ -221,7 +221,7 @@ async function setSuggestionStatus(guild, msgId, status, byId) {
   const msg = channel && (await channel.messages.fetch(msgId).catch(() => null));
   const author = await guild.client.users.fetch(s.authorId).catch(() => null);
   if (msg) await msg.edit(renderSuggestion(s, author)).catch(() => {});
-  await author?.send(`💡 Ta suggestion #${s.number} sur **${guild.name}** est maintenant : **${STATUS[status].label}**`).catch(() => {});
+  if (author) await require('./notify').dm(guild.client, author.id, `💡 Ta suggestion #${s.number} sur **${guild.name}** est maintenant : **${STATUS[status].label}**`, 'suggestion');
   return true;
 }
 

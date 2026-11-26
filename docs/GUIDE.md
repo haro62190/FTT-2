@@ -61,6 +61,7 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | `/serveur` | Infos sur le serveur |
 | `/sondage question: choix: A ; B ; C [duree:2h] [anonyme:] [multiple:] [resultats_en_direct:]` | Sondage anonyme avec date limite et résultats automatiques |
 | `/accueil` | Choisir tes intérêts et tes jeux : guide et rôles sur mesure |
+| `/notifications` | Tes mentions, les MP du bot que tu acceptes, heures calmes, maximum par jour |
 | `/guide [staff:]` | Le guide du serveur et de toutes les commandes |
 | `/merci membre: [raison:]` | Remercier un membre qui t'a aidé (+1 réputation) |
 | `/rep [membre:]` | La réputation d'un membre et le classement |
