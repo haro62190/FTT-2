@@ -78,14 +78,29 @@ async function resolveTracks(query, source, requestedBy) {
     }));
 }
 
-/** yt-dlp (meilleur flux audio) -> ffmpeg (Opus/Ogg) -> Discord */
-function createStream(track, onFail = () => {}) {
+// ───────── Volume : égalisation automatique + volume réglable + limiteur anti-saturation ─────────
+const volumePct = () => Math.max(10, Math.min(150, Number(require('./settings').get('music.volume')) || 100));
+const normalizeOn = () => require('./settings').get('music.normalize') !== false;
+/**
+ * Filtres audio ffmpeg : loudnorm met tous les morceaux au même niveau (-16 LUFS, comme les plateformes
+ * de streaming), puis le volume choisi, puis un limiteur qui empêche la saturation (grésillement).
+ */
+function audioFilters(vol = volumePct(), normalize = normalizeOn()) {
+  const f = [];
+  if (normalize) f.push('loudnorm=I=-16:TP=-2:LRA=11');
+  if (vol !== 100) f.push(`volume=${(vol / 100).toFixed(2)}`);
+  f.push('alimiter=limit=0.89:level=disabled');
+  return f.join(',');
+}
+
+/** yt-dlp (meilleur flux audio) -> ffmpeg (Opus/Ogg) -> Discord. `seek` : reprendre à cette seconde. */
+function createStream(track, onFail = () => {}, { seek = 0 } = {}) {
   const ytdlp = spawn(YTDLP, ['-f', 'bestaudio/best', '-o', '-', '-q', '--no-warnings', '--no-playlist', ...cookieArgs(), track.url], {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   const ffmpeg = spawn(
     FFMPEG,
-    ['-loglevel', 'error', '-i', 'pipe:0', '-vn', '-c:a', 'libopus', '-b:a', '128k', '-ar', '48000', '-ac', '2', '-f', 'ogg', 'pipe:1'],
+    ['-loglevel', 'error', '-i', 'pipe:0', ...(seek > 0 ? ['-ss', String(Math.floor(seek))] : []), '-vn', '-af', audioFilters(), '-c:a', 'libopus', '-b:a', '128k', '-ar', '48000', '-ac', '2', '-f', 'ogg', 'pipe:1'],
     { stdio: ['pipe', 'pipe', 'pipe'] },
   );
   ytdlp.stdout.pipe(ffmpeg.stdin);
@@ -105,7 +120,7 @@ function createStream(track, onFail = () => {}) {
     ytdlp.kill('SIGKILL');
     ffmpeg.kill('SIGKILL');
   };
-  return { resource, kill, stderr: () => stderr };
+  return { resource, kill, stderr: () => stderr, offset: seek };
 }
 
 // ───────────────────────── File d'attente ─────────────────────────
@@ -155,6 +170,23 @@ class GuildQueue {
 
   send(content) {
     return this.textChannel?.send({ content, allowedMentions: { parse: [] }, flags: MessageFlags.SuppressEmbeds }).catch(() => {});
+  }
+
+  /** Position de lecture actuelle (secondes). */
+  position() {
+    return (this.stream?.offset ?? 0) + (this.stream?.resource?.playbackDuration ?? 0) / 1000;
+  }
+
+  /** Relance le morceau en cours à la même position (pour appliquer un nouveau volume tout de suite). */
+  restartAtCurrent() {
+    const track = this.current;
+    if (!track || !this.stream) return false;
+    const at = this.position();
+    const old = this.stream;
+    this.stream = createStream(track, (reason) => this.onFail(track, reason), { seek: at });
+    this.player.play(this.stream.resource);
+    old.kill();
+    return true;
   }
 
   /** Un morceau n'a pas pu être lu : si YouTube bloque le serveur, on le cherche sur SoundCloud. */
@@ -345,6 +377,32 @@ const commands = [
   }),
   {
     category: '🎵 Musique',
+    module: 'music',
+    data: new SlashCommandBuilder()
+      .setName('volume')
+      .setDescription('Régler le volume de la musique (et l\'égalisation automatique)')
+      .addIntegerOption((o) => o.setName('niveau').setDescription('10 à 150 % (100 = normal)').setMinValue(10).setMaxValue(150))
+      .addBooleanOption((o) => o.setName('egalisation').setDescription('Égaliser le volume des morceaux (oui par défaut)')),
+    async run(i) {
+      const settings = require('./settings');
+      const level = i.options.getInteger('niveau');
+      const norm = i.options.getBoolean('egalisation');
+      if (level === null && norm === null) {
+        return i.reply(ephemeral(`🔊 Volume : **${volumePct()} %** · égalisation automatique : **${normalizeOn() ? 'oui' : 'non'}**`));
+      }
+      const q = queues.get(i.guildId);
+      // Pendant la lecture, seuls ceux qui écoutent (ou le staff) peuvent changer le volume
+      if (q && i.member.voice.channelId !== q.channelId && !require('./shared').isStaffMember(i.member)) {
+        return i.reply(ephemeral(`Rejoins <#${q.channelId}> pour régler le volume.`));
+      }
+      if (level !== null) settings.set('music.volume', level);
+      if (norm !== null) settings.set('music.normalize', norm);
+      const applied = q?.restartAtCurrent();
+      return i.reply(`🔊 Volume **${volumePct()} %** · égalisation **${normalizeOn() ? 'oui' : 'non'}**${applied ? ' — appliqué tout de suite' : ''}.`);
+    },
+  },
+  {
+    category: '🎵 Musique',
     data: new SlashCommandBuilder().setName('file').setDescription('Voir la file d\'attente'),
     async run(i) {
       const q = queues.get(i.guildId);
@@ -391,4 +449,4 @@ function onVoiceStateUpdate(oldState) {
   }
 }
 
-module.exports = { commands, onVoiceStateUpdate, formatDuration, createStream, queues, isBotBlock, isYouTube, cleanTitle, GuildQueue };
+module.exports = { commands, onVoiceStateUpdate, formatDuration, createStream, queues, isBotBlock, isYouTube, cleanTitle, GuildQueue, audioFilters, volumePct };
