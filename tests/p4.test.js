@@ -117,3 +117,21 @@ test('erreurs : « Effacer » masque les anciennes, garde le fichier, affiche le
   assert.ok(logger.tail(50).some((l) => l.includes('Nouvelle erreur')));
   console.error = realError;
 });
+
+test('yt-dlp : trouvé dans les dossiers d\'installation même si le PATH de pm2 est incomplet', () => {
+  if (process.platform === 'win32') return;
+  const fs = require('fs');
+  const os = require('os');
+  const path = require('path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bin-'));
+  const bin = path.join(dir, 'outil-test');
+  fs.writeFileSync(bin, '#!/bin/sh\necho ok\n', { mode: 0o755 });
+  const { findBinary } = require('../src/ytdlp');
+  const before = process.env.PATH;
+  process.env.PATH = `${before}:${dir}`;
+  assert.equal(findBinary('outil-test'), bin);
+  assert.equal(findBinary('outil-test', '/chemin/force'), '/chemin/force', 'YTDLP_PATH reste prioritaire');
+  assert.equal(findBinary('introuvable-xyz'), 'introuvable-xyz');
+  process.env.PATH = before;
+  assert.ok(process.env.PATH.split(':').includes('/usr/local/bin'), '/usr/local/bin toujours dans le PATH du bot');
+});

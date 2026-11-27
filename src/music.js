@@ -17,7 +17,7 @@ const {
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags, PermissionFlagsBits: P } = require('discord.js');
 const { BRAND_COLOR, findRole } = require('./shared');
 
-const FFMPEG = process.env.FFMPEG_PATH || 'ffmpeg';
+const FFMPEG = require('./ytdlp').findBinary('ffmpeg', process.env.FFMPEG_PATH); // ytdlp.js complète le PATH
 const MAX_PLAYLIST = 50;
 const IDLE_LEAVE_MS = 2 * 60_000;
 
