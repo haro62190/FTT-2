@@ -143,16 +143,31 @@ test('musique : blocage YouTube reconnu, titre nettoyé, bascule SoundCloud tent
   assert.ok(music.isYouTube('https://www.youtube.com/watch?v=x') && music.isYouTube('https://youtu.be/x'));
   assert.ok(!music.isYouTube('https://soundcloud.com/a/b'));
   assert.equal(music.cleanTitle('The Weeknd, Playboi Carti - Timeless (Official Video) [4K]'), 'The Weeknd, Playboi Carti - Timeless');
-  // File factice : pas de yt-dlp dans les tests → SoundCloud introuvable → message clair, pas l'erreur brute
+  // File factice, recherche SoundCloud simulée : le test ne dépend pas de la machine (yt-dlp installé ou non)
   const q = Object.create(music.GuildQueue.prototype);
   const said = [];
-  Object.assign(q, { tracks: [], current: null, destroyed: false, send: (m) => said.push(m), next: () => said.push('next') });
+  Object.assign(q, { tracks: [], current: null, destroyed: false, send: (m) => said.push(m), next: () => said.push('next'), resolve: async () => [] });
   const track = { title: 'Timeless (Official Video)', url: 'https://www.youtube.com/watch?v=5EpyN', requestedBy: 'u1' };
   q.current = track;
   await q.onFail(track, "ERROR: [youtube] 5EpyN: Sign in to confirm you're not a bot");
   assert.match(said[0], /SoundCloud/);
   assert.match(said.at(-1), /Introuvable sur SoundCloud/);
   assert.ok(!said.join(' ').includes('github.com'), 'pas de lien vers la FAQ yt-dlp');
+  // Trouvé sur SoundCloud : mis en tête de file et joué tout de suite, sans rejouer le morceau raté
+  said.length = 0;
+  let searched = null;
+  q.resolve = async (title, source) => ((searched = [title, source]), [{ title: 'Timeless', url: 'https://soundcloud.com/x/timeless' }]);
+  q.current = track;
+  await q.onFail(track, "ERROR: [youtube] 5EpyN: Sign in to confirm you're not a bot");
+  assert.deepEqual(searched, ['Timeless', 'soundcloud']);
+  assert.equal(q.tracks[0].url, 'https://soundcloud.com/x/timeless');
+  assert.equal(q.tracks[0].fallback, true);
+  assert.equal(said.at(-1), 'next');
+  // Le morceau de secours échoue aussi : pas de boucle infinie
+  said.length = 0;
+  q.tracks = [];
+  await q.onFail({ ...track, fallback: true }, 'ERROR: Sign in to confirm you are not a bot');
+  assert.equal(said.length, 0);
   // Autre erreur : message normal
   said.length = 0;
   await q.onFail({ title: 'X', url: 'https://soundcloud.com/a/b' }, 'ERROR: 404');

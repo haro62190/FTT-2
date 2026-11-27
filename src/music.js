@@ -195,7 +195,7 @@ class GuildQueue {
     ytBlockedAt = Date.now();
     if (track.fallback) return null;
     this.send(`🛡️ YouTube bloque la lecture depuis le serveur du bot (protection anti-robots). Je cherche **${cleanTitle(track.title)}** sur SoundCloud…`);
-    const found = await resolveTracks(cleanTitle(track.title), 'soundcloud', track.requestedBy).catch(() => []);
+    const found = await (this.resolve ?? resolveTracks)(cleanTitle(track.title), 'soundcloud', track.requestedBy).catch(() => []);
     if (!found.length || this.destroyed) {
       return this.send(`❌ Introuvable sur SoundCloud. Essaie un autre titre, ou \`/play source: SoundCloud\`. (Pour retrouver YouTube, l'admin peut ajouter des cookies YouTube au bot : voir le README, section Musique.)`);
     }
