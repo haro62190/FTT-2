@@ -38,12 +38,12 @@ module.exports = ({ esc, csrf, checkbox, fetchMembers, memberName, fmtDate }) =>
       const groups = new Map();
       for (const [key, label, path, group] of settings.MODULES) {
         if (!groups.has(group)) groups.set(group, []);
-        groups.get(group).push(`<tr><td>${esc(label)}</td><td style="width:70px">${checkbox(`m_${key}`, settings.raw(path) !== false, '')}</td></tr>`);
+        groups.get(group).push(`<tr><td>${esc(label)}</td><td>${checkbox(`m_${key}`, settings.raw(path) !== false, '')}</td></tr>`);
       }
       return {
         title: '🧩 Modules',
         body: `<form method="post">${csrf(sess)}<p class="muted">Active ou coupe chaque fonctionnalité. Un module coupé ne fait plus rien, mais ses données sont conservées.</p>
-        <div class="row">${[...groups].map(([g, rows]) => `<div class="card"><h3>${esc(g)}</h3><table>${rows.join('')}</table></div>`).join('')}</div>
+        <div class="modgrid">${[...groups].map(([g, rows]) => `<div class="card"><h3>${esc(g)}</h3><table>${rows.join('')}</table></div>`).join('')}</div>
         <button>Enregistrer</button></form>`,
       };
     },
