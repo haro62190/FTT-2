@@ -135,3 +135,26 @@ test('yt-dlp : trouvé dans les dossiers d\'installation même si le PATH de pm2
   process.env.PATH = before;
   assert.ok(process.env.PATH.split(':').includes('/usr/local/bin'), '/usr/local/bin toujours dans le PATH du bot');
 });
+
+test('musique : blocage YouTube reconnu, titre nettoyé, bascule SoundCloud tentée avec un message clair', async () => {
+  const music = require('../src/music');
+  assert.ok(music.isBotBlock("ERROR: [youtube] 5EpyN: Sign in to confirm you're not a bot. Use --cookies-from-browser"));
+  assert.ok(!music.isBotBlock('ERROR: Video unavailable'));
+  assert.ok(music.isYouTube('https://www.youtube.com/watch?v=x') && music.isYouTube('https://youtu.be/x'));
+  assert.ok(!music.isYouTube('https://soundcloud.com/a/b'));
+  assert.equal(music.cleanTitle('The Weeknd, Playboi Carti - Timeless (Official Video) [4K]'), 'The Weeknd, Playboi Carti - Timeless');
+  // File factice : pas de yt-dlp dans les tests → SoundCloud introuvable → message clair, pas l'erreur brute
+  const q = Object.create(music.GuildQueue.prototype);
+  const said = [];
+  Object.assign(q, { tracks: [], current: null, destroyed: false, send: (m) => said.push(m), next: () => said.push('next') });
+  const track = { title: 'Timeless (Official Video)', url: 'https://www.youtube.com/watch?v=5EpyN', requestedBy: 'u1' };
+  q.current = track;
+  await q.onFail(track, "ERROR: [youtube] 5EpyN: Sign in to confirm you're not a bot");
+  assert.match(said[0], /SoundCloud/);
+  assert.match(said.at(-1), /Introuvable sur SoundCloud/);
+  assert.ok(!said.join(' ').includes('github.com'), 'pas de lien vers la FAQ yt-dlp');
+  // Autre erreur : message normal
+  said.length = 0;
+  await q.onFail({ title: 'X', url: 'https://soundcloud.com/a/b' }, 'ERROR: 404');
+  assert.match(said[0], /Impossible de lire \*\*X\*\*/);
+});

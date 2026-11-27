@@ -39,8 +39,30 @@ function formatDuration(sec) {
 // ───────────────────────── yt-dlp ─────────────────────────
 
 
+// ───────── YouTube bloque souvent les serveurs (VPS) : bascule automatique sur SoundCloud ─────────
+const BLOCK_MS = 6 * 3600_000;
+let ytBlockedAt = 0;
+/** « Sign in to confirm you're not a bot », etc. : YouTube refuse ce serveur. */
+const isBotBlock = (text) => /sign in to confirm|not a bot|confirm you.?re not|--cookies/i.test(String(text ?? ''));
+const ytBlocked = () => !cookieArgs().length && Date.now() - ytBlockedAt < BLOCK_MS;
+const isYouTube = (url) => /(^|\.)youtu(\.be|be\.com)/i.test((() => {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return '';
+  }
+})());
+/** « Artiste - Titre (Official Video) [4K] » → « Artiste - Titre » pour chercher ailleurs. */
+const cleanTitle = (t) =>
+  String(t ?? '')
+    .replace(/[([][^)\]]*(official|officiel|video|vidéo|clip|lyrics?|paroles|audio|visuali[sz]er|4k|hd|hq|remaster)[^)\]]*[)\]]/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
 /** Transforme une recherche ou un lien en liste de morceaux. */
 async function resolveTracks(query, source, requestedBy) {
+  // YouTube bloque le serveur depuis peu : une recherche par titre passe directement par SoundCloud
+  if (!source && ytBlocked()) source = 'soundcloud';
   const target = isUrl(query) ? query : `${source === 'soundcloud' ? 'scsearch1' : 'ytsearch1'}:${query}`;
   const info = await ytdlpJson(['-J', '--flat-playlist', '--no-warnings', '--playlist-end', String(MAX_PLAYLIST), target]);
   const entries = info._type === 'playlist' ? info.entries ?? [] : [info];
@@ -110,6 +132,7 @@ class GuildQueue {
     this.player.on(AudioPlayerStatus.Idle, () => this.next());
     this.player.on('error', (err) => {
       const detail = this.stream?.stderr().split('\n').find((l) => l.includes('ERROR')) ?? err.message;
+      if (isBotBlock(detail)) return; // géré par onFail (bascule SoundCloud)
       this.send(`⚠️ Impossible de lire **${err.resource?.metadata?.title ?? 'ce morceau'}** : ${detail.slice(0, 300)}`);
     });
 
@@ -131,7 +154,25 @@ class GuildQueue {
   }
 
   send(content) {
-    return this.textChannel?.send({ content, allowedMentions: { parse: [] } }).catch(() => {});
+    return this.textChannel?.send({ content, allowedMentions: { parse: [] }, flags: MessageFlags.SuppressEmbeds }).catch(() => {});
+  }
+
+  /** Un morceau n'a pas pu être lu : si YouTube bloque le serveur, on le cherche sur SoundCloud. */
+  async onFail(track, reason) {
+    if (!isBotBlock(reason) || !isYouTube(track.url)) return this.send(`⚠️ Impossible de lire **${track.title}** : ${reason}`);
+    ytBlockedAt = Date.now();
+    if (track.fallback) return null;
+    this.send(`🛡️ YouTube bloque la lecture depuis le serveur du bot (protection anti-robots). Je cherche **${cleanTitle(track.title)}** sur SoundCloud…`);
+    const found = await resolveTracks(cleanTitle(track.title), 'soundcloud', track.requestedBy).catch(() => []);
+    if (!found.length || this.destroyed) {
+      return this.send(`❌ Introuvable sur SoundCloud. Essaie un autre titre, ou \`/play source: SoundCloud\`. (Pour retrouver YouTube, l'admin peut ajouter des cookies YouTube au bot : voir le README, section Musique.)`);
+    }
+    this.tracks.unshift({ ...found[0], fallback: true });
+    if (!this.current || this.current === track) {
+      if (this.current === track) this.current = null; // le morceau raté ne doit pas être rejoué en boucle
+      this.next();
+    }
+    return null;
   }
 
   async ready() {
@@ -161,7 +202,7 @@ class GuildQueue {
     this.idleTimer = null;
 
     const track = this.current;
-    this.stream = createStream(track, (reason) => this.send(`⚠️ Impossible de lire **${track.title}** : ${reason}`));
+    this.stream = createStream(track, (reason) => this.onFail(track, reason));
     this.player.play(this.stream.resource);
     if (!this.loop) {
       this.textChannel
@@ -350,4 +391,4 @@ function onVoiceStateUpdate(oldState) {
   }
 }
 
-module.exports = { commands, onVoiceStateUpdate, formatDuration, createStream, queues };
+module.exports = { commands, onVoiceStateUpdate, formatDuration, createStream, queues, isBotBlock, isYouTube, cleanTitle, GuildQueue };
