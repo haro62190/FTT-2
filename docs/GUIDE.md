@@ -109,6 +109,7 @@ Tape `/` dans n'importe quel salon pour voir toutes les commandes, ou `/guide` p
 | Commande | Ce qu'elle fait |
 |---|---|
 | `/play musique: [source:]` | Jouer une musique (lien YouTube, SoundCloud… ou recherche) |
+| `/volume [niveau:] [egalisation:]` | Volume de la musique (10 à 150 %), égalisation automatique |
 | `/skip` | Passer à la musique suivante |
 | `/stop` | Arrêter la musique et vider la file |
 | `/pause` | Mettre en pause |

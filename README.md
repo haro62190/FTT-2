@@ -493,6 +493,8 @@ pm2 restart bot-discord
 
 Sur Windows : `winget install yt-dlp.yt-dlp Gyan.FFmpeg DenoLand.Deno` puis rouvre le terminal.
 
+🔊 **Son** : le volume de chaque morceau est égalisé automatiquement (tous au même niveau) et un limiteur empêche la saturation. `/volume niveau:` (10 à 150 %) s'applique tout de suite au morceau en cours ; `/volume egalisation:false` pour couper l'égalisation.
+
 ⚠️ YouTube interdit dans ses conditions d'utilisation la lecture de ses vidéos hors de son lecteur, et bloque souvent les adresses IP de VPS (« Sign in to confirm you're not a bot »). Dans ce cas, le bot **cherche automatiquement le même morceau sur SoundCloud** et, pendant 6 h, fait les recherches par titre directement sur SoundCloud. Sinon : utilise `source: SoundCloud`, ou exporte les cookies YouTube d'un compte secondaire dans `cookies.txt` et indique son chemin dans `YTDLP_COOKIES`.
 
 ## 🔊 Vocaux temporaires

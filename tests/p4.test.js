@@ -158,3 +158,16 @@ test('musique : blocage YouTube reconnu, titre nettoyé, bascule SoundCloud tent
   await q.onFail({ title: 'X', url: 'https://soundcloud.com/a/b' }, 'ERROR: 404');
   assert.match(said[0], /Impossible de lire \*\*X\*\*/);
 });
+
+test('musique : égalisation, volume et limiteur anti-saturation dans les filtres audio', () => {
+  const music = require('../src/music');
+  const settings = require('../src/settings');
+  assert.equal(music.audioFilters(100, true), 'loudnorm=I=-16:TP=-2:LRA=11,alimiter=limit=0.89:level=disabled');
+  assert.equal(music.audioFilters(150, false), 'volume=1.50,alimiter=limit=0.89:level=disabled');
+  settings.set('music.volume', 999);
+  assert.equal(music.volumePct(), 150, 'volume plafonné');
+  settings.set('music.volume', 3);
+  assert.equal(music.volumePct(), 10, 'volume plancher');
+  settings.set('music.volume', 100);
+  assert.ok(music.commands.some((c) => c.data.name === 'volume'));
+});
