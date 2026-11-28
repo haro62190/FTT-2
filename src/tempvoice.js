@@ -46,6 +46,15 @@ function grantableOnly(guild, overwrites, parent = null) {
   return overwrites.map((o) => ({ ...o, ...(o.allow ? { allow: o.allow.filter(ok) } : {}), ...(o.deny ? { deny: o.deny.filter(ok) } : {}) }));
 }
 
+/** Permissions indispensables au bot dans la catégorie des vocaux pour créer un salon et y déplacer le membre. */
+const NEEDED = [['ViewChannel', 'Voir les salons'], ['ManageChannels', 'Gérer les salons'], ['Connect', 'Se connecter'], ['MoveMembers', 'Déplacer des membres']];
+function missingIn(guild, parent = null) {
+  const me = guild.members?.me;
+  if (!me) return NEEDED.map(([, l]) => l);
+  const mine = (parent && parent.permissionsFor?.(me)) || me.permissions;
+  return NEEDED.filter(([k]) => !mine?.has?.(P[k])).map(([, l]) => l);
+}
+
 function buildOverwrites(guild, ownerId, data, parent = null) {
   return grantableOnly(guild, rawOverwrites(guild, ownerId, data), parent);
 }
@@ -178,7 +187,12 @@ async function onVoiceStateUpdate(oldState, newState) {
 
   if (joined && isTrigger(guild, joined) && newState.member && !newState.member.user.bot) {
     if (!require('./settings').on('tempvoice')) console.warn('Vocal temporaire : module coupé (site → 🧩 Modules ou 🛠️ Maintenance), aucun salon créé.');
-    else await createFor(newState.member, joined).catch((err) => console.error('Vocal temporaire :', err.message));
+    else {
+      await createFor(newState.member, joined).catch((err) => {
+        const miss = missingIn(guild, joined.parent);
+        console.error(`Vocal temporaire : ${err.message}${miss.length ? ` — il manque au bot dans la catégorie « ${joined.parent?.name ?? 'aucune'} » : ${miss.join(', ')}` : ` (code ${err.code ?? '?'})`}`);
+      });
+    }
   }
 
   if (oldState.channelId && oldState.channelId !== newState.channelId && state()[oldState.channelId]) {
@@ -330,4 +344,4 @@ async function handleInteraction(i) {
   return true;
 }
 
-module.exports = { grantableOnly, onVoiceStateUpdate, handleInteraction, cleanup, isTempChannel };
+module.exports = { grantableOnly, missingIn, onVoiceStateUpdate, handleInteraction, cleanup, isTempChannel };
