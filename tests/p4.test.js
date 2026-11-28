@@ -186,3 +186,28 @@ test('musique : égalisation, volume et limiteur anti-saturation dans les filtre
   settings.set('music.volume', 100);
   assert.ok(music.commands.some((c) => c.data.name === 'volume'));
 });
+
+test('vocal temporaire : créé aussi depuis un « ➕ Créer ton vocal » en double', async () => {
+  const { ChannelType, PermissionsBitField } = require('discord.js');
+  const tv = require('../src/tempvoice');
+  const { db } = require('../src/store');
+  db.tempVoice = {};
+  const created = [];
+  const mk = (id, name, type = ChannelType.GuildVoice) => ({ id, name, type, parentId: 'cat', members: new Collection() });
+  const triggerA = mk('t1', '➕ Créer ton vocal');
+  const triggerB = mk('t2', '➕ Créer ton vocal'); // doublon
+  const channels = new Collection([['t1', triggerA], ['t2', triggerB]]);
+  const guild = {
+    id: 'G',
+    client: { user: { id: 'bot' } },
+    roles: { everyone: { id: 'G' }, cache: new Collection() },
+    channels: { cache: channels, create: async (o) => (created.push(o), { ...mk('new', o.name), send: async () => ({ id: 'p' }) }) },
+    members: { me: { permissions: new PermissionsBitField(PermissionsBitField.All) } },
+  };
+  const member = { id: 'u1', displayName: 'Haro', user: { bot: false, tag: 'haro' }, guild, voice: { setChannel: async () => {} } };
+  await tv.onVoiceStateUpdate({ channelId: null }, { guild, channelId: 't2', channel: triggerB, member });
+  assert.equal(created.length, 1, 'salon créé depuis le doublon');
+  assert.match(created[0].name, /Haro/);
+  await tv.onVoiceStateUpdate({ channelId: null }, { guild, channelId: 'x', channel: mk('x', '🌃 Shibuya'), member });
+  assert.equal(created.length, 1, 'un autre vocal ne crée rien');
+});
