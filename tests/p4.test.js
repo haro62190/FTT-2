@@ -227,3 +227,14 @@ test('vocal temporaire : n\'accorde que les permissions que le bot possède (sin
   const admin = { members: { me: { permissions: new PermissionsBitField(P.Administrator) } } };
   assert.equal(tv.grantableOnly(admin, [{ id: 'bot', allow: [P.ManageRoles] }])[0].allow.length, 1);
 });
+
+test('vocal temporaire : permissions manquantes nommées clairement', () => {
+  const { PermissionsBitField, PermissionFlagsBits: P } = require('discord.js');
+  const tv = require('../src/tempvoice');
+  const me = {};
+  const guild = { members: { me } };
+  const parent = { name: '🎧 VOCAUX', permissionsFor: () => new PermissionsBitField([P.ViewChannel, P.Connect]) };
+  assert.deepEqual(tv.missingIn(guild, parent), ['Gérer les salons', 'Déplacer des membres']);
+  const ok = { permissionsFor: () => new PermissionsBitField([P.ViewChannel, P.Connect, P.ManageChannels, P.MoveMembers]) };
+  assert.deepEqual(tv.missingIn(guild, ok), []);
+});

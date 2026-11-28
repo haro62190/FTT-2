@@ -169,6 +169,14 @@ function runChecks(client = clientRef, guild = guildRef) {
     if (blocked.length) add('hierarchy', 'Position du rôle du bot', 'warn', `Rôles au-dessus du bot : ${blocked.map((r) => r.name).slice(0, 6).join(', ')}`, 'Paramètres du serveur → Rôles : glisser le rôle du bot tout en haut.');
     else add('hierarchy', 'Position du rôle du bot', 'ok');
 
+    // Vocaux temporaires : le bot peut-il créer un salon dans leur catégorie ?
+    const trigger = findChannel(guild, 'voice_create');
+    if (trigger && settings.on('tempvoice')) {
+      const miss = require('./tempvoice').missingIn(guild, trigger.parent);
+      if (miss.length) add('tempvoice', 'Vocaux temporaires', 'error', `Le bot ne peut pas créer de salon dans « ${trigger.parent?.name ?? 'aucune catégorie'} » : il lui manque ${miss.join(', ')}.`, `Paramètres du serveur → Rôles → rôle du bot : activer ${miss.join(', ')} ; puis clic droit sur la catégorie « ${trigger.parent?.name ?? ''} » → Modifier → Permissions : vérifier que rien ne les refuse au bot.`);
+      else add('tempvoice', 'Vocaux temporaires', 'ok');
+    }
+
     // Structure (salons / rôles manquants)
     try {
       const p = require('./builder').plan(guild);
