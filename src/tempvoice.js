@@ -146,12 +146,22 @@ async function transferIfOwnerLeft(channel) {
   await channel.send({ content: `👑 ${next} est maintenant propriétaire du salon.`, allowedMentions: { users: [next.id] } }).catch(() => {});
 }
 
+/** Le salon rejoint est-il un « ➕ Créer ton vocal » ? (par son nom : marche aussi s'il existe en double) */
+function isTrigger(guild, channel) {
+  if (!channel || channel.type !== ChannelType.GuildVoice) return false;
+  const main = findChannel(guild, settings.triggerChannel);
+  if (main && channel.id === main.id) return true;
+  const def = config.categories.flatMap((c) => c.channels).find((d) => d.key === settings.triggerChannel);
+  return !!def && [def.name, ...(def.formerNames ?? [])].includes(channel.name);
+}
+
 async function onVoiceStateUpdate(oldState, newState) {
   const guild = newState.guild;
-  const trigger = findChannel(guild, settings.triggerChannel);
+  const joined = newState.channelId && newState.channelId !== oldState.channelId ? newState.channel ?? guild.channels.cache.get(newState.channelId) : null;
 
-  if (trigger && newState.channelId === trigger.id && newState.member && !newState.member.user.bot && require('./settings').on('tempvoice')) {
-    await createFor(newState.member, trigger).catch((err) => console.error('Vocal temporaire :', err.message));
+  if (joined && isTrigger(guild, joined) && newState.member && !newState.member.user.bot) {
+    if (!require('./settings').on('tempvoice')) console.warn('Vocal temporaire : module coupé (site → 🧩 Modules ou 🛠️ Maintenance), aucun salon créé.');
+    else await createFor(newState.member, joined).catch((err) => console.error('Vocal temporaire :', err.message));
   }
 
   if (oldState.channelId && oldState.channelId !== newState.channelId && state()[oldState.channelId]) {
