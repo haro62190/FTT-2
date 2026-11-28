@@ -33,7 +33,24 @@ const ephemeral = (content) => ({ content, flags: MessageFlags.Ephemeral });
 /** Rôles qui peuvent rejoindre tous les vocaux, même fermés (ex : 🤝 Amis). */
 const allVoiceRoles = (guild) => config.roles.filter((r) => r.allVoice).map((r) => findRole(guild, r.key)).filter(Boolean);
 
-function buildOverwrites(guild, ownerId, data) {
+/**
+ * Sans Administrateur, Discord refuse (« Missing Permissions ») de créer un salon dont les permissions
+ * donnent quelque chose que le bot n'a pas lui-même dans la catégorie, et de donner « Gérer les permissions ».
+ * On ne garde donc que ce que le bot peut réellement accorder.
+ */
+function grantableOnly(guild, overwrites, parent = null) {
+  const me = guild.members?.me;
+  if (!me || me.permissions?.has?.(P.Administrator)) return overwrites;
+  const mine = (parent && parent.permissionsFor?.(me)) || me.permissions;
+  const ok = (p) => p !== P.ManageRoles && mine?.has?.(p);
+  return overwrites.map((o) => ({ ...o, ...(o.allow ? { allow: o.allow.filter(ok) } : {}), ...(o.deny ? { deny: o.deny.filter(ok) } : {}) }));
+}
+
+function buildOverwrites(guild, ownerId, data, parent = null) {
+  return grantableOnly(guild, rawOverwrites(guild, ownerId, data), parent);
+}
+
+function rawOverwrites(guild, ownerId, data) {
   const member = findRole(guild, 'member');
   const staff = require('./shared').staffRoles(guild);
   const R = OverwriteType.Role;
@@ -86,7 +103,7 @@ function panelPayload(channel, data) {
 }
 
 async function refresh(channel, data) {
-  await channel.permissionOverwrites.set(buildOverwrites(channel.guild, data.ownerId, data));
+  await channel.permissionOverwrites.set(buildOverwrites(channel.guild, data.ownerId, data, channel.parent));
   if (data.panelId) {
     const msg = await channel.messages.fetch(data.panelId).catch(() => null);
     if (msg) await msg.edit(panelPayload(channel, data)).catch(() => {});
@@ -104,7 +121,7 @@ async function createFor(member, trigger) {
     name: settings.nameTemplate.replace('{user}', member.displayName).slice(0, 100),
     type: ChannelType.GuildVoice,
     parent: trigger.parentId,
-    permissionOverwrites: buildOverwrites(member.guild, member.id, data),
+    permissionOverwrites: buildOverwrites(member.guild, member.id, data, trigger.parent),
     reason: `Salon temporaire de ${member.user.tag}`,
   });
   state()[channel.id] = data;
@@ -313,4 +330,4 @@ async function handleInteraction(i) {
   return true;
 }
 
-module.exports = { onVoiceStateUpdate, handleInteraction, cleanup, isTempChannel };
+module.exports = { grantableOnly, onVoiceStateUpdate, handleInteraction, cleanup, isTempChannel };

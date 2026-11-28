@@ -211,3 +211,19 @@ test('vocal temporaire : créé aussi depuis un « ➕ Créer ton vocal » en do
   await tv.onVoiceStateUpdate({ channelId: null }, { guild, channelId: 'x', channel: mk('x', '🌃 Shibuya'), member });
   assert.equal(created.length, 1, 'un autre vocal ne crée rien');
 });
+
+test('vocal temporaire : n\'accorde que les permissions que le bot possède (sinon « Missing Permissions »)', () => {
+  const { PermissionsBitField, PermissionFlagsBits: P } = require('discord.js');
+  const tv = require('../src/tempvoice');
+  const mine = new PermissionsBitField([P.ViewChannel, P.Connect, P.Speak, P.ManageChannels, P.ManageRoles, P.MoveMembers]);
+  const guild = { members: { me: { permissions: mine } } };
+  const out = tv.grantableOnly(guild, [
+    { id: 'everyone', deny: [P.ViewChannel, P.Connect] },
+    { id: 'bot', allow: [P.ViewChannel, P.Connect, P.ManageRoles, P.PrioritySpeaker] },
+  ]);
+  assert.deepEqual(out[0].deny, [P.ViewChannel, P.Connect]);
+  assert.deepEqual(out[1].allow, [P.ViewChannel, P.Connect], '« Gérer les permissions » et ce que le bot n\'a pas sont retirés');
+  // Avec Administrateur : rien n'est retiré
+  const admin = { members: { me: { permissions: new PermissionsBitField(P.Administrator) } } };
+  assert.equal(tv.grantableOnly(admin, [{ id: 'bot', allow: [P.ManageRoles] }])[0].allow.length, 1);
+});
